@@ -5,13 +5,22 @@ from TwitterSearch import (
     TwitterSearchOrder, TwitterSearchException, TwitterSearch
     )
 
+
+# Get configuration from file
+def get_config(config_file):
+    with open(config_file) as f:
+        config = json.loads(f.read())
+    return config
+
+
 # Process tweets to show results in json format with one file per keyword
 def process_and_store(tweet, keyword):
     keyword = keyword + ".txt"
     with open(keyword, 'a') as f:
         print(json.dumps(tweet), file=f)
 
-def twitter_search(keyword):
+
+def twitter_search(keyword, conf):
     try:
         tso = TwitterSearchOrder()
         tso.set_keywords([keyword])
@@ -19,13 +28,12 @@ def twitter_search(keyword):
         tso.set_include_entities(False)
         # secret tokens
         ts = TwitterSearch(
-            access_token = 'aCcEss_tOken',
-            access_token_secret = 'aCcEsStOkEnSecReT',
-            consumer_key = 'cOnSuMER_kEy',
-            consumer_secret = 'cONSumeR_sECreT'
+            access_token=conf['twitter']['access_token'],
+            access_token_secret=conf['twitter']['access_token_secret'],
+            consumer_key=conf['twitter']['consumer_key'],
+            consumer_secret=conf['twitter']['consumer_secret']
         )
-
-        # collection of tweets
+        # recollect tweets
         for tweet in ts.search_tweets_iterable(tso):
             process_and_store(tweet, keyword)
 
@@ -35,9 +43,9 @@ def twitter_search(keyword):
 
 if __name__ == "__main__":
     threads = []
-    # definition of all searched keywords
-    mylist = ['Add', 'your', '@keywords']     
-    for i in mylist:
-        t = threading.Thread(target=twitter_search, args=(i, ))
+    myconf = "config.json"
+    configuration = get_config(myconf)
+    for i in configuration['keywords']:
+        t = threading.Thread(target=twitter_search, args=(i, configuration))
         threads.append(t)
         t.start()

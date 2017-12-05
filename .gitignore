@@ -1,2 +1,4 @@
 .DS_Store
 env/
+*-17
+*.json

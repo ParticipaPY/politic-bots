@@ -1,0 +1,7 @@
+{
+  "keywords": ["Add", "your", "@keywords"],  
+  "twitter": {"access_token": "yoUrAcCeSsToKen",
+    "access_token_secret":"YouRaCCesStOkEnSsEcrEt",
+    "consumer_key":"YOurCoNsuMerKEy",
+    "consumer_secret":"yOuRconSumERseCrEt"}
+}
