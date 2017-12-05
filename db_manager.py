@@ -1,6 +1,3 @@
-import json
-import pprint
-import sys
 from pymongo import MongoClient
 
 
@@ -27,5 +24,6 @@ def add_tweet(db, tweet, type, keyword):
 		keyword: string that contains the text of the handle or hashtag
 	'''
 	enriched_tweet = {'type': type, 'keyword': keyword, 'tweet_obj': tweet}
-	db.tweets.insert(enriched_tweet)
+	return db.tweets.insert(enriched_tweet)
+
 
