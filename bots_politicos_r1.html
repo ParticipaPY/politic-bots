@@ -11778,7 +11778,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Usando el API de Twitter recoletamos <strong>tweets publicados del el 27 de Noviembre al 4 de Diciembre de 2017</strong>, que provengan de cuentas de pre-candidatos de los principales partidos políticos (ANR y PLRA), y/o contengan hashtags utilizados con fines electorales. Como base utilizamos las cuentas y hashtags publicados por el Diario Última Hora <a href="http://elecciones.ultimahora.com/informacion/?id=20">Perfiles de pre-candidatos según las redes</a>. Por ejemplo, Última Hora reporta que el hashtag <strong>#JuntosPodemosMas</strong> es utilizado para identificar tweets vínculados al candidatos Santiago Peña de Honor Colorado. Así mismo, <strong>#MaritoDeLaGente</strong> se utilzan en tweets publicados en favor del candidato del movimiento Colorado Añeteté. Según Última Hora, el hashtag <strong>#EsAhora</strong> aparece en los tweets relacionados al pre-candidato a la presidencia por el PLRA, Efraín Alegre.</p>
+<p>Usando el API de Twitter recoletamos <strong>tweets publicados entre el 27 de Noviembre y el 4 de Diciembre de 2017</strong>, que provengan de cuentas de pre-candidatos de los principales partidos políticos (ANR y PLRA), y/o contengan hashtags utilizados con fines electorales. Como base utilizamos las cuentas y hashtags publicados por el Diario Última Hora en su artículo <a href="http://elecciones.ultimahora.com/informacion/?id=20">Perfiles de pre-candidatos según las redes</a>. Por ejemplo, Última Hora reporta que el hashtag <strong>#JuntosPodemosMas</strong> es utilizado para identificar tweets vínculados al candidatos Santiago Peña de Honor Colorado. Así mismo, <strong>#MaritoDeLaGente</strong> se utilzan en tweets publicados en favor del candidato del movimiento Colorado Añeteté. Según Última Hora, el hashtag <strong>#EsAhora</strong> aparece en los tweets relacionados al pre-candidato a la presidencia por el PLRA, Efraín Alegre.</p>
 <p><a href="https://docs.google.com/spreadsheets/d/1rOh-R5YVqdtTQY1sOnAAgRbkbHIu1qAHpZwgVmlBEtw/edit?usp=sharing">Aquí</a> se puede acceder a lista completa de hashtags y cuentas.</p>
 
 </div>
@@ -11819,11 +11819,11 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="prompt input_prompt">In&nbsp;[80]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">db</span> <span class="o">=</span> <span class="n">get_db</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hemos recolectado </span><span class="si">{0}</span><span class="s1"> tweets y luego almacenados en una base de datos NoSQL (MongoDB) para facilitar su &#39;</span>\
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se han recolectado </span><span class="si">{0}</span><span class="s1"> tweets y luego almacenados en una base de datos NoSQL (MongoDB) para facilitar su &#39;</span>\
       <span class="s1">&#39;análisis&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">tweets</span><span class="o">.</span><span class="n">count</span><span class="p">()))</span>
 </pre></div>
 
@@ -11837,7 +11837,7 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Hemos recolectado 16873 tweets y luego almacenados en una base de datos NoSQL (MongoDB) para facilitar su análisis
+<pre>Se han recolectado 16873 tweets y luego almacenados en una base de datos NoSQL (MongoDB) para facilitar su análisis
 </pre>
 </div>
 </div>
@@ -11934,7 +11934,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Casi el 80% de los tweets colectados provienen de cuentas vinculadas a candidatos de la ANR y/o utilizan hashtags asociados a la campaña del partido colorado.</p>
+<p>Casi el 80% de los tweets colectados provienen de cuentas vinculadas a candidatos de la ANR y/o utilizan hashtags asociados a campañas del Partido Colorado.</p>
 
 </div>
 </div>
@@ -11944,7 +11944,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Internas:-ANR">Internas: ANR<a class="anchor-link" href="#Internas:-ANR">&#182;</a></h2><p>En un primer momento nos enfocaremos en los tweets relacionados a la internas de la ANR por ser mayoría en el data set. Exploremos inicialmente la distribución de tweets considerando los dos movimiento más importantes en estas internas, es decir <strong>Honor Colorado</strong> y <strong>Colorado Añeteté</strong>.</p>
+<h2 id="Internas:-ANR">Internas: ANR<a class="anchor-link" href="#Internas:-ANR">&#182;</a></h2><p>En un primer momento nos enfocaremos en los tweets relacionados a la internas de la ANR por ser mayoría en el data set. Exploraremos inicialmente la distribución de tweets considerando los dos movimiento más importantes en estas internas, es decir <strong>Honor Colorado</strong> y <strong>Colorado Añeteté</strong>.</p>
 
 </div>
 </div>
@@ -11969,12 +11969,11 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[57]:</div>
+<div class="prompt input_prompt">In&nbsp;[88]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_hc</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;movimiento&#39;</span><span class="p">:</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados al movimiento Honor Colorado: &#39;</span> \
-      <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se publication </span><span class="si">{0}</span><span class="s1"> tweets relacionados al movimiento Honor Colorado (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
 </pre></div>
 
 </div>
@@ -11987,7 +11986,7 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados al movimiento Honor Colorado: 7136 (55.42% del total)
+<pre>Se publication 7136 tweets relacionados al movimiento Honor Colorado (55.42% del total)
 </pre>
 </div>
 </div>
@@ -12007,12 +12006,12 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[54]:</div>
+<div class="prompt input_prompt">In&nbsp;[87]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_ca</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;movimiento&#39;</span><span class="p">:</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados al movimiento Colorado Añeteté: &#39;</span> \
-      <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se publication </span><span class="si">{0}</span><span class="s1"> tweets relacionados al movimiento Colorado Añeteté (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span>
+      <span class="nb">format</span><span class="p">(</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
 </pre></div>
 
 </div>
@@ -12025,7 +12024,7 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados al movimiento Colora Añeteté: 5243 (40.72% del total)
+<pre>Se publication 5243 tweets relacionados al movimiento Colorado Añeteté (40.72% del total)
 </pre>
 </div>
 </div>
@@ -12244,7 +12243,7 @@ zQAAAABJRU5ErkJggg==
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Los tweets relacionados al movimiento <em>Honor Colorado</em> constituyen el 55% de nuestro data set mientras que los vinculados a las candidaturas del movimiento <em>Colorado Añeteté</em> representan el 41% del total de datos. El restante porcentaje pertence a tweets vínculados a las internas pero no necesariamente a uno de estos dos movimiento, por ejemplo, tweets que utilizan solamente el hashtag <strong>#InternasANR</strong>.</p>
+<p>Los tweets relacionados al movimiento <em>Honor Colorado</em> constituyen el 55% de nuestro data set mientras que los vinculados a las candidaturas del movimiento <em>Colorado Añeteté</em> representan el 41% del total de datos. El restante porcentaje pertence a tweets vínculados a las internas de la ANR pero no necesariamente a uno de estos dos movimiento, por ejemplo, tweets que utilizan solamente el hashtag <strong>#InternasANR</strong>.</p>
 
 </div>
 </div>
@@ -12308,12 +12307,12 @@ zQAAAABJRU5ErkJggg==
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[59]:</div>
+<div class="prompt input_prompt">In&nbsp;[89]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_ma</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;candidatura&#39;</span><span class="p">:</span> <span class="s1">&#39;mario abdo&#39;</span><span class="p">})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados al candidato Mario Abdo: &#39;</span> \
-      <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total del movimiento Colorado Añetetè)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> 
+      <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total del movimiento Colorado Añeteté)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> 
                                                       <span class="nb">round</span><span class="p">((</span><span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
 </pre></div>
 
@@ -12327,7 +12326,7 @@ zQAAAABJRU5ErkJggg==
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados al candidato Mario Abdo: 4591 (87.56% del total del movimiento Colorado Añetetè)
+<pre>Tweets relacionados al candidato Mario Abdo: 4591 (87.56% del total del movimiento Colorado Añeteté)
 </pre>
 </div>
 </div>
@@ -12521,7 +12520,7 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Este resultado es interesante. Muestra una diferencia de enfoques en las campañas en redes de ambos movimientos. <strong>La campaña del movimiento <em>Colorado Añeteté</em> se centra mucho en el candidato a presidente Mario Abdo Benítez, casi el 90% de los tweets éstan vinculados al candidato</strong>. Por otra parte, la campañan de <em>Honor Colorado</em> se enfoca más en el  movimiento en si y no tanto en Peña. Quizás el pasado liberal del candidato oficialista puede estar influenciando la estraegia de HC.</p>
+<p>Este resultado es interesante. Muestra una diferencia de enfoques en las campañas en redes de ambos movimientos. <strong>La campaña del movimiento <em>Colorado Añeteté</em> se centra principalmente en el candidato a presidente Mario Abdo Benítez, casi el 90% de los tweets éstan vinculados a su figura</strong>. Por otra parte, la campañan de <em>Honor Colorado</em> se enfoca más en el  movimiento en si y no tanto en Peña. Quizás el pasado liberal del candidato oficialista puede estar influenciando la estraegia de HC.</p>
 
 </div>
 </div>
@@ -12624,7 +12623,7 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Estos resultados son consistentes con los anteriores que muestran como <strong>la campaña del movimiento HC está principalmente enfocada en dar promoción al movimiento antes que al candidato</strong>.</p>
+<p>Estos resultados son consistentes con los anteriores ya que muestran como <strong>la campaña del movimiento HC está principalmente enfocada en dar promoción al movimiento antes que al candidato</strong>.</p>
 
 </div>
 </div>
@@ -12649,11 +12648,11 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[71]:</div>
+<div class="prompt input_prompt">In&nbsp;[90]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_hc</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitean sobre Honor Colorado&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_hc</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitearon sobre Honor Colorado&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_hc</span><span class="p">)))</span>
 </pre></div>
 
 </div>
@@ -12666,7 +12665,7 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>2260 usuarios tuitean sobre Honor Colorado
+<pre>2260 usuarios tuitearon sobre Honor Colorado
 </pre>
 </div>
 </div>
@@ -12838,11 +12837,11 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[74]:</div>
+<div class="prompt input_prompt">In&nbsp;[91]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_ca</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitean sobre Colorado Anetete&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_ca</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitearon sobre Colorado Anetete&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_ca</span><span class="p">)))</span>
 </pre></div>
 
 </div>
@@ -12855,7 +12854,7 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>916 usuarios tuitean sobre Colorado Anetete
+<pre>916 usuarios tuitearon sobre Colorado Anetete
 </pre>
 </div>
 </div>
@@ -13206,8 +13205,8 @@ MAjUWwAAAABJRU5ErkJggg==
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Como podría haberse suponido el ejercito de tuiteros del movimiento <em>Honor Colorado</em> es ampliamente superior al del movimiento <em>Colorado Añeteté</em>. Prácticamente, <strong>por cada tuitero de <em>Colorado Añeteté</em> existen 2.5 tuiteros de <em>Honor Colorado</em></strong>. Sin embargo la diferencia en cantidad de tweets entre ambos movimiento no es muy importante, como vimos anteriormente, lo que demuestra que <em>Colorado Añeteté</em> tiene un ejercito más activo de tuiteros.</p>
-<p>Otro aspecto destacable del último análisis es el tipo de actividad que realizan tanto los tuiteros de <em>Honor Colorado</em> como los de <em>Añeteté</em>. En ambos casos, <strong>los tuiteros más activos no publican nuevo tweets</strong> sino se limitan a casi exclusivamente a retuitear tweets vinculados a su movimiento. En otras palabras, la principal actividad de estos usuarios es amplificar y promocionar información relacionada a sus intereses. <strong>Este comportamiento es típico de bots y cuentas falsas</strong>. La siguiente tarea en el estudio debe consistir, por lo tanto, en análizar más en detalle el comportamiento de estas cuentas con el objetivo de verificar si son falsas o se encuentran vínculadas a sistemas automáticos de publicaciones.</p>
+<p>Como se podría esperar el ejercito de tuiteros del movimiento <em>Honor Colorado</em> es ampliamente superior al de <em>Colorado Añeteté</em>. Prácticamente, <strong>por cada tuitero de <em>Colorado Añeteté</em> existen 2.5 tuiteros de <em>Honor Colorado</em></strong>. Sin embargo la diferencia en cantidad de tweets entre ambos movimiento no es muy importante, como vimos anteriormente, lo que demuestra que <em>Colorado Añeteté</em> tiene un ejercito más activo de tuiteros.</p>
+<p>Otro aspecto destacable del último análisis es el tipo de actividad que realizan tanto los tuiteros de <em>Honor Colorado</em> como los de <em>Añeteté</em>. En ambos casos, <strong>los tuiteros más activos no publican nuevo tweets</strong> sino se limitan a casi exclusivamente a retuitear tweets vinculados a su movimiento. En otras palabras, la principal actividad de estos usuarios es amplificar y promocionar información relacionada a sus intereses. <strong>Este comportamiento es típico de bots y cuentas falsas</strong>. La siguiente tarea en el estudio consistirá, por lo tanto, en análizar más en detalle el comportamiento de estas cuentas con el objetivo de verificar si son falsas o se encuentran vínculadas a sistemas automáticos de publicaciones.</p>
 
 </div>
 </div>
