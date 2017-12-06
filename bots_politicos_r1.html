@@ -12545,13 +12545,17 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[70]:</div>
+<div class="prompt input_prompt">In&nbsp;[96]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_hc</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">)</span>
+<span class="n">hashtags_populares_hc</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">hashtag</span> <span class="ow">in</span> <span class="n">hashtags_hc</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;#</span><span class="si">{0}</span><span class="s1">: </span><span class="si">{1}</span><span class="s1"> tweets (</span><span class="si">{2}% d</span><span class="s1">el total de HC)&#39;</span><span class="o">.</span>
-          <span class="nb">format</span><span class="p">(</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span><span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)))</span>
+    <span class="n">por_total</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">hashtag_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;1. Hashtag&#39;</span><span class="p">:</span> <span class="s1">&#39;#&#39;</span> <span class="o">+</span> <span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="s1">&#39;2. Cantidad de Tweets&#39;</span><span class="p">:</span> <span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span> 
+                    <span class="s1">&#39;3. % Total de HC&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">por_total</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">}</span>
+    <span class="n">hashtags_populares_hc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hashtag_dict</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">hashtags_populares_hc</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12562,14 +12566,49 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>#HonorColorado: 1637 tweets (23% del total de HC)
-#JuntosPodemosMas: 1152 tweets (16% del total de HC)
-#CaminandoJuntos: 541 tweets (8% del total de HC)
-#SigamosConversando: 406 tweets (6% del total de HC)
-</pre>
+<div class="output_area"><div class="prompt output_prompt">Out[96]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>1. Hashtag</th>
+      <th>2. Cantidad de Tweets</th>
+      <th>3. % Total de HC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>#HonorColorado</td>
+      <td>1637</td>
+      <td>23%</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>#JuntosPodemosMas</td>
+      <td>1152</td>
+      <td>16%</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>#CaminandoJuntos</td>
+      <td>541</td>
+      <td>8%</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>#SigamosConversando</td>
+      <td>406</td>
+      <td>6%</td>
+    </tr>
+  </tbody>
+</table>
 </div>
+</div>
+
 </div>
 
 </div>
@@ -12587,13 +12626,17 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[69]:</div>
+<div class="prompt input_prompt">In&nbsp;[97]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_ca</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">)</span>
+<span class="n">hashtags_populares_ca</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">hashtag</span> <span class="ow">in</span> <span class="n">hashtags_ca</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;#</span><span class="si">{0}</span><span class="s1">: </span><span class="si">{1}</span><span class="s1"> tweets (</span><span class="si">{2}% d</span><span class="s1">el total de Añeteté)&#39;</span><span class="o">.</span>
-          <span class="nb">format</span><span class="p">(</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span><span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)))</span>
+    <span class="n">por_total</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">hashtag_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;1. Hashtag&#39;</span><span class="p">:</span> <span class="s1">&#39;#&#39;</span> <span class="o">+</span> <span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="s1">&#39;2. Cantidad de Tweets&#39;</span><span class="p">:</span> <span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span> 
+                    <span class="s1">&#39;3. % Total de Añeteté&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">por_total</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">}</span>
+    <span class="n">hashtags_populares_ca</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hashtag_dict</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">hashtags_populares_ca</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12604,14 +12647,49 @@ AAxE4AEAMBCBBwDAQAQeAAADEXgAAAxE4AEAMBCBBwDAQP8ffZ3LHqgJwpEAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>#ParaguayDeLaGente: 1700 tweets (24% del total de Añeteté)
-#Lista3: 1600 tweets (22% del total de Añeteté)
-#MaritoDeLaGente: 1291 tweets (18% del total de Añeteté)
-#ColoradoAñetete: 358 tweets (5% del total de Añeteté)
-</pre>
+<div class="output_area"><div class="prompt output_prompt">Out[97]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>1. Hashtag</th>
+      <th>2. Cantidad de Tweets</th>
+      <th>3. % Total de Añeteté</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>#ParaguayDeLaGente</td>
+      <td>1700</td>
+      <td>24%</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>#Lista3</td>
+      <td>1600</td>
+      <td>22%</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>#MaritoDeLaGente</td>
+      <td>1291</td>
+      <td>18%</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>#ColoradoAñetete</td>
+      <td>358</td>
+      <td>5%</td>
+    </tr>
+  </tbody>
+</table>
 </div>
+</div>
+
 </div>
 
 </div>
