@@ -1,7 +1,8 @@
 {
-  "keywords": ["Add", "your", "@keywords"],  
-  "twitter": {"access_token": "yoUrAcCeSsToKen",
-    "access_token_secret":"YouRaCCesStOkEnSsEcrEt",
-    "consumer_key":"YOurCoNsuMerKEy",
-    "consumer_secret":"yOuRconSumERseCrEt"}
+  "max_tweets": 100000000,
+  "tweets_qry": 100,
+  "twitter": {
+      "consumer_key":"YOurCoNsuMerKEy",
+      "consumer_secret":"yOuRconSumERseCrEt"
+   }
 }

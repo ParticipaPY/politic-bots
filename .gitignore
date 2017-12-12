@@ -2,3 +2,4 @@
 env/
 *-17
 *.json
+__pycache__
