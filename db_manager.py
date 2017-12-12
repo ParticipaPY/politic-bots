@@ -111,19 +111,49 @@ def get_unique_users_by_movement(db, movement_name):
     return results
 
 
+def get_id_duplicated_tweets(db):
+    pipeline = [
+        {
+            '$group': {
+                '_id': '$tweet_obj.id_str',
+                'num_tweets': {'$sum': 1}
+            }
+        },
+        {
+            '$match': {
+                'num_tweets': {'$gt': 1}
+            }
+        },
+        {
+            '$sort': {'count': -1}
+        }
+    ]
+    duplicates = [doc for doc in db.tweets.aggregate(pipeline)]
+    return duplicates
+
+
 def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
-    '''
-        tweet: dictionary, information of the tweet
-        type: string, take the value 'user' or 'hashtag'
-        keyword: string, contains the text of the handle or hashtag
-        extraction_date: string, date (dd/mm/yyyy) when the tweet was collected
-        k_metadata: dictionary, metadata about the keyword
-    '''
+    """
+    Save a tweet in the database
+    :param db: database object
+    :param tweet: dictionary in json format of the tweet
+    :param type_k: string, take the value 'user' or 'hashtag'
+    :param keyword: string, contains the text of the handle or hashtag
+    :param extraction_date: string, date (dd/mm/yyyy) when the tweet was collected
+    :param k_metadata: dictionary, metadata about the keyword
+    :return:
+    """
     enriched_tweet = {'type': type_k,
                       'keyword': keyword,
                       'tweet_obj': tweet,
                       'extraction_date': extraction_date}
     enriched_tweet.update(k_metadata)
-    return db.tweets.insert(enriched_tweet)
+    id_tweet = tweet['id_str']
+    results = do_search(db, {'tweet_obj.id_str': id_tweet})
+    if results.count() == 0:
+        db.tweets.insert(enriched_tweet)
+        return True
+    else:
+        return False
 
 
