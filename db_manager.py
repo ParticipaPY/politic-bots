@@ -125,11 +125,25 @@ def get_id_duplicated_tweets(db):
             }
         },
         {
-            '$sort': {'count': -1}
+            '$sort': {'num_tweets': -1}
         }
     ]
-    duplicates = [doc for doc in db.tweets.aggregate(pipeline)]
-    return duplicates
+    return aggregate(db, pipeline)
+
+
+def get_tweet_places(db):
+    pipeline = [
+        {
+            '$group': {
+                '_id': '$tweet_obj.place.country',
+                'num_users': {'$sum': 1}
+            }
+        },
+        {
+            '$sort': {'num_users': -1}
+        }
+    ]
+    return aggregate(db, pipeline)
 
 
 def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
