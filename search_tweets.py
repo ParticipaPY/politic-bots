@@ -32,7 +32,7 @@ def parse_metadata():
 def process_and_store(tweet, keyword, ktype, k_metadata):
     db = get_db()
     date = time.strftime("%m/%d/%y")
-    add_tweet(db, json.dumps(tweet._json), ktype, keyword, date, k_metadata)
+    add_tweet(db, tweet._json, ktype, keyword, date, k_metadata)
 
 # Search tweets
 def twitter_search(keyword, conf, ktype, k_metadata):
