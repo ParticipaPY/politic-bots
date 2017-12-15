@@ -30,6 +30,7 @@ def get_hashtags_by_movement(db, movement_name):
         {
             '$match': {
                 'movimiento': {'$eq': movement_name},
+                'relevante': {'$eq': 1},
                 'type': {'$eq': 'hashtag'}
             }
         },
@@ -57,7 +58,8 @@ def get_unique_users_by_movement(db, movement_name):
     pipeline = [
         {
             '$match': {
-                'movimiento': {'$eq': movement_name}
+                'movimiento': {'$eq': movement_name},
+                'relevante': {'$eq': 1}
             }
         },
         {
@@ -126,6 +128,20 @@ def get_id_duplicated_tweets(db):
         },
         {
             '$sort': {'num_tweets': -1}
+        }
+    ]
+    return aggregate(db, pipeline)
+
+
+def get_user_and_location(db):
+    pipeline = [
+        {
+            '$group': {
+                '_id': '$tweet_obj.user.id_str',
+                'location': {'$first': '$tweet_obj.user.location'},
+                'description': {'$first': '$tweet_obj.user.description'},
+                'time_zone': {'$first': '$tweet_obj.user.time_zone'}
+            }
         }
     ]
     return aggregate(db, pipeline)
