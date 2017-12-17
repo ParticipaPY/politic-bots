@@ -35,7 +35,12 @@ def identify_relevant_tweets(db):
                     users_counter += 1
                 if token.lower() in hashtags:
                     hashtags_counter += 1
-            if hashtags_counter > 0 or users_counter > 0:
+            # a tweet is considered relevant if fulfills one of two
+            # conditions; candidates are mentioned together with
+            # at least one campaign hashtag or if candidates are
+            # are not mentioned there are at least more than one
+            # campaign hashtag
+            if users_counter > 0 or hashtags_counter > 1:
                 tweet_reg['relevante'] = 1
             else:
                 tweet_reg['relevante'] = 0
