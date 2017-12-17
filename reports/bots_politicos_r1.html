@@ -11800,14 +11800,18 @@ div#notebook {
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
 
-<span class="c1"># Importing libraries</span>
-<span class="kn">from</span> <span class="nn">db_manager</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">csv</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">db_manager</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">data_wrangler</span> <span class="k">import</span> <span class="o">*</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn&#39;</span><span class="p">)</span>
 </pre></div>
@@ -11851,6 +11855,53 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Limpieza-de-data-set">Limpieza de data set<a class="anchor-link" href="#Limpieza-de-data-set">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Nos dimos cuenta que los hashtags que usamos para buscar tweets se utilizan también en otros contextos (en otros paises) por lo tanto para los análisis consideramos solo aquellos que además de los hashtags de interés contengan alguna mención a la cuenta de los candidatos</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">identify_relevant_tweets</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Seleccionamos </span><span class="si">{0}</span><span class="s1"> tweets que encontramos relevantes para el trabajo&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;relevante&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span><span class="o">.</span><span class="n">count</span><span class="p">()))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Seleccionamos 11731 tweets que encontramos relevantes para el trabajo
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Cantidad-de-Tweets-por-Interna">Cantidad de Tweets por Interna<a class="anchor-link" href="#Cantidad-de-Tweets-por-Interna">&#182;</a></h2>
 </div>
 </div>
@@ -11866,10 +11917,10 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_anr</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;partido_politico&#39;</span><span class="p">:</span> <span class="s1">&#39;anr&#39;</span><span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_anr</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;partido_politico&#39;</span><span class="p">:</span> <span class="s1">&#39;anr&#39;</span><span class="p">,</span> <span class="s1">&#39;relevante&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados a la interna ANR: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">()))</span>
 </pre></div>
 
@@ -11883,7 +11934,7 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados a la interna ANR: 10987
+<pre>Tweets relacionados a la interna ANR: 8290
 </pre>
 </div>
 </div>
@@ -11903,10 +11954,10 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_plra</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;partido_politico&#39;</span><span class="p">:</span> <span class="s1">&#39;plra&#39;</span><span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_plra</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;partido_politico&#39;</span><span class="p">:</span> <span class="s1">&#39;plra&#39;</span><span class="p">,</span> <span class="s1">&#39;relevante&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados a la interna PLRA: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_plra</span><span class="o">.</span><span class="n">count</span><span class="p">()))</span>
 </pre></div>
 
@@ -11920,7 +11971,7 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados a la interna PLRA: 1959
+<pre>Tweets relacionados a la interna PLRA: 1765
 </pre>
 </div>
 </div>
@@ -11934,7 +11985,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Casi el 80% de los tweets colectados provienen de cuentas vinculadas a candidatos de la ANR y/o utilizan hashtags asociados a campañas del Partido Colorado.</p>
+<p>Alrededor del 70% de los tweets colectados provienen de cuentas vinculadas a candidatos de la ANR y/o utilizan hashtags asociados a campañas del Partido Colorado.</p>
 
 </div>
 </div>
@@ -11969,11 +12020,20 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_hc</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;movimiento&#39;</span><span class="p">:</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se publication </span><span class="si">{0}</span><span class="s1"> tweets relacionados al movimiento Honor Colorado (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se publication </span><span class="si">{0}</span><span class="s1"> tweets relacionados al movimiento Honor Colorado (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span>
+      <span class="nb">format</span><span class="p">(</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+
+<span class="n">tweets_sp</span> <span class="o">=</span> <span class="n">find_tweets_by_author</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;SantiPenap&#39;</span><span class="p">)</span>
+<span class="n">rtweets_sp</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">tweet_sp</span> <span class="ow">in</span> <span class="n">tweets_sp</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;retweeted_status&#39;</span> <span class="ow">in</span> <span class="n">tweet_sp</span><span class="p">[</span><span class="s1">&#39;tweet_obj&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">rtweets_sp</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;De los </span><span class="si">{0}</span><span class="s1"> tweets de Honor Colorado, Santiago Peña publicó </span><span class="si">{1}</span><span class="s1"> tweets (</span><span class="si">{2}</span><span class="s1"> retweets)&#39;</span><span class="o">.</span>
+      <span class="nb">format</span><span class="p">(</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="n">tweets_sp</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="n">rtweets_sp</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -11986,7 +12046,8 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Se publication 5950 tweets relacionados al movimiento Honor Colorado (54.15% del total)
+<pre>Se publication 4433 tweets relacionados al movimiento Honor Colorado (53.47% del total)
+De los 4433 tweets de Honor Colorado, Santiago Peña publicó 10 tweets (0 retweets)
 </pre>
 </div>
 </div>
@@ -12006,12 +12067,19 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_ca</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;movimiento&#39;</span><span class="p">:</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Se publication </span><span class="si">{0}</span><span class="s1"> tweets relacionados al movimiento Colorado Añeteté (</span><span class="si">{1}% d</span><span class="s1">el total)&#39;</span><span class="o">.</span>
       <span class="nb">format</span><span class="p">(</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="nb">round</span><span class="p">((</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_anr</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+<span class="n">tweets_ma</span> <span class="o">=</span> <span class="n">find_tweets_by_author</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;MaritoAbdo&#39;</span><span class="p">)</span>
+<span class="n">rtweets_ma</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">tweet_ma</span> <span class="ow">in</span> <span class="n">tweets_ma</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;retweeted_status&#39;</span> <span class="ow">in</span> <span class="n">tweet_ma</span><span class="p">[</span><span class="s1">&#39;tweet_obj&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">rtweets_ma</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;De los </span><span class="si">{0}</span><span class="s1"> tweets de Colorado Añetete, Mario Abdo publicó </span><span class="si">{1}</span><span class="s1"> tweets (</span><span class="si">{2}</span><span class="s1"> retweets)&#39;</span><span class="o">.</span>
+      <span class="nb">format</span><span class="p">(</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> <span class="n">rtweets_ma</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -12024,7 +12092,8 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Se publication 4545 tweets relacionados al movimiento Colorado Añeteté (41.37% del total)
+<pre>Se publication 3675 tweets relacionados al movimiento Colorado Añeteté (44.33% del total)
+De los 3675 tweets de Colorado Añetete, Mario Abdo publicó 70 tweets (11 retweets)
 </pre>
 </div>
 </div>
@@ -12035,7 +12104,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_por_movimiento</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
@@ -12053,11 +12122,11 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x1106fd4e0&gt;</pre>
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x11c0ec1d0&gt;</pre>
 </div>
 
 </div>
@@ -12067,158 +12136,138 @@ div#notebook {
 
 <div class="output_png output_subarea ">
 <img src="data:image/png;base64,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
-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
+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
-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
+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
-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
-y9e09Qi/SGXGhLYeAWgRnWc+75f9nhKn6AEAQOsh8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjA
-AwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIPAICBCDwAAAYi
-8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIPAICB
-CDwAAAYi8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBg
-IAIPAICB7G09QGPq6+s1ffp0bd++XQ6HQzNnzlT37t3beiwAAE4Lp+wR/DvvvKPa2lotW7ZMDzzw
-gGbPnt3WIwEAcNo4ZQNfWlqq6OhoSVL//v312WeftfFEAACcPk7ZU/Qej0chISG+24GBgTp69Kjs
-9sZH7tLF5ZdZxr/3vl/2C+DEuvxjaVuPAJy2Ttkj+JCQEHm9Xt/t+vr6E8YdAAD81ykb+MjISBUX
-F0uSPvnkE4WHh7fxRAAAnD5slmVZbT3Ezzn+W/Q7duyQZVl6/PHH1bNnz7YeCwCA08IpG3gAAHDy
-TtlT9AAA4OQReAAADETgf8NKSko0efLkBtuefPJJvfrqq35/7G+//Vb333+/kpKSNHbsWE2fPl21
-tbWNrp83b57y8/Nb7PGLi4uVnp7eYvsD2trChQs1bNgw1dTU+LZNnDhRL774oubMmaM9e/Y0et89
-e/bo3XffPeH+lyxZ0uD2O++8o8LCwl83NPyKwKPV1dXVaeLEibrjjjvkdru1fPly2e12PfPMM209
-GnDaev3113Xttddq1apVko59l0jfvn3VvXt3HTp0SF27dm30vps2bdJHH310wv0/99xzDW5fddVV
-Gjdu3K8fHH7DPyxHo2bPnq3S0lJJ0vXXX6/bb79d6enpcjgc2r17t/bt26fZs2erX79+ev3117Vo
-0SI5HA5dcMEFmjFjht544w298sorqq+v13333aehQ4dKOvYtheeee64uueQS32Olpqaqvr5ekvTi
-iy9q1apVstvtGjRokFJTU5s11/fff6/vv/9ezz33nJ588knt3btX+/bt05VXXqnJkyervLxcU6ZM
-Ubt27dSuXTudddZZkvSzswcFBfn9zxdoKSUlJQoNDdUtt9yi1NRUjRkzRsnJyerTp4/cbrc8Ho92
-796t8847T263W2+++aZsNpuuvfZa3XrrrVqwYIGqq6s1YMAAdevWTTNnzpQkdejQQY8//riWLFmi
-Q4cOafr06Xr44YeVmZmpnTt3qr6+XikpKRo8eHAb/wng53AE/xu3adMmJSUl+f578803JUlr167V
-rl27VFhYqLy8PL355pvavn27JKlr167Kzc1VUlKSli1bpoMHD2revHlatGiR8vPz5XK5tGzZMklS
-+/btlZ+f74u7JO3bt0/nn39+gzmCg4PVrl07bd++XWvWrFFBQYEKCgq0c+dOrV271rfuRHMNGTJE
-BQUF8nq96t+/v3Jzc/Xyyy+roKBAkvTEE0/ovvvu00svvaQBAwZI0glnB04Xy5cv19ixYxUWFiaH
-w6FPP/1UkhQREaGXXnpJl112mVatWqX//Oc/Wr16tfLy8rR06VK988472rlzp8aPH6/rr79ew4cP
-19SpU5WZmSm3262YmBi98MILSk5O1llnnaXp06dr+fLl6tixo5YuXar58+drxowZbfzs0RiO4H/j
-hgwZoqeeesp3+8knn5QklZeXa9CgQbLZbAoKCtIll1yi8vJySdJFF10kSTr33HP10Ucf6ZtvvtGF
-F17o+2rhSy+9VO+//74uueQS9ejR4yeP2bVrV7311lsNth08eFAff/yxampqdMkll/iOoAcNGqTP
-P//ct+5Ecx1/rA4dOujf//63Nm3apJCQEN9n+1999ZUiIiIkHfsipS+++KLR2YHTxaFDh1RcXKwD
-Bw74jtaPf17et29fScdeq/v379eOHTu0Z88e/fnPf/bdd+fOnQ32V15erkceeUSSdOTIEV1wwQUN
-fr5jxw6VlpZqy5YtkqSjR4/qwIED6tSpkx+fJU4GR/D4WT179vSdBj9y5Ig+/vhj3+V6bTZbg7Xd
-unVTeXm5fvzxR0nSBx984IttQMBP/xfr37+/du3a5fsLwrIsPfvss/rwww8VFhamLVu26OjRo7Is
-S5s3b27wJqE5c7366qtyuVzKzs7WHXfcoerqalmWpZ49e+rjjz+WJN/Fi040O3A6eP3113XjjTfq
-xRdfVG5urgoLC7V+/XodOHDgJ2vDwsJ04YUXavHixXK73RozZox69+6tgIAA30dkPXr0UFZWltxu
-t1JTU3XFFVdIOvY6Pb6P6667Tm63WwsXLtQ111yjDh06tNrzRfNxBI+fFRsbqw8++EA333yzjhw5
-omuuuUb9+vX72bWdOnXSpEmTdNtttykgIEChoaF68MEHfb/s878CAgI0d+5czZgxQ4cPH9aPP/6o
-/v37KyUlRQ6HQ3FxcUpISFB9fb0GDhyoq666SmVlZc2ea+jQoXrggQf0ySefyOFwqHv37tq3b5/S
-09OVlpam3NxcderUScHBwY3ODpwuli9frieeeMJ3u127drr66qv18ssv/2Rtnz59NHToUCUkJKi2
-tlYRERH63e9+p/DwcD333HPq16+fpk+frrS0NB09elQ2m02PPfaYpGNvrh988EE9/vjjysjI0J/+
-9Cd5PB4lJib+7Bt5tD2+yQ4AAAPxtgsAAAMReAAADETgAQAwEIEHAMBABB4AAAMReMBAu3btUu/e
-vTVt2rQG27dt26bevXv/4gsKFRUVae7cuc1eP3fuXBUVFf2ixzjumWee0YcffnhS9wXwX/w7eMBQ
-HTp00L/+9S/V1dUpMDBQkrR69eqT+sax4cOHa/jw4c1ef//99//ixzhu8+bNfLc50AI4ggcM5XQ6
-ddFFF2nz5s2+bevXr9cf/vAHSce+13/UqFEaOXKkJk6cqP3796uoqEh33323b/2SJUs0c+ZMvfrq
-q77L61555ZWaM2eOrrvuOt1www167733dNttt+nyyy/X6tWrJUnp6em+swQrV67U6NGjNWrUKE2Z
-MsV3OdNhw4bp0UcfVXx8vG688UZ98803WrlypT777DNlZGRo+/bt+vLLL5WUlKSRI0fq5ptv9n37
-IYCmEXjAYHFxcfrnP/8pSdqyZYt69+6toKAgVVZWatq0afr73/+uN954Q5GRkZoxY4ZiYmK0detW
-HTp0SJL05ptv6oYbbvjJfs855xytWrVK/fr104IFC3zXHF+wYEGDdZ9//rkKCwtVUFCg1157TZ07
-d1Zubq4kqaKiQkOHDtXKlSt16aWXaunSpYqPj9fFF1+smTNnqnfv3kpNTVVSUpLeeOMNPfTQQ7r/
-/vt91xYAcGIEHjBYbGysiouLVV9frzVr1iguLk7Ssa8zjYiIULdu3SRJN998szZt2qSgoCBdffXV
-euutt7R79259//33vgv0/H8xMTGSjl046NJLL5XdblfXrl31ww8/NFhXUlKinTt3aty4cRo1apSK
-ior0xRdf+H4eHR0tSerVq5fvTcVxXq9XX3/9ta6++mpJx65hcNZZZzW4P4DG8Rk8YLCQkBD16dNH
-paWl2rSWerDsAAABd0lEQVRpkx544AGtXr3ad2GR4yzL0tGjRyVJN9xwg+bOnatDhw7p+uuv/9n9
-Hr/anyTZ7Y3/NVJXV6e4uDhlZGRIOhbturo638+Dg4MlHbtQ0P9+a7ZlWT+77f/fH0DjOIIHDBcX
-F6fs7GxdfPHFvhhXV1fr008/1a5duyRJy5Yt8/1iW//+/bVv3z699tprGjVq1K967MGDB+vtt99W
-ZWWlLMvS9OnTtWjRohPeJzAwUHV1dQoJCdH555/vu7TwJ598ov3796tXr16/aibgt4LAA4aLjY3V
-tm3bdO211/q2nX322ZoxY4buvfdeXXfddfrggw981wCXjr0pcDqdOv/883/VY/fp00f33nuvbr/9
-dl133XWqr6/X+PHjT3if6OhoZWZm6qOPPtKcOXPkdrs1cuRIzZgxQ/PmzZPD4fhVMwG/FVxNDgAA
-A3EEDwCAgQg8AAAGIvAAABiIwAMAYCACDwCAgQg8AAAGIvAAABiIwAMAYKD/A5+nJ/p6U2eoAAAA
-AElFTkSuQmCC
+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
+lStXavr06Zo3b56vRwIA4JJx0Qa+uLhYkZGRkqR+/frp888/9/FEAABcOi7al+idTqeCg4M9t/39
+/VVTUyOrteGRO3Z0eGWWSe/90yv7BXBuHV9Z4esRgEvWRXsGHxwcLJfL5bldV1d3zrgDAID/umgD
+HxERocLCQknSp59+qrCwMB9PBADApcPidrvdvh7ibM58iv6LL76Q2+3WM888o+7du/t6LAAALgkX
+beABAEDzXbQv0QMAgOYj8AAAGIjA/4IVFRVp2rRp9bY999xzWr16tdcf+/vvv9ejjz6q+Ph4TZgw
+QWlpaaqurm5w/cKFC5Wbm9tij19YWKjk5OQW2x/ga0uXLtXQoUNVVVXl2TZlyhS99tprmj9/vg4d
+OtTgfQ8dOqR33333nPtfvnx5vdtbt25Vfn7+hQ0NryLwaHW1tbWaMmWK7r//fmVnZ2vVqlWyWq16
+8cUXfT0acMlav369brvtNm3atEnS6e8S6d27t7p166YTJ06oc+fODd53586d+vjjj8+5/8WLF9e7
+fcstt2jixIkXPji8hn9YjgbNmzdPxcXFkqTbb79d9913n5KTk2Wz2XTw4EEdPnxY8+bNU58+fbR+
+/XotW7ZMNptNV199tWbPnq0NGzborbfeUl1dnR555BENGTJE0ulvKezUqZP69u3reazExETV1dVJ
+kl577TVt2rRJVqtVAwcOVGJiYpPmOn78uI4fP67Fixfrueee0w8//KDDhw/r5ptv1rRp01RSUqIZ
+M2YoKChIQUFBuvzyyyXprLMHBAR4/c8XaClFRUUKCQnR3XffrcTERI0fP16TJ09Wr169lJ2dLafT
+qYMHD+qqq65Sdna2Nm7cKIvFottuu0333HOPlixZosrKSvXv319dunTRnDlzJElt27bVM888o+XL
+l+vEiRNKS0vTE088odTUVJWWlqqurk4JCQm68cYbffwngLPhDP4XbufOnYqPj/f8t3HjRknStm3b
+dODAAeXn5ysnJ0cbN27U/v37JUmdO3dWVlaW4uPjtXLlSh07dkwLFy7UsmXLlJubK4fDoZUrV0qS
+2rRpo9zcXE/cJenw4cPq2rVrvTkCAwMVFBSk/fv3a8uWLcrLy1NeXp5KS0u1bds2z7pzzTV48GDl
+5eXJ5XKpX79+ysrK0ptvvqm8vDxJ0rPPPqtHHnlEr7/+uvr37y9J55wduFSsWrVKEyZMUGhoqGw2
+mz777DNJUnh4uF5//XX97ne/06ZNm/Tvf/9bmzdvVk5OjlasWKGtW7eqtLRUkyZN0u23364RI0Zo
+5syZSk1NVXZ2tqKiovTqq69q8uTJuvzyy5WWlqZVq1apXbt2WrFihRYtWqTZs2f7+NmjIZzB/8IN
+HjxYzz//vOf2c889J0kqKSnRwIEDZbFYFBAQoL59+6qkpESSdN1110mSOnXqpI8//ljfffedrr32
+Ws9XC99www365z//qb59++qaa6752WN27txZb7/9dr1tx44d0yeffKKqqir17dvXcwY9cOBAffnl
+l55155rrzGO1bdtW//rXv7Rz504FBwd73tv/5ptvFB4eLun0Fyl99dVXDc4OXCpOnDihwsJCHT16
+1HO2fub98t69e0s6/bt65MgRffHFFzp06JD+9Kc/ee5bWlpab38lJSV68sknJUmnTp3S1VdfXe/n
+X3zxhYqLi7V7925JUk1NjY4ePar27dt78VmiOTiDx1l1797d8zL4qVOn9Mknn3gu12uxWOqt7dKl
+i0pKSnTy5ElJ0ocffuiJrZ/fz/8X69evnw4cOOD5C8Ltduull17SRx99pNDQUO3evVs1NTVyu93a
+tWtXvYOEpsy1evVqORwOZWRk6P7771dlZaXcbre6d++uTz75RJI8Fy861+zApWD9+vW688479dpr
+rykrK0v5+fnasWOHjh49+rO1oaGhuvbaa/XGG28oOztb48ePV8+ePeXn5+d5i+yaa65Renq6srOz
+lZiYqJtuuknS6d/TM/sYPXq0srOztXTpUt16661q27Ztqz1fNB1n8Dir4cOH68MPP9Rdd92lU6dO
+6dZbb1WfPn3OurZ9+/aaOnWq7r33Xvn5+SkkJESPPfaY58M+/8vPz08LFizQ7Nmz9dNPP+nkyZPq
+16+fEhISZLPZFB0drdjYWNXV1WnAgAG65ZZbtG/fvibPNWTIEE2fPl2ffvqpbDabunXrpsOHDys5
+OVlJSUnKyspS+/btFRgY2ODswKVi1apVevbZZz23g4KCNHLkSL355ps/W9urVy8NGTJEsbGxqq6u
+Vnh4uH79618rLCxMixcvVp8+fZSWlqakpCTV1NTIYrHo6aeflnT64Pqxxx7TM888o5SUFP3xj3+U
+0+lUXFzcWQ/k4Xt8kx0AAAbisAsAAAMReAAADETgAQAwEIEHAMBABB4AAAMReMBABw4cUM+ePTVr
+1qx62/fu3auePXue9wWFCgoKtGDBgiavX7BggQoKCs7rMc548cUX9dFHHzXrvgD+i38HDxiqbdu2
++sc//qHa2lr5+/tLkjZv3tysbxwbMWKERowY0eT1jz766Hk/xhm7du3iu82BFsAZPGAou92u6667
+Trt27fJs27Fjh377299KOv29/mPHjtWYMWM0ZcoUHTlyRAUFBfrzn//sWb98+XLNmTNHq1ev9lxe
+9+abb9b8+fM1evRo3XHHHXrvvfd07733atiwYdq8ebMkKTk52fMqwdq1azVu3DiNHTtWM2bM8FzO
+dOjQoXrqqacUExOjO++8U999953Wrl2rzz//XCkpKdq/f7++/vprxcfHa8yYMbrrrrs8334IoHEE
+HjBYdHS0/v73v0uSdu/erZ49eyogIEDl5eWaNWuW/va3v2nDhg2KiIjQ7NmzFRUVpT179ujEiROS
+pI0bN+qOO+742X6vvPJKbdq0SX369NGSJUs81xxfsmRJvXVffvml8vPzlZeXp3Xr1qlDhw7KysqS
+JJWVlWnIkCFau3atbrjhBq1YsUIxMTG6/vrrNWfOHPXs2VOJiYmKj4/Xhg0b9Pjjj+vRRx/1XFsA
+wLkReMBgw4cPV2Fhoerq6rRlyxZFR0dLOv11puHh4erSpYsk6a677tLOnTsVEBCgkSNH6u2339bB
+gwd1/PhxzwV6/r+oqChJpy8cdMMNN8hqtapz58768ccf660rKipSaWmpJk6cqLFjx6qgoEBfffWV
+5+eRkZGSpB49engOKs5wuVz69ttvNXLkSEmnr2Fw+eWX17s/gIbxHjxgsODgYPXq1UvFxcXauXOn
+pk+frs2bN3suLHKG2+1WTU2NJOmOO+7QggULdOLECd1+++1n3e+Zq/1JktXa8F8jtbW1io6OVkpK
+iqTT0a6trfX8PDAwUNLpCwX977dmu93us277//cH0DDO4AHDRUdHKyMjQ9dff70nxpWVlfrss890
+4MABSdLKlSs9H2zr16+fDh8+rHXr1mns2LEX9Ng33nij3nnnHZWXl8vtdistLU3Lli075338/f1V
+W1ur4OBgde3a1XNp4U8//VRHjhxRjx49Lmgm4JeCwAOGGz58uPbu3avbbrvNs+2KK67Q7Nmz9fDD
+D2v06NH68MMPPdcAl04fFNjtdnXt2vWCHrtXr156+OGHdd9992n06NGqq6vTpEmTznmfyMhIpaam
+6uOPP9b8+fOVnZ2tMWPGaPbs2Vq4cKFsNtsFzQT8UnA1OQAADMQZPAAABiLwAAAYiMADAGAgAg8A
+gIEIPAAABiLwAAAYiMADAGAgAg8AgIH+D8uUbNUbr3cVAAAAAElFTkSuQmCC
 "
 >
 </div>
@@ -12234,7 +12283,7 @@ AElFTkSuQmCC
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Los tweets relacionados al movimiento <em>Honor Colorado</em> constituyen el 55% de nuestro data set mientras que los vinculados a las candidaturas del movimiento <em>Colorado Añeteté</em> representan el 41% del total de datos. El restante porcentaje pertence a tweets vínculados a las internas de la ANR pero no necesariamente a uno de estos dos movimiento, por ejemplo, tweets que utilizan solamente el hashtag <strong>#InternasANR</strong>.</p>
+<p>Los tweets relacionados al movimiento <em>Honor Colorado</em> constituyen más del 50% de nuestro data set mientras que los vinculados a las candidaturas del movimiento <em>Colorado Añeteté</em> representan casi el 45% del total de datos. El restante porcentaje pertence a tweets vínculados a las internas de la ANR pero no necesariamente a uno de estos dos movimiento, por ejemplo, tweets que utilizan solamente el hashtag <strong>#InternasANR</strong>.</p>
 
 </div>
 </div>
@@ -12244,7 +12293,7 @@ AElFTkSuQmCC
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Distribuci&#243;n-de-tweets-por-candidato">Distribuci&#243;n de tweets por candidato<a class="anchor-link" href="#Distribuci&#243;n-de-tweets-por-candidato">&#182;</a></h2>
+<h2 id="Distribuci&#243;n-de-tweets-sobre-candidato">Distribuci&#243;n de tweets sobre candidato<a class="anchor-link" href="#Distribuci&#243;n-de-tweets-sobre-candidato">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -12260,6 +12309,7 @@ AElFTkSuQmCC
 <li><p>Hashtags relacionados directamente con la campaña de Abdo y que se consideraron para este análisis: #MaritoDeLaGente, #ParaguayDeLaGente</p>
 </li>
 </ul>
+<p>En los siguientes análisis no se tendrán en cuenta los tweets publicados por los candidatos. Esto es, los 10 tweets publicados por Santiago Peña y los 70 tweets publicados por Mario Abdo.</p>
 
 </div>
 </div>
@@ -12275,10 +12325,10 @@ AElFTkSuQmCC
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_sp</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;candidatura&#39;</span><span class="p">:</span> <span class="s1">&#39;santiago peña&#39;</span><span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_sp</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;candidatura&#39;</span><span class="p">:</span> <span class="s1">&#39;santiago peña&#39;</span><span class="p">,</span> <span class="s1">&#39;tweet_obj.user.screen_name&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$ne&#39;</span><span class="p">:</span><span class="s1">&#39;SantiPenap&#39;</span><span class="p">}})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados al candidato Santiago Peña: &#39;</span> \
       <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total del movimiento HC)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_sp</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> 
                                                       <span class="nb">round</span><span class="p">((</span><span class="n">tweets_sp</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
@@ -12294,7 +12344,7 @@ AElFTkSuQmCC
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados al candidato Santiago Peña: 3570 (60.0% del total del movimiento HC)
+<pre>Tweets relacionados al candidato Santiago Peña: 2169 (48.93% del total del movimiento HC)
 </pre>
 </div>
 </div>
@@ -12314,10 +12364,10 @@ AElFTkSuQmCC
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_ma</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;candidatura&#39;</span><span class="p">:</span> <span class="s1">&#39;mario abdo&#39;</span><span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_ma</span> <span class="o">=</span> <span class="n">do_search</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;candidatura&#39;</span><span class="p">:</span> <span class="s1">&#39;mario abdo&#39;</span><span class="p">,</span> <span class="s1">&#39;tweet_obj.user.screen_name&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$ne&#39;</span><span class="p">:</span><span class="s1">&#39;MaritoAbdo&#39;</span><span class="p">}})</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tweets relacionados al candidato Mario Abdo: &#39;</span> \
       <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> (</span><span class="si">{1}% d</span><span class="s1">el total del movimiento Colorado Añeteté)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">(),</span> 
                                                       <span class="nb">round</span><span class="p">((</span><span class="n">tweets_ma</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">/</span><span class="n">tweets_ca</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
@@ -12333,7 +12383,7 @@ AElFTkSuQmCC
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Tweets relacionados al candidato Mario Abdo: 4054 (89.2% del total del movimiento Colorado Añeteté)
+<pre>Tweets relacionados al candidato Mario Abdo: 3246 (88.33% del total del movimiento Colorado Añeteté)
 </pre>
 </div>
 </div>
@@ -12344,7 +12394,7 @@ AElFTkSuQmCC
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tweets_por_candidato</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
@@ -12362,11 +12412,11 @@ AElFTkSuQmCC
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[10]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[11]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x113a1ff60&gt;</pre>
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x11c1e47f0&gt;</pre>
 </div>
 
 </div>
@@ -12376,180 +12426,161 @@ AElFTkSuQmCC
 
 <div class="output_png output_subarea ">
 <img src="data:image/png;base64,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
-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
-AP9EwAOGKy4u1qFDh/TAAw8Er2527bXXat68eaqrq1NGRob27dunw4cPq0uXLlq4cKEOHz6s+++/
-X927d9eHH36oVq1a6amnnlKLFi20fv16LVq0SC6XSx07dgze7OfGG2/U8uXL1bZtWz3yyCPas2eP
-OnbsqKNHj0qSamtrNXPmzB/t6/HHH5ckjRo1SmvWrNG2bdv05JNPqq6uTp06ddKjjz7KldCAc8AS
-PWC4Dz74QFddddWPLl16ww03aP/+/YqKitLq1auDNw7Zvn27pO8vg3rXXXfplVdeUUxMjF5++WUd
-PHhQjz/+uFauXKnVq1crEAj8aH95eXmSpM2bNysjI0N///vfJUnvv//+T+4rIyND0vdXUausrNT0
-6dP1zDPP6OWXX1ZSUpIeffTRUL49gLGYwQOGi4iIOOW19q+55hq1aNFCK1eu1P79+/Xpp5/q22+/
-lfT9xYiuvPJKSVL37t319ddf6/3331diYmJwRj1s2DC9/fbb9cZ85513gncUvPTSS4N3Pjvdvn5Q
-WlqqhIQEXXLJJZKk22+/XUuWLGmkdwL498IMHjBcr1699MEHH/wo5HNycrRlyxZNmTJFF110kUaO
-HKlrrrkm2C86OjrY12azybIs2Wy2ejcUstt/PEc4VZ+tW7eecl8/+L83K7Isizv9AeeIgAcMl5yc
-rFatWmnhwoU6efKkJOnNN9/USy+9pDfffFNDhgzRb37zG7Vu3Vq7du0K9vkpffr00e7du3Xw4EHV
-1dVp06ZNP+pz3XXX6ZVXXlFdXZ0+//xzvffee5KknTt3nnJfkZGRqq2t1dVXX63du3frs88+kySt
-Xr1a/fr1a+y3BPi3wBI9YDibzabc3FzNmzdPv/zlL2W32xUbG6slS5YoMjJSU6ZM0Z///Gc5HA71
-7t07GK4/pXXr1srIyNCdd96pZs2a6bLLLvtRH6/Xq3379mnIkCHq2LGj4uPjJX3/JbpT7eumm27S
-r3/9a7300kt69NFHdf/99+vEiRPq0KEDdyIDzhHXogcAwEAs0QMAYCACHgAAAxHwAAAYiIAHAMBA
-BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
+AAALEgAACxIB0t1+/AAAIABJREFUeJzt3XtYlHX+//HXMMOQzAwrImWamJpkJ0okq8u0pYOmm6WW
+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
+zz0aOXKk1q1bp48//lg5OTmy2+2KiopSTk6OWrZsWe/+NmzYoISEBN14443KzMxU//79/d97/PHH
+tXv3bjmdTj300EP6y1/+ojFjxujzzz9X69atVVNTI0n65ptvlJWVpQMHDshmsyk7O1sdO3YM3Q8N
+kljBQ9JJJ52kWbNm6f3339cNN9ygK6+8UmvWrJEkbd26VdOmTVN+fr569OihV199VZL05ZdfatKk
+SVq8eLGKi4tVUVGhoUOH6sILL9QNN9zgP/b27dv1t7/9Tc8884zmzp2rZ599VpI0btw4TZ06VfPm
+zVNCQoKkX1cmK1euVGFhoQoLC7V9+3b/HP9r2rRpysjI0M0336y33npLI0eO1Oeff64VK1aooKBA
+CxYs0KpVq7Rt2zZJUsuWLTV37lxlZGRo0aJFqqur008//aRnn31Wixcv1oEDB/TRRx8F80cMHJUe
+PXrotddek2VZKi0tVadOnSTpkP+WY2JitHDhQl100UX+42RnZ2vs2LGaP3++0tLS/vAzPhYvXqwB
+AwaoXbt2cjqd2rRpU7055s2bp9TUVD311FN6/fXXVV1draKiIt17773+MwsPPfSQbrrpJi1YsEAP
+PPBAo84I4uixgoe2b98ut9utKVOmSJI++ugjDR48WBdccIFOOukkTZo0SdHR0dqxY4eSk5MlSQkJ
+Cf5LCcfHx9f7Xd3/at68uZ577jm99tprcrvdqq2tlSTt3LlTHTp0kCR17txZK1as0LZt23Tuuecq
+MjJSkpSSkqKtW7cqNTW13jEzMzPVvXv3etvee+89fffdd7rlllsk/bqy3759uyTpjDPOkCS1aNFC
+77//viIiIhQZGal//etfio6O1g8//OCfCzgW9enTR+PHj1fr1q2VkpLi336of8tt27b93XF27tzp
+fz6cf/75mj59er3v//zzzyouLtaPP/6o/Px8eb1ezZ8/3/+rrd/uOzk5WWvXrlVsbKz/V3EtW7bU
+ySefLEkqLy/X+eefL+nX598PP/wQyB8HDhMreOjTTz/Vgw8+6D+91rZtW8XExMhut2vMmDGaPHmy
+pk6dqhNPPFG/XTbBZrP97jgRERGqq6urt+2ZZ57Reeedp4cfflhXXnml//YtWrTQ559/Lkn+FUK7
+du1UWlqq2tpaWZaljRs3/uF/pP5Iu3btdNppp2nevHnKz89X//79dfrpp//hrGVlZVq1apUeffRR
+jRkzRnV1deJyEDiWtW7dWnv27FF+fr6uvvpq//ZD/VuOiPj9f95PPPFElZWVSZI2btyoU089td73
+ly1bpmuvvdZ/xq2oqEjr1q3Tjz/+KEn+swPvvfeeOnTooNNOO00ffvihJGnHjh3asWOHJKl9+/Z6
+7733JEmffPKJmjdvHsCfBg4XK3ioR48eKi8v13XXXafo6GhZlqX77rtPHo9HV199tQYOHKgmTZqo
+efPm2rlz50GPk5CQoM8++8x/Gl6SUlNTNXHiRK1YsUIej0d2u101NTUaN26csrKyFB0drcjISJ10
+0kk6/fTT1atXL6Wlpamurk6dO3fW5ZdffliPoWPHjrrooouUlpammpoaJSUl6aSTTvrDfdu0aaMm
+TZroxhtvlPTrGYhDPS7gWNC7d2+99NJLatu2rb7++mtJR/5veeLEicrJyZFlWbLb7Zo8eXK97y9e
+vFgPPfSQ/+smTZqoR48eKioqkvTrx3g/99xzcrlcys3NVUxMjNatW6cBAwaoZcuWio2NlSTdd999
+GjNmjJ555hnV1tZq0qRJAf1Z4PBwJTuExYIFC9SrVy81a9ZMjzzyiCIjI4/4T3kAAAfHCh5hERcX
+p0GDBik6Oloej+cP3+wDAGg8VvAAABiIN9kBAGAgAg8AgIEIPAAABiLwwJ+A1+vVhAkTdNVVV+ma
+a65RRkaGtmzZctTHfeGFF/wfejJ48GD/30H/r4yMDG3YsOGQx8nIyDjqWQDUx7voAcPV1dX5r0z4
+4osvyuFw6J133tHgwYO1fPly/98uH605c+Y0+rbvvvtuQGYA8F8EHjDchg0btHPnTt1zzz3+q5td
+eOGFmjJliurq6pSdna2tW7dq165datu2rWbOnKldu3bprrvuUocOHfTJJ58oLi5Ojz32mJo2baoX
+X3xRs2bNktvtVqtWrfwf9nPppZdq3rx5OvHEE/XAAw9o8+bNatWqlXbv3i1Jqq2t1fjx4393Xw8/
+/LAkacCAAVq8eLHWrFmjRx99VHV1dWrdurUefPBBroQGNAKn6AHDffzxxzrnnHN+d+nSSy65RNu2
+bVNkZKQWLVrk/+CQtWvXSvr1Mqi33nqrXnnlFcXExOjll1/Wjh079PDDD2vBggVatGiRfD7f7+4v
+Pz9fkrRixrlUAAACPUlEQVRy5UplZ2frq6++kiR98MEHf3hf2dnZkn69ilplZaXGjh2rJ598Ui+/
+/LKSk5P14IMPBvPHAxiLFTxguIiIiINea//8889X06ZNtWDBAm3btk1ffvml9uzZI+nXixGdeeaZ
+kqQOHTro559/1gcffKBOnTr5V9R9+vTRO++8U++Y7777rv8TBU899VT/J58d6r5+U1paqqSkJJ1y
+yimSpBtuuEFPP/10gH4SwJ8LK3jAcGeffbY+/vjj30V+xowZWrVqlUaOHKkTTjhB/fv31/nnn+/f
+Lyoqyr+vzWaTZVmy2Wz1PlDI4fj9GuFg+6xevfqg9/Wb//thRZZl8Ul/QCMReMBwKSkpiouL08yZ
+M3XgwAFJ0ltvvaUXXnhBb731lnr16qVrr71WzZs318aNG/37/JHOnTtr06ZN2rFjh+rq6rRixYrf
+7XPRRRfplVdeUV1dnb799lu9//77kqT169cf9L7sdrtqa2t17rnnatOmTfrmm28kSYsWLdIFF1wQ
+6B8J8KfAKXrAcDabTXl5eZoyZYquuuoqORwOxcbG6umnn5bdbtfIkSP16quvyul06rzzzvPH9Y80
+b95c2dnZuuWWW9SkSROddtppv9snPT1dW7duVa9evdSqVSslJiZK+vVNdAe7r8suu0zXXHONXnjh
+BT344IO66667tH//frVs2ZJPIgMaiWvRAwBgIE7RAwBgIAIPAICBCDwAAAYi8AAAGIjAAwBgIAIP
+AICBCDwAAAYi8AAAGOj/A13uMMkgPfFeAAAAAElFTkSuQmCC
 "
 >
 </div>
@@ -12590,10 +12621,10 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_hc</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_hc</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">,</span> <span class="n">include_candidate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">candidate_handler</span><span class="o">=</span><span class="s1">&#39;SantiPenap&#39;</span><span class="p">)</span>
 <span class="n">hashtags_populares_hc</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">hashtag</span> <span class="ow">in</span> <span class="n">hashtags_hc</span><span class="p">:</span>
     <span class="n">por_total</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
@@ -12611,7 +12642,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[11]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12627,27 +12658,27 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
   <tbody>
     <tr>
       <th>0</th>
-      <td>#JuntosPodemosMas</td>
-      <td>1152</td>
-      <td>19%</td>
+      <td>#HonorColorado</td>
+      <td>762</td>
+      <td>17%</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>#HonorColorado</td>
-      <td>819</td>
-      <td>14%</td>
+      <td>#SigamosConversando</td>
+      <td>402</td>
+      <td>9%</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>#SigamosConversando</td>
-      <td>406</td>
-      <td>7%</td>
+      <td>#CaminandoJuntos</td>
+      <td>46</td>
+      <td>1%</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>#CaminandoJuntos</td>
-      <td>272</td>
-      <td>5%</td>
+      <td>#JuntosPodemosMas</td>
+      <td>6</td>
+      <td>0%</td>
     </tr>
   </tbody>
 </table>
@@ -12671,10 +12702,10 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_ca</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">hashtags_ca</span> <span class="o">=</span> <span class="n">get_hashtags_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">,</span> <span class="n">include_candidate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">candidate_handler</span><span class="o">=</span><span class="s1">&#39;MaritoAbdo&#39;</span><span class="p">)</span>
 <span class="n">hashtags_populares_ca</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">hashtag</span> <span class="ow">in</span> <span class="n">hashtags_ca</span><span class="p">:</span>
     <span class="n">por_total</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">hashtag</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">tweets_hc</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
@@ -12692,7 +12723,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12709,26 +12740,26 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
     <tr>
       <th>0</th>
       <td>#ParaguayDeLaGente</td>
-      <td>1612</td>
-      <td>27%</td>
+      <td>1498</td>
+      <td>34%</td>
     </tr>
     <tr>
       <th>1</th>
       <td>#MaritoDeLaGente</td>
-      <td>1291</td>
-      <td>22%</td>
+      <td>915</td>
+      <td>21%</td>
     </tr>
     <tr>
       <th>2</th>
       <td>#Lista3</td>
-      <td>1151</td>
+      <td>833</td>
       <td>19%</td>
     </tr>
     <tr>
       <th>3</th>
       <td>#ColoradoAñetete</td>
-      <td>321</td>
-      <td>5%</td>
+      <td>198</td>
+      <td>4%</td>
     </tr>
   </tbody>
 </table>
@@ -12771,10 +12802,11 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_hc</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_hc</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;honor colorado&#39;</span><span class="p">,</span> <span class="n">include_candidate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                                               <span class="n">candidate_handler</span><span class="o">=</span><span class="s1">&#39;SantiPenap&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitearon sobre Honor Colorado&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_hc</span><span class="p">)))</span>
 </pre></div>
 
@@ -12788,7 +12820,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>2260 usuarios tuitearon sobre Honor Colorado
+<pre>1687 usuarios tuitearon sobre Honor Colorado
 </pre>
 </div>
 </div>
@@ -12808,7 +12840,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">top10_tuiteros_hc</span> <span class="o">=</span> <span class="p">[]</span>
@@ -12818,7 +12850,9 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
                   <span class="s1">&#39;3.Originales&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;original_count&#39;</span><span class="p">],</span>
                   <span class="s1">&#39;4.Retweets&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;retweets_count&#39;</span><span class="p">],</span>
                   <span class="s1">&#39;5.Quotes&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;quotes_count&#39;</span><span class="p">],</span>
-                  <span class="s1">&#39;6.Replies&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;replies_count&#39;</span><span class="p">]}</span>
+                  <span class="s1">&#39;6.Replies&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;replies_count&#39;</span><span class="p">],</span>
+                  <span class="s1">&#39;7.Followers&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;followers&#39;</span><span class="p">],</span>
+                  <span class="s1">&#39;8.Friends&#39;</span><span class="p">:</span> <span class="n">unique_users_hc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;friends&#39;</span><span class="p">]}</span>
     <span class="n">top10_tuiteros_hc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tuitero_hc</span><span class="p">)</span>
 <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">top10_tuiteros_hc</span><span class="p">)</span>
 </pre></div>
@@ -12831,7 +12865,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12845,35 +12879,43 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
       <th>4.Retweets</th>
       <th>5.Quotes</th>
       <th>6.Replies</th>
+      <th>7.Followers</th>
+      <th>8.Friends</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>ArturoO22734057</td>
-      <td>55</td>
+      <td>52</td>
       <td>0</td>
-      <td>55</td>
+      <td>52</td>
       <td>0</td>
       <td>0</td>
+      <td>189</td>
+      <td>795</td>
     </tr>
     <tr>
       <th>1</th>
       <td>Michelec1954</td>
-      <td>48</td>
+      <td>45</td>
       <td>0</td>
       <td>0</td>
-      <td>46</td>
+      <td>43</td>
       <td>2</td>
+      <td>705</td>
+      <td>1483</td>
     </tr>
     <tr>
       <th>2</th>
       <td>delgapy2016</td>
-      <td>46</td>
+      <td>45</td>
       <td>0</td>
-      <td>46</td>
+      <td>45</td>
       <td>0</td>
       <td>0</td>
+      <td>76</td>
+      <td>460</td>
     </tr>
     <tr>
       <th>3</th>
@@ -12883,6 +12925,8 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
       <td>40</td>
       <td>0</td>
       <td>2</td>
+      <td>10</td>
+      <td>53</td>
     </tr>
     <tr>
       <th>4</th>
@@ -12892,24 +12936,30 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
       <td>39</td>
       <td>0</td>
       <td>2</td>
+      <td>11</td>
+      <td>55</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>saguierangel</td>
-      <td>40</td>
-      <td>0</td>
-      <td>39</td>
-      <td>0</td>
-      <td>1</td>
-    </tr>
-    <tr>
-      <th>6</th>
       <td>alilebron45</td>
       <td>40</td>
       <td>0</td>
       <td>39</td>
       <td>0</td>
       <td>1</td>
+      <td>11</td>
+      <td>64</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>saguierangel</td>
+      <td>40</td>
+      <td>0</td>
+      <td>39</td>
+      <td>0</td>
+      <td>1</td>
+      <td>10</td>
+      <td>53</td>
     </tr>
     <tr>
       <th>7</th>
@@ -12919,24 +12969,30 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
       <td>38</td>
       <td>0</td>
       <td>1</td>
+      <td>11</td>
+      <td>114</td>
     </tr>
     <tr>
       <th>8</th>
       <td>Mariade84654356</td>
-      <td>37</td>
+      <td>36</td>
       <td>0</td>
-      <td>37</td>
+      <td>36</td>
       <td>0</td>
       <td>0</td>
+      <td>9</td>
+      <td>77</td>
     </tr>
     <tr>
       <th>9</th>
       <td>aristiqui85</td>
-      <td>36</td>
+      <td>35</td>
       <td>0</td>
-      <td>34</td>
+      <td>33</td>
       <td>0</td>
       <td>2</td>
+      <td>245</td>
+      <td>224</td>
     </tr>
   </tbody>
 </table>
@@ -12960,10 +13016,11 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_ca</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">unique_users_ca</span> <span class="o">=</span> <span class="n">get_unique_users_by_movement</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s1">&#39;colorado añetete&#39;</span><span class="p">,</span> <span class="n">include_candidate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                                               <span class="n">candidate_handler</span><span class="o">=</span><span class="s1">&#39;MaritoAbdo&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> usuarios tuitearon sobre Colorado Anetete&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_users_ca</span><span class="p">)))</span>
 </pre></div>
 
@@ -12977,7 +13034,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>842 usuarios tuitearon sobre Colorado Anetete
+<pre>748 usuarios tuitearon sobre Colorado Anetete
 </pre>
 </div>
 </div>
@@ -12997,7 +13054,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">top10_tuiteros_ca</span> <span class="o">=</span> <span class="p">[]</span>
@@ -13007,7 +13064,9 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
                   <span class="s1">&#39;3.Originales&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;original_count&#39;</span><span class="p">],</span>
                   <span class="s1">&#39;4.Retweets&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;retweets_count&#39;</span><span class="p">],</span>
                   <span class="s1">&#39;5.Quotes&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;quotes_count&#39;</span><span class="p">],</span>
-                  <span class="s1">&#39;6.Replies&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;replies_count&#39;</span><span class="p">]}</span>
+                  <span class="s1">&#39;6.Replies&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;replies_count&#39;</span><span class="p">],</span>
+                  <span class="s1">&#39;7.Followers&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;followers&#39;</span><span class="p">],</span>
+                  <span class="s1">&#39;8.Friends&#39;</span><span class="p">:</span> <span class="n">unique_users_ca</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;friends&#39;</span><span class="p">]}</span>
     <span class="n">top10_tuiteros_ca</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tuitero_ca</span><span class="p">)</span>
 <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">top10_tuiteros_ca</span><span class="p">)</span>
 </pre></div>
@@ -13020,7 +13079,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13034,98 +13093,120 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
       <th>4.Retweets</th>
       <th>5.Quotes</th>
       <th>6.Replies</th>
+      <th>7.Followers</th>
+      <th>8.Friends</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>Paraguaynosune</td>
-      <td>291</td>
+      <td>205</td>
       <td>0</td>
-      <td>291</td>
+      <td>205</td>
       <td>0</td>
       <td>0</td>
+      <td>502</td>
+      <td>173</td>
     </tr>
     <tr>
       <th>1</th>
       <td>jjrios_bogado</td>
-      <td>108</td>
+      <td>85</td>
       <td>0</td>
-      <td>92</td>
+      <td>76</td>
       <td>0</td>
-      <td>16</td>
+      <td>9</td>
+      <td>1857</td>
+      <td>777</td>
     </tr>
     <tr>
       <th>2</th>
       <td>Solmelga</td>
-      <td>97</td>
+      <td>84</td>
       <td>0</td>
-      <td>65</td>
+      <td>62</td>
       <td>0</td>
-      <td>32</td>
+      <td>22</td>
+      <td>5287</td>
+      <td>4788</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>MichellMCord</td>
-      <td>70</td>
+      <td>Beatriz20D</td>
+      <td>55</td>
       <td>0</td>
       <td>55</td>
-      <td>9</td>
-      <td>6</td>
+      <td>0</td>
+      <td>0</td>
+      <td>206</td>
+      <td>739</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>MaritoAbdo</td>
-      <td>70</td>
-      <td>0</td>
-      <td>11</td>
-      <td>0</td>
-      <td>59</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>Beatriz20D</td>
-      <td>66</td>
-      <td>0</td>
-      <td>66</td>
-      <td>0</td>
-      <td>0</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>felixugarte</td>
-      <td>62</td>
-      <td>0</td>
-      <td>62</td>
-      <td>0</td>
-      <td>0</td>
-    </tr>
-    <tr>
-      <th>7</th>
-      <td>LaJusticierra</td>
-      <td>62</td>
-      <td>0</td>
-      <td>59</td>
-      <td>0</td>
-      <td>3</td>
-    </tr>
-    <tr>
-      <th>8</th>
       <td>EDITHVILLA3</td>
       <td>55</td>
       <td>0</td>
       <td>54</td>
       <td>0</td>
       <td>1</td>
+      <td>589</td>
+      <td>1118</td>
     </tr>
     <tr>
-      <th>9</th>
+      <th>5</th>
+      <td>felixugarte</td>
+      <td>53</td>
+      <td>0</td>
+      <td>53</td>
+      <td>0</td>
+      <td>0</td>
+      <td>496</td>
+      <td>368</td>
+    </tr>
+    <tr>
+      <th>6</th>
       <td>equipo_anetete</td>
       <td>52</td>
       <td>0</td>
       <td>46</td>
       <td>0</td>
       <td>6</td>
+      <td>3504</td>
+      <td>812</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>MichellMCord</td>
+      <td>52</td>
+      <td>0</td>
+      <td>43</td>
+      <td>4</td>
+      <td>5</td>
+      <td>75</td>
+      <td>474</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>FaroveFatima</td>
+      <td>49</td>
+      <td>0</td>
+      <td>49</td>
+      <td>0</td>
+      <td>0</td>
+      <td>973</td>
+      <td>906</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Villa3Edith</td>
+      <td>42</td>
+      <td>0</td>
+      <td>42</td>
+      <td>0</td>
+      <td>0</td>
+      <td>273</td>
+      <td>381</td>
     </tr>
   </tbody>
 </table>
@@ -13140,7 +13221,7 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">tuiteros_por_movimiento</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
@@ -13158,11 +13239,11 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[18]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x1155b4c50&gt;</pre>
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x1204e6f28&gt;</pre>
 </div>
 
 </div>
@@ -13172,147 +13253,178 @@ BDwAAAYi4AEAMBABDwCAgQh4AAAM9P8Bjnm05b2KQiYAAAAASUVORK5CYII=
 
 <div class="output_png output_subarea ">
 <img src="data:image/png;base64,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
-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
+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
-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
+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
-+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
-wzeyYgAAAABJRU5ErkJggg==
+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
+X3SDujdjxgzl5uZKku699149+uijGjt2rBwOhw4dOqQjR45oxowZatOmjdasWaPXX39dDodDN998
+s6ZMmaK1a9cqKytLFRUVeuaZZ9S9e3dJZ//iuO6669SuXTv/vsaMGaOKigpJ0quvvqp169YpPDxc
+nTt31pgxY85rrhMnTujEiRN65ZVXNHv2bB0+fFhHjhxRr169NGrUKOXn52vcuHGqX7++6tevrwYN
+GkjSOWevV69ewP98ceXIzs5Wt27ddPPNN0s6+8VdM2fO9P+enet3+gelpaV6/vnnVVBQoPLycv32
+t79V3759lZycrMaNG+vkyZNasGCB0tLS5PF4dOTIEblcLrlcLn366ad68cUXFR0drbCwMLVv315S
+zc8xSXrzzTeVmJioX/3qV1q9erWGDRumgoICrVy5Utddd50OHjyoM2fO6N5775XH49H48eNVVFQk
+SUpLS9O3336rPXv2KDU1VStWrNCqVav0l7/8RSEhIerbt68efvhhLV68WGfOnFGHDh104403aurU
+qZKkhg0b6sUXX5TTGZgvL7tiGFyxtmzZYm6//XYzbNgw/3933nmnycrKMhs2bDBPP/20qaioMCUl
+JeaBBx4weXl5JjU11bzyyivGGGNWrVplJkyYYI4fP27uvvtu4/F4jDHGTJs2zbjdbpOVlWWeeuqp
+n+x37dq1Ztq0aeecKS8vzzzwwAOmpKTEVFRUmKefftps2LDBzJ8/36xYsaLauf7nf/7HGGPMwYMH
+TWZmpjHGmDNnzpiuXbsaY4x58sknzYcffmiMMeZPf/qTSU1NrXJ2oDYtWrTIvPbaa+e8r7rf6U2b
+Nhm32+1/vng8HnPPPfeYY8eOmWHDhpn333/fGGPM559/bt577z1jjDGHDx8299xzjzHGmHvvvdfs
+37/fGGPMxIkTzfz586t8jv2Yx+Mxd999tyktLTVfffWV6du3rzHm7HOra9euxuPxmLKyMnPXXXeZ
+I0eOmP/+7/82y5cvN8YY89VXX5mHHnrIGGPMsGHDzJdffmn27dtnHnroIVNWVmbKyspMcnKyyc/P
+N1lZWWbWrFnGGGMefPBBs2/fPmOMMZmZmSY9Pb12/vCvYBzBX+Fuv/12vfTSS/7bs2fPliTl5+er
+c+fOCgkJUb169dSuXTvl5+dLklq3bi1Juu6667R9+3YdPHhQLVq08H+1cJcuXfThhx+qXbt2uuWW
+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
+EXgAACz0/ye1jhigABNjAAAAAElFTkSuQmCC
 "
 >
 </div>
@@ -13328,7 +13440,7 @@ wzeyYgAAAABJRU5ErkJggg==
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Como se podría esperar el ejercito de tuiteros del movimiento <em>Honor Colorado</em> es ampliamente superior al de <em>Colorado Añeteté</em>. Prácticamente, <strong>por cada tuitero de <em>Colorado Añeteté</em> existen 2.7 tuiteros de <em>Honor Colorado</em></strong>. Sin embargo la diferencia en cantidad de tweets entre ambos movimiento no es muy importante, como vimos anteriormente, lo que demuestra que <em>Colorado Añeteté</em> tiene un ejercito más activo de tuiteros.</p>
+<p>Como se podría esperar el ejercito de tuiteros del movimiento <em>Honor Colorado</em> es ampliamente superior al de <em>Colorado Añeteté</em>. Prácticamente, <strong>por cada tuitero de <em>Colorado Añeteté</em> existen casi 2.5 tuiteros de <em>Honor Colorado</em></strong>. Sin embargo la diferencia en cantidad de tweets entre ambos movimiento no es muy importante, como vimos anteriormente, lo que demuestra que <em>Colorado Añeteté</em> tiene un ejercito más activo de tuiteros.</p>
 <p>Otro aspecto destacable del último análisis es el tipo de actividad que realizan tanto los tuiteros de <em>Honor Colorado</em> como los de <em>Añeteté</em>. En ambos casos, <strong>los tuiteros más activos no publican nuevo tweets</strong> sino se limitan a casi exclusivamente a retuitear tweets vinculados a su movimiento. En otras palabras, la principal actividad de estos usuarios es amplificar y promocionar información relacionada a sus intereses. <strong>Este comportamiento es típico de bots y cuentas falsas</strong>. La siguiente tarea en el estudio consistirá, por lo tanto, en análizar más en detalle el comportamiento de estas cuentas con el objetivo de verificar si son falsas o se encuentran vínculadas a sistemas automáticos de publicaciones.</p>
 
 </div>
