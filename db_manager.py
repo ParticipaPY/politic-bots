@@ -8,16 +8,18 @@ def get_db():
 
 
 def do_search(db, query):
+    if 'relevante' not in query.keys():
+        query.update({'relevante': 1})
     return db.tweets.find(query)
 
 
-def find_tweets_by_author(db, author_id):
-    query = {'type': 'user', 'keyword': author_id}
+def find_tweets_by_author(db, author_screen_name):
+    query = {'tweet_obj.user.screen_name': author_screen_name, 'relevante': 1}
     return do_search(db, query)
 
 
 def find_tweets_by_hashtag(db, hashtag):
-    query = {'type': 'hashtag', 'keyword': hashtag}
+    query = {'type': 'hashtag', 'keyword': hashtag, 'relevante': 1}
     return do_search(db, query)
 
 
@@ -25,15 +27,29 @@ def aggregate(db, pipeline):
     return [doc for doc in db.tweets.aggregate(pipeline)]
 
 
-def get_hashtags_by_movement(db, movement_name):
-    pipeline = [
-        {
+def get_hashtags_by_movement(db, movement_name, include_candidate=True, candidate_handler=''):
+    if not include_candidate:
+        if candidate_handler != '':
+            match = {
+                '$match': {
+                    'movimiento': {'$eq': movement_name},
+                    'relevante': {'$eq': 1},
+                    'type': {'$eq': 'hashtag'},
+                    'tweet_obj.user.screen_name': {'$ne': candidate_handler}
+                }
+            }
+        else:
+            raise Exception('The parameter candidate_handler cannot be empty')
+    else:
+        match = {
             '$match': {
                 'movimiento': {'$eq': movement_name},
                 'relevante': {'$eq': 1},
                 'type': {'$eq': 'hashtag'}
             }
-        },
+        }
+    pipeline = [
+        match,
         {
             '$group': {
                 '_id': '$keyword',
@@ -53,15 +69,27 @@ def get_hashtags_by_movement(db, movement_name):
     return aggregate(db, pipeline)
 
 
-def get_unique_users_by_movement(db, movement_name):
-    # prepare the pipeline
-    pipeline = [
-        {
+def get_unique_users_by_movement(db, movement_name, include_candidate=True, candidate_handler=''):
+    if not include_candidate:
+        if candidate_handler != '':
+            match = {
+                '$match': {
+                    'movimiento': {'$eq': movement_name},
+                    'relevante': {'$eq': 1},
+                    'tweet_obj.user.screen_name': {'$ne': candidate_handler}
+                }
+            }
+        else:
+            raise Exception('The parameter candidate_handler cannot be empty')
+    else:
+        match = {
             '$match': {
                 'movimiento': {'$eq': movement_name},
                 'relevante': {'$eq': 1}
             }
-        },
+        }
+    pipeline = [
+        match,
         {
             '$group': {
                 '_id': '$tweet_obj.user.id_str',
@@ -136,6 +164,11 @@ def get_id_duplicated_tweets(db):
 def get_user_and_location(db):
     pipeline = [
         {
+          '$match': {
+              'relevante': {'$eq': 1}
+          }
+        },
+        {
             '$group': {
                 '_id': '$tweet_obj.user.id_str',
                 'location': {'$first': '$tweet_obj.user.location'},
@@ -149,6 +182,11 @@ def get_user_and_location(db):
 
 def get_tweet_places(db):
     pipeline = [
+        {
+            '$match': {
+                'relevante': {'$eq': 1}
+            }
+        },
         {
             '$group': {
                 '_id': '$tweet_obj.place.country',
@@ -185,5 +223,3 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
         return True
     else:
         return False
-
-
