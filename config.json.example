@@ -1,8 +1,7 @@
 {
-  "max_tweets": 100000000,
+  "metadata": "kwd_metadata.csv",
   "tweets_qry": 100,
   "twitter": {
-      "consumer_key":"YOurCoNsuMerKEy",
-      "consumer_secret":"yOuRconSumERseCrEt"
-   }
+    "consumer_key":"YOurCoNsuMerKEy",
+    "consumer_secret":"yOuRconSumERseCrEt"
 }

@@ -3,3 +3,5 @@ env/
 *-17
 *.json
 __pycache__
+.idea
+.vscode
