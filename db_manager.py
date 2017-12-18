@@ -7,9 +7,10 @@ def get_db():
     return db
 
 
-def do_search(db, query):
-    if 'relevante' not in query.keys():
-        query.update({'relevante': 1})
+def do_search(db, query, consider_only_relevant=False):
+    if consider_only_relevant:
+        if 'relevante' not in query.keys():
+            query.update({'relevante': 1})
     return db.tweets.find(query)
 
 
