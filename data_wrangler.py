@@ -1,13 +1,13 @@
-
-from search_tweets import parse_metadata
 from collections import defaultdict
+from utils import get_config, parse_metadata
 import re
 
 special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
 
 
 def get_user_handlers_and_hashtags():
-    keywords, _ = parse_metadata('kwd_metadata.csv')
+    configuration = get_config('config.json')
+    keywords, _ = parse_metadata(configuration['metadata'])
     hashtags, users = [], []
     for keyword in keywords:
         if '@' in keyword:
