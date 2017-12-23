@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from data_wrangler import is_tweet_relevant
 import logging
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
