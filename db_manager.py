@@ -1,4 +1,8 @@
 from pymongo import MongoClient
+from data_wrangler import is_tweet_relevant
+import logging
+
+logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 def get_db():
@@ -218,9 +222,28 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
                       'extraction_date': extraction_date}
     enriched_tweet.update(k_metadata)
     id_tweet = tweet['id_str']
-    results = do_search(db, {'tweet_obj.id_str': id_tweet})
-    if results.count() == 0:
+    num_results = do_search(db, {'tweet_obj.id_str': id_tweet}).count()
+    if num_results == 0:
         db.tweets.insert(enriched_tweet)
         return True
     else:
         return False
+
+
+def import_tweets_to_server_db(db):
+    print('Importing data...')
+    tweets = db.tweets_first_week.find({})
+    num_reg_inserted = 0
+    num_reg_visited = 0
+    total_records_to_insert = tweets.count()
+    for i in range(total_records_to_insert):
+        num_reg_visited += 1
+        logging.debug('There are left {0} records to insert'.format(total_records_to_insert-num_reg_visited))
+        tweet_reg = tweets[i]
+        tweet = tweet_reg['tweet_obj']
+        num_results = db.tweets_server.find({'tweet_obj.id_str': tweet['id_str']}).count()
+        if num_results > 0:
+            continue
+        db.tweets_server.insert(tweet_reg)
+        num_reg_inserted += 1
+        logging.debug('{0} new records inserted'.format(num_reg_inserted))
