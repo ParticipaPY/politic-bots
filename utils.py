@@ -1,6 +1,7 @@
 import csv
 import json
 
+
 # Get configuration from file
 def get_config(config_file):
     with open(config_file) as f:
@@ -23,3 +24,15 @@ def parse_metadata(kfile):
                 'candidatura': line['candidatura']
             })
     return keyword, k_metadata
+
+
+def get_user_handlers_and_hashtags():
+    configuration = get_config('config.json')
+    keywords, _ = parse_metadata(configuration['metadata'])
+    user_handlers, hashtags = [], []
+    for keyword in keywords:
+        if '@' in keyword:
+            user_handlers.append(keyword.lower())
+        else:
+            hashtags.append('#'+keyword.lower())
+    return user_handlers, hashtags
