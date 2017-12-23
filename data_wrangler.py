@@ -1,16 +1,19 @@
 from collections import defaultdict
 from utils import get_user_handlers_and_hashtags
 import re
+import logging
+
+logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 class TweetEvaluator:
     special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
     hashtags, user_handlers = [], []
 
-    def __init(self):
+    def __init__(self):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
 
-    def is_relevant(self, users_counter, hashtags_counter):
+    def __is_relevant(self, users_counter, hashtags_counter):
         # a tweet is considered relevant if fulfills one of two
         # conditions; candidates are mentioned or if candidates are
         # are not mentioned but there are at least more than one
@@ -20,7 +23,7 @@ class TweetEvaluator:
         else:
             return False
 
-    def assess_tweet_by_text(self, tweet_text):
+    def __assess_tweet_by_text(self, tweet_text):
         tweet_text = re.sub(u'\u2026', '', tweet_text)  # remove ellipsis unicode char
         users_counter, hashtags_counter = 0, 0
         for token in tweet_text.split():
@@ -29,9 +32,9 @@ class TweetEvaluator:
                 users_counter += 1
             if token.lower() in self.hashtags:
                 hashtags_counter += 1
-        return self.is_relevant(users_counter, hashtags_counter)
+        return self.__is_relevant(users_counter, hashtags_counter)
 
-    def assess_tweet_by_entities(self, tweet_hashtags, tweet_mentions):
+    def __assess_tweet_by_entities(self, tweet_hashtags, tweet_mentions):
         users_counter, hashtags_counter = 0, 0
         for tweet_hashtag in tweet_hashtags:
             tweet_hashtag_txt = '#' + tweet_hashtag['text'].lower()
@@ -41,7 +44,7 @@ class TweetEvaluator:
             screen_name = '@' + tweet_mention['screen_name'].lower()
             if screen_name in self.user_handlers:
                 users_counter += 1
-        return self.is_relevant(users_counter, hashtags_counter)
+        return self.__is_relevant(users_counter, hashtags_counter)
 
     def is_tweet_relevant(self, tweet):
         tweet_author = tweet['user']['screen_name']
@@ -56,22 +59,28 @@ class TweetEvaluator:
             if 'entities' in original_tweet.keys():
                 t_user_mentions = original_tweet['entities']['user_mentions']
                 t_hashtags = original_tweet['entities']['hashtags']
-                return self.assess_tweet_by_entities(t_hashtags, t_user_mentions)
+                return self.__assess_tweet_by_entities(t_hashtags, t_user_mentions)
             else:
                 if 'full_text' in original_tweet.keys():
-                    return self.assess_tweet_by_text(tweet['full_text'])
+                    return self.__assess_tweet_by_text(tweet['full_text'])
                 else:
-                    return self.assess_tweet_by_text(tweet['text'])
+                    return self.__assess_tweet_by_text(tweet['text'])
 
     def identify_relevant_tweets(self, db):
         tweet_regs = db.tweets.find({'relevante': {'$exists': 0}})
-        for tweet_reg in tweet_regs:
-            tweet = tweet_reg['tweet_obj']
+        logging.info('Identifying relevant tweets...')
+        total_tweets = tweet_regs.count()
+        tweet_counter = 0
+        for i in range(total_tweets):
+            tweet_counter += 1
+            tweet = tweet_regs[i]['tweet_obj']
             if self.is_tweet_relevant(tweet):
-                tweet_reg['relevante'] = 1
+                tweet_regs[i]['relevante'] = 1
+                logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
             else:
-                tweet_reg['relevante'] = 0
-            db.tweets.save(tweet_reg)
+                tweet_regs[i]['relevante'] = 0
+                logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
+            db.tweets.save(tweet_regs[i])
         return True
 
 
