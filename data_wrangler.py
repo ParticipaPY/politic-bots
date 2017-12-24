@@ -66,21 +66,40 @@ class TweetEvaluator:
                 else:
                     return self.__assess_tweet_by_text(tweet['text'])
 
+    def __mark_relevance_rt(self, db, tweet_reg):
+        logging.info('Marking RTS...')
+        search_res = db.tweets.find({
+                'tweet_obj.retweeted_status': {'$exists': 1},
+                'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
+            })
+        rts = [doc for doc in search_res]
+        for rt in rts:
+            rt['relevante'] = tweet_reg['relevante']
+            db.tweets.save(rt)
+
     def identify_relevant_tweets(self, db):
-        tweet_regs = db.tweets.find({'relevante': {'$exists': 0}})
+        # select only original tweets
+        search_res = db.tweets.find({
+            'relevante': {'$exists': 0},
+            'tweet_obj.retweeted_status': {'$exists': 0}
+        })
+        tweet_regs = [doc for doc in search_res]
         logging.info('Identifying relevant tweets...')
-        total_tweets = tweet_regs.count()
+        total_tweets = len(tweet_regs)
         tweet_counter = 0
         for i in range(total_tweets):
             tweet_counter += 1
-            tweet = tweet_regs[i]['tweet_obj']
+            tweet_reg = tweet_regs[i]
+            tweet = tweet_reg['tweet_obj']
             if self.is_tweet_relevant(tweet):
-                tweet_regs[i]['relevante'] = 1
+                tweet_reg['relevante'] = 1
                 logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
             else:
-                tweet_regs[i]['relevante'] = 0
+                tweet_reg['relevante'] = 0
                 logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
-            db.tweets.save(tweet_regs[i])
+            db.tweets.save(tweet_reg)
+            # copy the relevance flag to rts
+            self.__mark_relevance_rt(db, tweet_reg)
         return True
 
 
