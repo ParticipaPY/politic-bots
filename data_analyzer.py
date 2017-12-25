@@ -9,46 +9,38 @@ class SentimentAnalysis:
     language = ''
     method = ''
 
-    def __init__(self, language='spanish', method='in_house'):
+    def __init__(self, method='in_house', language='spanish'):
         self.config = get_config('config.json')
         self.language = language
         self.method = method
 
-    def get_analyzed_tweet(self, analyzed_tweets, id_tweet_to_search):
+    def __get_analyzed_tweet(self, analyzed_tweets, id_tweet_to_search):
         for analyzed_tweet in analyzed_tweets:
             if id_tweet_to_search == analyzed_tweet['id']:
                 return analyzed_tweet
         return None
 
-    def update_sentimient_rts(self, db, pending_tweets):
-        for pending_tweet in pending_tweets:
-            rt = db.tweets.find({'tweet_obj.id_str': pending_tweet['id_rt']})
-            ot = db.tweets.find({'tweet_obj.id_str': pending_tweet['id_original']})
-            rt['sentimiento'] = ot['sentimiento']
-            db.tweets.save(rt)
+    def __update_sentimient_rts(self, db, analyzed_tweets):
+        for analyzed_tweet in analyzed_tweets:
+            # search rts of the analyzed tweet
+            rts = db.tweets.find({'tweet_obj.retweeted_status.id_str': analyzed_tweet['id']})
+            for rt in rts:
+                rt['sentimiento'] = analyzed_tweet['sentimiento']
+                db.tweets.save(rt)
 
-    def sentiment_analysis(self, db, query={}):
+    def analyze_sentiments(self, db, query={}):
         """
         :param db: MongoDB database
         :param query: dictionary of <key, value> terms to be used in querying the db
         """
-
+        query.update({
+            'relevante': 1,
+            'tweet_obj.retweeted_status': {'$exists': 0}
+        })
         tweet_regs = db.tweets.find(query)
         analyzed_tweets = []
-        pending_tweets = []
         for tweet_reg in tweet_regs:
             tweet = tweet_reg['tweet_obj']
-            if 'retweeted_status' in tweet.keys():
-                id_original_tweet = tweet['retweeted_status']['id_str']
-                analyzed_tweet = self.get_analyzed_tweet(analyzed_tweets, id_original_tweet)
-                if analyzed_tweet:
-                    tweet_reg['sentimiento'] = analyzed_tweet['sentimiento']
-                else:
-                    pending_tweets.append({
-                        'id_original': tweet['retweeted_status']['id_str'],
-                        'id_rt': tweet['id_str']
-                    })
-                continue
             if 'full_text' in tweet.keys():
                 tweet_text = tweet['full_text']
             else:
@@ -68,7 +60,7 @@ class SentimentAnalysis:
                 'texto': tweet_text,
                 'sentimiento': sentiment_result
             })
-        self.update_sentimient_rts(db, pending_tweets)
+        self.__update_sentimient_rts(db, analyzed_tweets)
 
         return analyzed_tweets
 
