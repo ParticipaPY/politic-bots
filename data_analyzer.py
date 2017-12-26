@@ -1,7 +1,10 @@
 import indicoio
+import logging
 from utils import get_config
 from sentiment_analyzer import SentimentAnalyzer
 from aylienapiclient import textapi
+
+logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 class SentimentAnalysis:
@@ -33,12 +36,16 @@ class SentimentAnalysis:
         :param db: MongoDB database
         :param query: dictionary of <key, value> terms to be used in querying the db
         """
+        logging.debug('Analyzing sentiment of tweets...')
         query.update({
             'relevante': 1,
-            'tweet_obj.retweeted_status': {'$exists': 0}
+            'tweet_obj.retweeted_status': {'$exists': 0},
+            'sentimiento': {'$exists': 0},
         })
         tweet_regs = db.tweets.find(query)
         analyzed_tweets = []
+        #limit = 60
+        call_counter = 0
         for tweet_reg in tweet_regs:
             tweet = tweet_reg['tweet_obj']
             if 'full_text' in tweet.keys():
@@ -60,6 +67,12 @@ class SentimentAnalysis:
                 'texto': tweet_text,
                 'sentimiento': sentiment_result
             })
+            call_counter += 1
+            logging.debug('Call: {0} - Tweet text: {1}, Sentimiento: {2} ({3})'.format(call_counter, tweet_text.encode('utf-8'),
+                                                                           sentiment_result['tono'],
+                                                                           sentiment_result['score']))
+            #if call_counter >= limit:
+            #    break
         self.__update_sentimient_rts(db, analyzed_tweets)
 
         return analyzed_tweets
@@ -69,7 +82,8 @@ class SentimentAnalysis:
         sa_result = sa.analyze_doc(text)
         return {
             'tono': sa_result[1],
-            'score': sa_result[2]
+            'score': sa_result[2],
+            'servicio': 'local'
         }
 
     def indicoio_sentiment_analysis(self, text):
@@ -83,7 +97,8 @@ class SentimentAnalysis:
             tono = 'positive'
         return {
             'tono': tono,
-            'score': sa_result
+            'score': sa_result,
+            'servicio': 'indicoio'
         }
 
     def aylien_sentiment_analysis(self, text):
@@ -101,5 +116,6 @@ class SentimentAnalysis:
         sa_result = client.Sentiment({'text': text, 'mode': 'tweet', 'language': lang})
         return {
             'tono': sa_result['polarity'],
-            'score': sa_result['polarity_confidence']
+            'score': sa_result['polarity_confidence'],
+            'servicio': 'aylien'
         }
