@@ -1,7 +1,6 @@
 import nltk
 import re
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from textblob import TextBlob
 
