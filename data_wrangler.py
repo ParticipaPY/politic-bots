@@ -215,7 +215,8 @@ def fix_tweet_type(db):
         'type': 'hashtag', 'keyword': {'$regex': '@'}
     }
     objs = db.tweets.find(query)
+    num_fixed_tweets = objs.count()
     for obj in objs:
         obj['type'] = 'user'
         db.tweets.save(obj)
-    return objs.count()
+    return num_fixed_tweets
