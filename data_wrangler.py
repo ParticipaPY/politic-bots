@@ -207,3 +207,14 @@ class HashtagDiscoverer:
                     for k in sorted(coccurence_hashtags_dict, key=coccurence_hashtags_dict.get, reverse=True)]
         else:
             return coccurence_hashtags_dict
+
+
+# set to 'user' the type of tweets which keyword contains @
+def fix_tweet_type(db):
+    query = {
+        'type': 'hashtag', 'keyword': {'$regex': '@'}
+    }
+    objs = db.tweets.find(query)
+    for obj in objs:
+        obj['type'] = 'user'
+        db.tweets.save(obj)
