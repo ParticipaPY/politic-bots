@@ -218,3 +218,4 @@ def fix_tweet_type(db):
     for obj in objs:
         obj['type'] = 'user'
         db.tweets.save(obj)
+    return objs.count()
