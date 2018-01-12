@@ -13,7 +13,9 @@ def get_db():
     return db
 
 
-def do_search(db, query):
+def do_search(db, query, only_relevant_tws=True):
+    if only_relevant_tws:
+        query.update({'relevante': 1})
     return db.tweets.find(query)
 
 
@@ -214,7 +216,7 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
                       'extraction_date': extraction_date}
     enriched_tweet.update(k_metadata)
     id_tweet = tweet['id_str']
-    num_results = do_search(db, {'tweet_obj.id_str': id_tweet}).count()
+    num_results = do_search(db, {'tweet_obj.id_str': id_tweet}, only_relevant_tws=False).count()
     if num_results == 0:
         db.tweets.insert(enriched_tweet)
         logging.info('Inserted tweet: {0}'.format(id_tweet))
