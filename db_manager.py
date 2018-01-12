@@ -1,12 +1,15 @@
 from pymongo import MongoClient
+from utils import *
 import logging
+
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 def get_db():
     client = MongoClient('localhost:27017')
-    db = client.politic_bots
+    config = get_config('config.json')
+    db = client[config['db_name']]
     return db
 
 
@@ -44,7 +47,7 @@ def get_hashtags_by_movement(db, movement_name, **kwargs):
         if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
             match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
         else:
-            raise Exception('The parameter candidate_handler cannot be empty')
+            logging.error('The parameter candidate_handler cannot be empty')
     if 'limited_to_time_window' in kwargs.keys():
         match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
@@ -79,7 +82,7 @@ def get_unique_users_by_movement(db, movement_name, **kwargs):
         if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
             match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
         else:
-            raise Exception('The parameter candidate_handler cannot be empty')
+            logging.error('The parameter candidate_handler cannot be empty')
     if 'limited_to_time_window' in kwargs.keys():
         match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
@@ -216,6 +219,7 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
     num_results = do_search(db, {'tweet_obj.id_str': id_tweet}).count()
     if num_results == 0:
         db.tweets.insert(enriched_tweet)
+        logging.info('Inserted tweet: {0}'.format(id_tweet))
         return True
     else:
         return False
