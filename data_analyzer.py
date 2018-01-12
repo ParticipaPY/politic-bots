@@ -46,34 +46,38 @@ class SentimentAnalysis:
         analyzed_tweets = []
         #limit = 60
         call_counter = 0
-        for tweet_reg in tweet_regs:
-            tweet = tweet_reg['tweet_obj']
-            if 'full_text' in tweet.keys():
-                tweet_text = tweet['full_text']
-            else:
-                tweet_text = tweet['text']
-            if self.method == 'in_house':
-                sentiment_result = self.in_house_sentiment_analysis(tweet_text)
-            elif self.method == 'indico':
-                sentiment_result = self.indicoio_sentiment_analysis(tweet_text)
-            elif self.method == 'aylien':
-                sentiment_result = self.aylien_sentiment_analysis(tweet_text)
-            else:
-                raise Exception('Sentiment analysis method unknown!')
-            tweet_reg['sentimiento'] = sentiment_result
-            db.tweets.save(tweet_reg)
-            analyzed_tweets.append({
-                'id': tweet['id_str'],
-                'texto': tweet_text,
-                'sentimiento': sentiment_result
-            })
-            call_counter += 1
-            logging.debug('Call: {0} - Tweet text: {1}, Sentimiento: {2} ({3})'.format(call_counter, tweet_text.encode('utf-8'),
-                                                                           sentiment_result['tono'],
-                                                                           sentiment_result['score']))
-            #if call_counter >= limit:
-            #    break
-        self.__update_sentimient_rts(db, analyzed_tweets)
+        try:
+            for tweet_reg in tweet_regs:
+                tweet = tweet_reg['tweet_obj']
+                if 'full_text' in tweet.keys():
+                    tweet_text = tweet['full_text']
+                else:
+                    tweet_text = tweet['text']
+                if self.method == 'in_house':
+                    sentiment_result = self.in_house_sentiment_analysis(tweet_text)
+                elif self.method == 'indico':
+                    sentiment_result = self.indicoio_sentiment_analysis(tweet_text)
+                elif self.method == 'aylien':
+                    sentiment_result = self.aylien_sentiment_analysis(tweet_text)
+                else:
+                    raise Exception('Sentiment analysis method unknown!')
+                tweet_reg['sentimiento'] = sentiment_result
+                db.tweets.save(tweet_reg)
+                analyzed_tweets.append({
+                    'id': tweet['id_str'],
+                    'texto': tweet_text,
+                    'sentimiento': sentiment_result
+                })
+                call_counter += 1
+                logging.debug('Call: {0} - Tweet text: {1}, Sentimiento: {2} ({3})'.format(call_counter, tweet_text.encode('utf-8'),
+                                                                               sentiment_result['tono'],
+                                                                               sentiment_result['score']))
+                #if call_counter >= limit:
+                #    break
+        except Exception as e:
+            logging.error(e)
+        finally:
+            self.__update_sentimient_rts(db, analyzed_tweets)
 
         return analyzed_tweets
 

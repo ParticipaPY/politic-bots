@@ -10,20 +10,23 @@ def get_db():
     return db
 
 
-def do_search(db, query, consider_only_relevant=False):
-    if consider_only_relevant:
-        if 'relevante' not in query.keys():
-            query.update({'relevante': 1})
+def do_search(db, query, **kwargs):
+    if 'consider_only_relevant' in kwargs.keys() and 'relevante' not in query.keys():
+        query.update({'relevante': 1})
     return db.tweets.find(query)
 
 
-def find_tweets_by_author(db, author_screen_name):
+def find_tweets_by_author(db, author_screen_name, **kwargs):
     query = {'tweet_obj.user.screen_name': author_screen_name, 'relevante': 1}
+    if 'limited_to_time_window' in kwargs.keys():
+        query.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     return do_search(db, query)
 
 
-def find_tweets_by_hashtag(db, hashtag):
+def find_tweets_by_hashtag(db, hashtag, **kwargs):
     query = {'type': 'hashtag', 'keyword': hashtag, 'relevante': 1}
+    if 'limited_to_time_window' in kwargs.keys():
+        query.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     return do_search(db, query)
 
 
@@ -31,29 +34,23 @@ def aggregate(db, pipeline):
     return [doc for doc in db.tweets.aggregate(pipeline)]
 
 
-def get_hashtags_by_movement(db, movement_name, include_candidate=True, candidate_handler=''):
-    if not include_candidate:
-        if candidate_handler != '':
-            match = {
-                '$match': {
-                    'movimiento': {'$eq': movement_name},
-                    'relevante': {'$eq': 1},
-                    'type': {'$eq': 'hashtag'},
-                    'tweet_obj.user.screen_name': {'$ne': candidate_handler}
-                }
-            }
+def get_hashtags_by_movement(db, movement_name, **kwargs):
+    match = {
+        'movimiento': {'$eq': movement_name},
+        'relevante': {'$eq': 1},
+        'type': {'$eq': 'hashtag'}
+    }
+    if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+        if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+            match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
         else:
             raise Exception('The parameter candidate_handler cannot be empty')
-    else:
-        match = {
-            '$match': {
-                'movimiento': {'$eq': movement_name},
-                'relevante': {'$eq': 1},
-                'type': {'$eq': 'hashtag'}
-            }
-        }
+    if 'limited_to_time_window' in kwargs.keys():
+        match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
-        match,
+        {
+            '$match': match
+        },
         {
             '$group': {
                 '_id': '$keyword',
@@ -73,27 +70,22 @@ def get_hashtags_by_movement(db, movement_name, include_candidate=True, candidat
     return aggregate(db, pipeline)
 
 
-def get_unique_users_by_movement(db, movement_name, include_candidate=True, candidate_handler=''):
-    if not include_candidate:
-        if candidate_handler != '':
-            match = {
-                '$match': {
-                    'movimiento': {'$eq': movement_name},
-                    'relevante': {'$eq': 1},
-                    'tweet_obj.user.screen_name': {'$ne': candidate_handler}
-                }
-            }
+def get_unique_users_by_movement(db, movement_name, **kwargs):
+    match = {
+        'movimiento': {'$eq': movement_name},
+        'relevante': {'$eq': 1}
+    }
+    if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+        if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+            match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
         else:
             raise Exception('The parameter candidate_handler cannot be empty')
-    else:
-        match = {
-            '$match': {
-                'movimiento': {'$eq': movement_name},
-                'relevante': {'$eq': 1}
-            }
-        }
+    if 'limited_to_time_window' in kwargs.keys():
+        match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
-        match,
+        {
+            '$match': match
+        },
         {
             '$group': {
                 '_id': '$tweet_obj.user.id_str',
