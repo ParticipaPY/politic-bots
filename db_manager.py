@@ -14,8 +14,9 @@ def get_db():
 
 
 def do_search(db, query, **kwargs):
-    if 'consider_only_relevant' in kwargs.keys() and 'relevante' not in query.keys():
-        query.update({'relevante': 1})
+    if 'consider_only_relevant' in kwargs.keys() and kwargs['consider_only_relevant']:
+        if 'relevante' not in query.keys():
+            query.update({'relevante': 1})
     return db.tweets.find(query)
 
 
