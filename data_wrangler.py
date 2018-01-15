@@ -1,5 +1,6 @@
 from collections import defaultdict
-from utils import get_user_handlers_and_hashtags
+from db_manager import do_search
+from utils import get_user_handlers_and_hashtags, parse_metadata, get_config
 import re
 import logging
 
@@ -102,6 +103,101 @@ class TweetEvaluator:
             self.__mark_relevance_rt(db, tweet_reg)
         return True
 
+    # set to 'user' the type of tweets which keyword contains @
+    def fix_tweet_type(self, db):
+        query = {
+            'type': 'hashtag', 'keyword': {'$regex': '@'}
+        }
+        objs = do_search(db, query)
+        num_fixed_tweets = objs.count()
+        for obj in objs:
+            obj['type'] = 'user'
+            db.tweets.save(obj)
+        return num_fixed_tweets
+
+    def __get_hashtags(self, hashtags_list):
+        hts = []
+        for ht in hashtags_list:
+            hts.append(ht['text'])
+        return hts
+
+    def __get_screen_names(self, screen_names_list):
+        scs = []
+        for sc in screen_names_list:
+            scs.append('@'+sc['screen_name'])
+        return scs
+
+    # fix value of candidatura if hashtags related to a candidacy
+    # are present in the text of the tweet
+    def fix_value_of_candidatura(self, db):
+        myconf = 'config.json'
+        configuration = get_config(myconf)
+        keyword, k_metadata = parse_metadata(configuration['metadata'])
+        interested_data = []
+        # keep metadata that refer to candidacies
+        for kword, kmetada in zip(keyword, k_metadata):
+            if kmetada['candidatura'] != '':
+                kmetada.update({'keyword': kword})
+                interested_data.append(kmetada)
+        query = {
+            'candidatura': ''
+        }
+        # select tweets without candidacy
+        s_objs = do_search(db, query)
+        num_fixed_tweets = 0
+        # iterate over tweets without candidacy and fix those
+        # whose text mention a candidate or have hashtags
+        # related to a candidacy
+        for s_obj in s_objs:
+            party = s_obj['partido_politico']
+            movement = s_obj['movimiento']
+            tweet = s_obj['tweet_obj']
+            relevant_data = []
+            candidacy = ''
+            # keep metadata related to the political party
+            # (and movement) of the tweet (s_obj)
+            for ida in interested_data:
+                if ida['partido_politico'] == party:
+                    if movement != '':
+                        if ida['movimiento'] == movement:
+                            relevant_data.append(ida)
+                    else:
+                        relevant_data.append(ida)
+            if len(relevant_data) > 0:
+                # extract relevant information of the tweet. hashtags and mentions if
+                # the tweet obj has these entities otherwise the text of the tweet
+                if 'retweeted_status' in tweet.keys():
+                    original_tweet = tweet['retweeted_status']
+                else:
+                    original_tweet = tweet
+                if 'entities' in original_tweet.keys():
+                    t_user_mentions = self.__get_screen_names(original_tweet['entities']['user_mentions'])
+                    t_hashtags = self.__get_hashtags(original_tweet['entities']['hashtags'])
+                    # see if the interested keywords are part of the tweet hashtags or mentions
+                    for rd in relevant_data:
+                        if rd['keyword'] in t_user_mentions:
+                            candidacy = rd['candidatura']
+                            break
+                        else:
+                            if rd['keyword'] in t_hashtags:
+                                candidacy = rd['candidatura']
+                                break
+                else:
+                    if 'full_text' in original_tweet.keys():
+                        t_text = tweet['full_text']
+                    else:
+                        t_text = tweet['text']
+                    # see if the interested keywords are present in the text
+                    for rd in relevant_data:
+                        if rd['keyword'] in t_text:
+                            candidacy = rd['candidatura']
+                            break
+                # fix candidacy key
+                if candidacy:
+                    s_obj['candidatura'] = candidacy
+                    num_fixed_tweets += 1
+                    db.tweets.save(s_obj)
+        return num_fixed_tweets
 
 class HashtagDiscoverer:
     user_handlers, hashtags = [], []
@@ -207,16 +303,3 @@ class HashtagDiscoverer:
                     for k in sorted(coccurence_hashtags_dict, key=coccurence_hashtags_dict.get, reverse=True)]
         else:
             return coccurence_hashtags_dict
-
-
-# set to 'user' the type of tweets which keyword contains @
-def fix_tweet_type(db):
-    query = {
-        'type': 'hashtag', 'keyword': {'$regex': '@'}
-    }
-    objs = db.tweets.find(query)
-    num_fixed_tweets = objs.count()
-    for obj in objs:
-        obj['type'] = 'user'
-        db.tweets.save(obj)
-    return num_fixed_tweets
