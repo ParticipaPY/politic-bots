@@ -317,6 +317,6 @@ def compute_tweets_local_date(db, force_computation=False):
     for s_obj in s_objs:
         tweet = s_obj['tweet_obj']
         py_pub_dt = get_py_date(tweet)
-        s_obj['tweet_py_date'] = py_pub_dt
+        s_obj['tweet_py_date'] = datetime.strftime(py_pub_dt, '%m/%d/%y')
         db.tweets.save(s_obj)
     return

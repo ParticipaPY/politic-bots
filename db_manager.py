@@ -226,6 +226,11 @@ def get_tweets_by_date(db, **kwargs):
         'num_tweets': {'$sum': 1}
     }
     project = {
+        'date': {
+            '$dateFromString': {
+                'dateString': '_id'
+            }
+        },
         'count': '$num_tweets'
     }
     if 'partido' in kwargs.keys():
@@ -246,7 +251,7 @@ def get_tweets_by_date(db, **kwargs):
     pipeline = [{'$match': match},
                 {'$group': group},
                 {'$project': project},
-                {'$sort': {'_id': 1}}
+                {'$sort': {'date': 1}}
                 ]
     return aggregate(db, pipeline)
 
@@ -270,7 +275,7 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
     id_tweet = tweet['id_str']
     num_results = do_search(db, {'tweet_obj.id_str': id_tweet}, only_relevant_tws=False).count()
     if num_results == 0:
-        py_date = get_py_date(tweet)
+        py_date = datetime.strftime(get_py_date(tweet), '%m/%d/%y')
         enriched_tweet.update({'tweet_py_date': py_date})
         db.tweets.insert(enriched_tweet)
         logging.info('Inserted tweet: {0}'.format(id_tweet))
