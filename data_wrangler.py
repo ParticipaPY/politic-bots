@@ -326,18 +326,22 @@ class UTC4(tzinfo):
         return "GMT -4"
 
 
-def compute_tweets_local_date(db):
+def get_py_date(tweet):
     PYT = UTC4()
+    str_pub_dt = tweet['created_at']
+    pub_dt = datetime.strptime(str_pub_dt, '%a %b %d %H:%M:%S %z %Y')
+    # convert to paraguayan timezone
+    return pub_dt.astimezone(PYT)
+
+
+def compute_tweets_local_date(db):
     query = {
         'tweet_py_date': {'$exists': 0}
     }
     s_objs = do_search(db, query, only_relevant_tws=False)
     for s_obj in s_objs:
         tweet = s_obj['tweet_obj']
-        str_pub_dt = tweet['created_at']
-        pub_dt = datetime.strptime(str_pub_dt, '%a %b %d %H:%M:%S %z %Y')
-        # convert to paraguayan timezone
-        py_pub_dt = pub_dt.astimezone(PYT)
+        py_pub_dt = get_py_date(tweet)
         s_obj['tweet_py_date'] = datetime.strftime(py_pub_dt, '%m/%d/%y')
         db.tweets.save(s_obj)
     return
