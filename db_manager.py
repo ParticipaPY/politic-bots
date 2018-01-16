@@ -204,7 +204,7 @@ def get_tweets_by_date(db, **kwargs):
         'relevante': {'$eq': 1}
     }
     group = {
-        '_id': '$tweet_date',
+        '_id': '$tweet_py_date',
         'num_tweets': {'$sum': 1}
     }
     project = {
