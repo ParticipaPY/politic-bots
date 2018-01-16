@@ -1,4 +1,3 @@
-from data_wrangler import get_py_date
 from pymongo import MongoClient
 from utils import *
 import logging
