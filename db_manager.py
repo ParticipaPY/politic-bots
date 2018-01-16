@@ -1,3 +1,4 @@
+from data_wrangler import get_py_date
 from pymongo import MongoClient
 from utils import *
 import logging
@@ -270,6 +271,8 @@ def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
     id_tweet = tweet['id_str']
     num_results = do_search(db, {'tweet_obj.id_str': id_tweet}, only_relevant_tws=False).count()
     if num_results == 0:
+        py_date = get_py_date(tweet)
+        enriched_tweet.update({'tweet_py_date': py_date})
         db.tweets.insert(enriched_tweet)
         logging.info('Inserted tweet: {0}'.format(id_tweet))
         return True
