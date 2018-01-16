@@ -3,6 +3,7 @@ import logging
 from utils import get_config
 from sentiment_analyzer import SentimentAnalyzer
 from aylienapiclient import textapi
+from db_manager import DBManager
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
@@ -11,11 +12,13 @@ class SentimentAnalysis:
     config = None
     language = ''
     method = ''
+    __db = None
 
     def __init__(self, method='in_house', language='spanish'):
         self.config = get_config('config.json')
         self.language = language
         self.method = method
+        self.__dbm = DBManager('tweets')
 
     def __get_analyzed_tweet(self, analyzed_tweets, id_tweet_to_search):
         for analyzed_tweet in analyzed_tweets:
@@ -23,17 +26,16 @@ class SentimentAnalysis:
                 return analyzed_tweet
         return None
 
-    def __update_sentimient_rts(self, db, analyzed_tweets):
+    def __update_sentimient_rts(self, analyzed_tweets):
         for analyzed_tweet in analyzed_tweets:
             # search rts of the analyzed tweet
-            rts = db.tweets.find({'tweet_obj.retweeted_status.id_str': analyzed_tweet['id']})
+            rts = self.__db.search({'tweet_obj.retweeted_status.id_str': analyzed_tweet['id']})
             for rt in rts:
                 rt['sentimiento'] = analyzed_tweet['sentimiento']
-                db.tweets.save(rt)
+                self.__dbm.save_record(rt)
 
-    def analyze_sentiments(self, db, query={}):
+    def analyze_sentiments(self, query={}):
         """
-        :param db: MongoDB database
         :param query: dictionary of <key, value> terms to be used in querying the db
         """
         logging.debug('Analyzing sentiment of tweets...')
@@ -42,7 +44,7 @@ class SentimentAnalysis:
             'tweet_obj.retweeted_status': {'$exists': 0},
             'sentimiento': {'$exists': 0},
         })
-        tweet_regs = db.tweets.find(query)
+        tweet_regs = self.__dbm.search(query)
         analyzed_tweets = []
         #limit = 60
         call_counter = 0
@@ -62,7 +64,7 @@ class SentimentAnalysis:
                 else:
                     raise Exception('Sentiment analysis method unknown!')
                 tweet_reg['sentimiento'] = sentiment_result
-                db.tweets.save(tweet_reg)
+                self.__dbm.save_record(tweet_reg)
                 analyzed_tweets.append({
                     'id': tweet['id_str'],
                     'texto': tweet_text,
@@ -72,12 +74,10 @@ class SentimentAnalysis:
                 logging.debug('Call: {0} - Tweet text: {1}, Sentimiento: {2} ({3})'.format(call_counter, tweet_text.encode('utf-8'),
                                                                                sentiment_result['tono'],
                                                                                sentiment_result['score']))
-                #if call_counter >= limit:
-                #    break
         except Exception as e:
             logging.error(e)
         finally:
-            self.__update_sentimient_rts(db, analyzed_tweets)
+            self.__update_sentimient_rts(analyzed_tweets)
 
         return analyzed_tweets
 

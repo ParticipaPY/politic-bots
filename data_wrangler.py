@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from db_manager import do_search
+from db_manager import DBManager
 from utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date
 import re
 import logging
@@ -11,9 +11,11 @@ logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 class TweetEvaluator:
     special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
     hashtags, user_handlers = [], []
+    __dbm = None
 
     def __init__(self):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
+        self.__dbm = DBManager('tweets')
 
     def __is_relevant(self, users_counter, hashtags_counter):
         # a tweet is considered relevant if fulfills one of two
@@ -68,23 +70,25 @@ class TweetEvaluator:
                 else:
                     return self.__assess_tweet_by_text(tweet['text'])
 
-    def __mark_relevance_rt(self, db, tweet_reg):
+    def __mark_relevance_rt(self, tweet_reg):
         logging.info('Marking RTS...')
-        search_res = db.tweets.find({
-                'tweet_obj.retweeted_status': {'$exists': 1},
-                'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
-            })
+        query = {
+            'tweet_obj.retweeted_status': {'$exists': 1},
+            'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
+        }
+        search_res = self.__dbm.search(query, only_relevant_tws=False)
         rts = [doc for doc in search_res]
         for rt in rts:
             rt['relevante'] = tweet_reg['relevante']
-            db.tweets.save(rt)
+            self.__dbm.save_record(rt)
 
-    def identify_relevant_tweets(self, db):
+    def identify_relevant_tweets(self):
         # select only original tweets
-        search_res = db.tweets.find({
+        query = {
             'relevante': {'$exists': 0},
             'tweet_obj.retweeted_status': {'$exists': 0}
-        })
+        }
+        search_res = self.__dbm.search(query, only_relevant_tws=False)
         tweet_regs = [doc for doc in search_res]
         logging.info('Identifying relevant tweets...')
         total_tweets = len(tweet_regs)
@@ -99,21 +103,21 @@ class TweetEvaluator:
             else:
                 tweet_reg['relevante'] = 0
                 logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
-            db.tweets.save(tweet_reg)
+            self.__dbm.save_record(tweet_reg)
             # copy the relevance flag to rts
-            self.__mark_relevance_rt(db, tweet_reg)
+            self.__mark_relevance_rt(tweet_reg)
         return True
 
     # set to 'user' the type of tweets which keyword contains @
-    def fix_tweet_type(self, db):
+    def fix_tweet_type(self):
         query = {
             'type': 'hashtag', 'keyword': {'$regex': '@'}
         }
-        objs = do_search(db, query)
+        objs = self.__dbm.search(query)
         num_fixed_tweets = objs.count()
         for obj in objs:
             obj['type'] = 'user'
-            db.tweets.save(obj)
+            self.__dbm.save_record(obj)
         return num_fixed_tweets
 
     def __get_hashtags(self, hashtags_list):
@@ -130,7 +134,7 @@ class TweetEvaluator:
 
     # fix value of candidatura if hashtags related to a candidacy
     # are present in the text of the tweet
-    def fix_value_of_candidatura(self, db):
+    def fix_value_of_candidatura(self):
         myconf = 'config.json'
         configuration = get_config(myconf)
         keyword, k_metadata = parse_metadata(configuration['metadata'])
@@ -144,7 +148,7 @@ class TweetEvaluator:
             'candidatura': ''
         }
         # select tweets without candidacy
-        s_objs = do_search(db, query)
+        s_objs = self.__dbm.search(query)
         num_fixed_tweets = 0
         # iterate over tweets without candidacy and fix those
         # whose text mention a candidate or have hashtags
@@ -197,14 +201,16 @@ class TweetEvaluator:
                 if candidacy:
                     s_obj['candidatura'] = candidacy
                     num_fixed_tweets += 1
-                    db.tweets.save(s_obj)
+                    self.__dbm.save_record(s_obj)
         return num_fixed_tweets
 
 class HashtagDiscoverer:
     user_handlers, hashtags = [], []
+    __dbm = None
 
     def __init__(self):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
+        self.__dbm = DBManager('tweets')
 
     def discover_hashtags_by_text(self, tweet_text):
         new_hashtags = set()
@@ -226,8 +232,8 @@ class HashtagDiscoverer:
                 new_hashtags.add('#' + tweet_hashtag['text'])
         return new_hashtags
 
-    def discover_new_hashtags(self, db, query={}, sorted_results=True):
-        tweet_regs = db.tweets.find(query)
+    def discover_new_hashtags(self, query={}, sorted_results=True):
+        tweet_regs = self.__dbm.search(query)
         hashtags, user_handlers = get_user_handlers_and_hashtags()
         new_hashtags = defaultdict(int)
         for tweet_reg in tweet_regs:
@@ -278,9 +284,9 @@ class HashtagDiscoverer:
         else:
             return None
 
-    def coccurence_hashtags(self, db, query={}, sorted_results=True):
+    def coccurence_hashtags(self, query={}, sorted_results=True):
         coccurence_hashtags_dict = defaultdict(int)
-        tweet_regs = db.tweets.find(query)
+        tweet_regs = self.__dbm.search(query)
         hashtags, user_handlers = get_user_handlers_and_hashtags()
         for tweet_reg in tweet_regs:
             tweet = tweet_reg['tweet_obj']
@@ -306,17 +312,18 @@ class HashtagDiscoverer:
             return coccurence_hashtags_dict
 
 
-def compute_tweets_local_date(db, force_computation=False):
+def compute_tweets_local_date(force_computation=False):
+    dbm = DBManager('tweets')
     if force_computation:
         query = {}
     else:
         query = {
             'tweet_py_date': {'$exists': 0}
         }
-    s_objs = do_search(db, query, only_relevant_tws=False)
+    s_objs = dbm.search(query, only_relevant_tws=False)
     for s_obj in s_objs:
         tweet = s_obj['tweet_obj']
         py_pub_dt = get_py_date(tweet)
         s_obj['tweet_py_date'] = datetime.strftime(py_pub_dt, '%m/%d/%y')
-        db.tweets.save(s_obj)
+        dbm.save_record(s_obj)
     return

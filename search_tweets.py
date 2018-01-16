@@ -1,7 +1,7 @@
 import tweepy
 import time
 import logging
-from db_manager import add_tweet, get_db
+from db_manager import DBManager
 from data_wrangler import TweetEvaluator
 from utils import get_config, parse_metadata
 
@@ -9,9 +9,9 @@ logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 # Add tweets to DB
-def process_and_store(db, tweet, keyword, ktype, k_metadata):
+def process_and_store(dbm, tweet, keyword, ktype, k_metadata):
     date = time.strftime("%m/%d/%y")
-    add_tweet(db, tweet._json, ktype, keyword, date, k_metadata)
+    dbm.add_tweet(tweet._json, ktype, keyword, date, k_metadata)
 
 
 # Search tweets
@@ -49,13 +49,13 @@ if __name__ == "__main__":
     myconf = 'config.json'
     configuration = get_config(myconf)
     keyword, k_metadata = parse_metadata(configuration['metadata'])
-    db = get_db()
+    dbm = DBManager('tweets')
     for i, j in zip(keyword, k_metadata):
         logging.info('Searching tweets for %s' % i)
         if '@' in i:
-            twitter_search(db, i, configuration, 'user', j)
+            twitter_search(dbm, i, configuration, 'user', j)
         else:
-            twitter_search(db, i, configuration, 'hashtag', j)
+            twitter_search(dbm, i, configuration, 'hashtag', j)
     logging.info('Evaluating the relevance of the new tweets...')
     te = TweetEvaluator()
-    te.identify_relevant_tweets(db)
+    te.identify_relevant_tweets()
