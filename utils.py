@@ -65,4 +65,5 @@ def get_py_date(tweet):
     str_pub_dt = tweet['created_at']
     pub_dt = datetime.strptime(str_pub_dt, '%a %b %d %H:%M:%S %z %Y')
     # convert to paraguayan timezone
-    return pub_dt.astimezone(PYT)
+    py_pub_dt = pub_dt.astimezone(PYT)
+    return py_pub_dt.date()

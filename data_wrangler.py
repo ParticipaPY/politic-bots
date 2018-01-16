@@ -306,14 +306,17 @@ class HashtagDiscoverer:
             return coccurence_hashtags_dict
 
 
-def compute_tweets_local_date(db):
-    query = {
-        'tweet_py_date': {'$exists': 0}
-    }
+def compute_tweets_local_date(db, force_computation=False):
+    if force_computation:
+        query = {}
+    else:
+        query = {
+            'tweet_py_date': {'$exists': 0}
+        }
     s_objs = do_search(db, query, only_relevant_tws=False)
     for s_obj in s_objs:
         tweet = s_obj['tweet_obj']
         py_pub_dt = get_py_date(tweet)
-        s_obj['tweet_py_date'] = datetime.strftime(py_pub_dt, '%m/%d/%y')
+        s_obj['tweet_py_date'] = py_pub_dt
         db.tweets.save(s_obj)
     return
