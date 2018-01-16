@@ -199,6 +199,40 @@ def get_tweet_places(db):
     return aggregate(db, pipeline)
 
 
+def get_tweets_by_date(db, **kwargs):
+    match = {
+        'relevante': {'$eq': 1}
+    }
+    group = {
+        '_id': '$tweet_date',
+        'num_tweets': {'$sum': 1}
+    }
+    project = {
+        'count': '$num_tweets'
+    }
+    if 'partido' in kwargs.keys():
+        match.update({'partido_politico': {'$eq': kwargs['partido']}})
+        group.update({'partido_politico': {'$last': kwargs['partido']}})
+        project.update({'partido_politico': '$partido_politico'})
+    if 'movimiento' in kwargs.keys():
+        match.update({'movimiento': {'$eq': kwargs['movimiento']}})
+        group.update({'movimiento': {'$last': kwargs['movimiento']}})
+        project.update({'movimiento': '$movimiento'})
+    if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+        if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+            match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+        else:
+            logging.error('The parameter candidate_handler cannot be empty')
+    if 'limited_to_time_window' in kwargs.keys():
+        match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+    pipeline = [{'$match': match},
+                {'$group': group},
+                {'$project': project},
+                {'$sort': {'_id': 1}}
+                ]
+    return aggregate(db, pipeline)
+
+
 def add_tweet(db, tweet, type_k, keyword, extraction_date, k_metadata):
     """
     Save a tweet in the database
