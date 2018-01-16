@@ -326,7 +326,7 @@ class UTC4(tzinfo):
         return "GMT -4"
 
 
-def extract_date_from_tweets(db):
+def compute_tweets_local_date(db):
     PYT = UTC4()
     query = {
         'tweet_py_date': {'$exists': 0}
