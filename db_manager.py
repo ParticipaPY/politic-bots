@@ -228,7 +228,7 @@ def get_tweets_by_date(db, **kwargs):
     project = {
         'date': {
             '$dateFromString': {
-                'dateString': '_id'
+                'dateString': '$_id'
             }
         },
         'count': '$num_tweets'
