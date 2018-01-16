@@ -160,41 +160,59 @@ def get_id_duplicated_tweets(db):
     return aggregate(db, pipeline)
 
 
-def get_user_and_location(db):
+def get_user_and_location(db, **kwargs):
+    match = {
+        'relevante': {'$eq': 1}
+    }
+    group = {
+        '_id': '$tweet_obj.user.id_str',
+        'location': {'$first': '$tweet_obj.user.location'},
+        'description': {'$first': '$tweet_obj.user.description'},
+        'time_zone': {'$first': '$tweet_obj.user.time_zone'}
+    }
+    if 'partido' in kwargs.keys():
+        match.update({'partido_politico': {'$eq': kwargs['partido']}})
+        group.update({'partido_politico': {'$last': kwargs['partido']}})
+    if 'movimiento' in kwargs.keys():
+        match.update({'movimiento': {'$eq': kwargs['movimiento']}})
+        group.update({'movimiento': {'$last': kwargs['movimiento']}})
+    if 'limited_to_time_window' in kwargs.keys():
+        match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
-        {
-          '$match': {
-              'relevante': {'$eq': 1}
-          }
-        },
-        {
-            '$group': {
-                '_id': '$tweet_obj.user.id_str',
-                'location': {'$first': '$tweet_obj.user.location'},
-                'description': {'$first': '$tweet_obj.user.description'},
-                'time_zone': {'$first': '$tweet_obj.user.time_zone'}
-            }
-        }
+        {'$match': match},
+        {'$group': group},
+        {'$sort': {'num_users': -1}}
     ]
     return aggregate(db, pipeline)
 
 
-def get_tweet_places(db):
+def get_tweet_places(db, **kwargs):
+    match = {
+        'relevante': {'$eq': 1}
+    }
+    group = {
+        'num_tweets': {'$sum': 1}
+    }
+    if 'location_reference' in kwargs.keys():
+        if kwargs['location_reference'] == 'place':
+            group.update({'_id': '$tweet_obj.place.country'})
+        else:
+            group.update({'_id': '$tweet_obj.user.time_zone'})
+    else:
+        logging.error('Missing location_reference!')
+        return None
+    if 'partido' in kwargs.keys():
+        match.update({'partido_politico': {'$eq': kwargs['partido']}})
+        group.update({'partido_politico': {'$last': kwargs['partido']}})
+    if 'movimiento' in kwargs.keys():
+        match.update({'movimiento': {'$eq': kwargs['movimiento']}})
+        group.update({'movimiento': {'$last': kwargs['movimiento']}})
+    if 'limited_to_time_window' in kwargs.keys():
+        match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
     pipeline = [
-        {
-            '$match': {
-                'relevante': {'$eq': 1}
-            }
-        },
-        {
-            '$group': {
-                '_id': '$tweet_obj.place.country',
-                'num_users': {'$sum': 1}
-            }
-        },
-        {
-            '$sort': {'num_users': -1}
-        }
+        {'$match': match},
+        {'$group': group},
+        {'$sort': {'num_tweets': -1}}
     ]
     return aggregate(db, pipeline)
 
