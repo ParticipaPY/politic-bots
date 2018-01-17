@@ -8,6 +8,8 @@ logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 class NetworkAnalyzer:
     __dbm_tweets = None
     __dbm_users = None
+    nodes = set()
+    unknown_users = set()
 
     def __init__(self):
         self.__dbm_tweets = DBManager('tweets')
@@ -44,51 +46,56 @@ class NetworkAnalyzer:
             self.__dbm_users.update_record(filter_query, db_user, create_if_doesnt_exist=True)
 
     def __get_ffratio(self, screen_name):
-        user = self.__dbm_users.find_record({'screen_name': screen_name})
-        if user:
-            return user['ff_ratio']
-        else:
-            query = {
-                '$or': [
-                    {'tweet_obj.user.screen_name': screen_name},
-                    {'tweet_obj.retweeted_status.user.screen_name': screen_name},
-                    {'tweet_obj.quoted_status.user.screen_name': screen_name}
-                ]
-            }
-            tweet_obj = self.__dbm_tweets.find_record(query)
-            if tweet_obj:
-                tweet = tweet_obj['tweet_obj']
-                if 'retweeted_status' in tweet.keys():
-                    return self.__computer_ff_ratio(tweet['retweeted_status']['user']['friends_count'],
-                                                    tweet['retweeted_status']['user']['followers_count'])
-                elif 'quoted_status' in tweet.keys():
-                    return self.__computer_ff_ratio(tweet['quoted_status']['user']['friends_count'],
-                                                    tweet['quoted_status']['user']['followers_count'])
-                else:
-                    return self.__computer_ff_ratio(tweet['user']['friends_count'],
-                                                    tweet['user']['followers_count'])
+        query = {
+            '$or': [
+                {'tweet_obj.user.screen_name': screen_name},
+                {'tweet_obj.retweeted_status.user.screen_name': screen_name},
+                {'tweet_obj.quoted_status.user.screen_name': screen_name}
+            ]
+        }
+        tweet_obj = self.__dbm_tweets.find_record(query)
+        if tweet_obj:
+            tweet = tweet_obj['tweet_obj']
+            if 'retweeted_status' in tweet.keys():
+                return self.__computer_ff_ratio(tweet['retweeted_status']['user']['friends_count'],
+                                                tweet['retweeted_status']['user']['followers_count'])
+            elif 'quoted_status' in tweet.keys():
+                return self.__computer_ff_ratio(tweet['quoted_status']['user']['friends_count'],
+                                                tweet['quoted_status']['user']['followers_count'])
             else:
-                return None
+                return self.__computer_ff_ratio(tweet['user']['friends_count'],
+                                                tweet['user']['followers_count'])
+        else:
+            return None
 
-    def generate_network(self, subnet_query={}):
-        logging.info('Generating the network, please wait_')
+    def generate_network(self, subnet_query={}, depth=1):
+        logging.info('Generating the network, it can take several minutes, please wait_')
         users = self.__dbm_users.search(subnet_query, only_relevant_tws=False)
-        unknown_users = set()
         # for each user generate his/her edges
         for user in users:
+            self.nodes.add(user['screen_name'])
             for interacted_user, interactions in user['interactions'].items():
-                iuser_ffratio = self.__get_ffratio(interacted_user)
-                if not iuser_ffratio:
-                    unknown_users.add(interacted_user)
-                    continue
+                self.nodes.add(interacted_user)
+                iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
+                if not iuser:
+                    if depth > 1:
+                        iuser_ffratio = self.__get_ffratio(interacted_user)
+                        if not iuser_ffratio:
+                            self.unknown_users.add(interacted_user)
+                            continue
+                    else:
+                        self.unknown_users.add(interacted_user)
+                        continue
+                else:
+                    iuser_ffratio = iuser['ff_ratio']
                 edge = {
                     'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': user['ff_ratio']},
                     'nodeB': {'screen_name': interacted_user, 'ff_ratio': iuser_ffratio},
                     'weight': interactions['total']
                 }
                 self.__network.append(edge)
-        logging.info('Dont have information of these users', unknown_users)
-        logging.info('Unknown users {0}'.format(len(unknown_users)))
+        logging.info('Created a network of {0} nodes and {1} edges'.format(len(self.nodes), len(self.__network)))
+        logging.info('Unknown users {0}'.format(len(self.unknown_users)))
 
     def create_graph(self):
         graph = net.DiGraph()
