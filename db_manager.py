@@ -1,3 +1,4 @@
+from collections import defaultdict
 from pymongo import MongoClient
 from utils import *
 import logging
@@ -14,9 +15,20 @@ class DBManager:
         client = MongoClient(host+':'+port)
         config = get_config(config_fn)
         self.__db = client[config['db_name']]
+        self.__collection = collection
+
+    def clear_collection(self):
+        self.__db[self.__collection].remove({})
 
     def save_record(self, record_to_save):
         self.__db[self.__collection].insert(record_to_save)
+
+    def find_record(self, query):
+        return self.__db[self.__collection].find_one(query)
+
+    def update_record(self, filter_query, new_values, create_if_doesnt_exist=False):
+        return self.__db[self.__collection].update_one(filter_query, {'$set': new_values},
+                                                       upsert=create_if_doesnt_exist)
 
     def search(self, query, only_relevant_tws=True):
         if only_relevant_tws:
@@ -36,7 +48,7 @@ class DBManager:
         return self.search(query)
 
     def aggregate(self, pipeline):
-        return [doc for doc in self.__db[self.__collection].aggregate(pipeline)]
+        return [doc for doc in self.__db[self.__collection].aggregate(pipeline, allowDiskUse=True)]
 
     def get_hashtags_by_movement(self, movement_name, **kwargs):
         match = {
@@ -73,11 +85,14 @@ class DBManager:
         ]
         return self.aggregate(pipeline)
 
-    def get_unique_users_by_movement(self, movement_name, **kwargs):
+    def get_unique_users(self, **kwargs):
         match = {
-            'movimiento': {'$eq': movement_name},
             'relevante': {'$eq': 1}
         }
+        if 'partido' in kwargs.keys():
+            match.update({'partido_politico': {'$eq': kwargs['partido']}})
+        if 'movimiento' in kwargs.keys():
+            match.update({'movimiento': {'$eq': kwargs['movimiento']}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
@@ -110,9 +125,17 @@ class DBManager:
                     'listed_count': {'$last': '$tweet_obj.user.listed_count'},
                     'tweets_count': {'$sum': 1},
                     'tweets': {'$push': {'text': '$tweet_obj.text',
+                                         'mentions': '$tweet_obj.entities.user_mentions',
                                          'quote': '$tweet_obj.quoted_status_id',
+                                         'quoted_user_id': '$tweet_obj.quoted_status.user.screen_name',
                                          'reply': '$tweet_obj.in_reply_to_status_id_str',
-                                         'retweet': '$tweet_obj.retweeted_status.id_str'}}
+                                         'replied_user_id': '$tweet_obj.in_reply_to_screen_name',
+                                         'retweet': '$tweet_obj.retweeted_status.id_str',
+                                         'retweeted_user_id': '$tweet_obj.retweeted_status.user.screen_name'
+                                         }
+                                },
+                    'party': {'$first': '$partido_politico'},
+                    'movement': {'$first': '$movimiento'}
                 }
             },
             {
@@ -121,22 +144,65 @@ class DBManager:
         ]
         results = self.aggregate(pipeline)
         # calculate the number of rts, rps, and qts
+        # compute the users' interactions
         for result in results:
             ret_tweets = result['tweets']
             rt_count = 0
             qt_count = 0
             rp_count = 0
+            interactions = defaultdict(dict)
             for tweet in ret_tweets:
                 if 'retweet' in tweet.keys():
                     rt_count += 1
+                    user_id = tweet['retweeted_user_id']
+                    if user_id in interactions.keys():
+                        interactions[user_id]['total'] += 1
+                        if 'retweets' in interactions[user_id].keys():
+                            interactions[user_id]['retweets'] += 1
+                        else:
+                            interactions[user_id].update({'retweets': 1})
+                    else:
+                        interactions[user_id] = {'retweets': 1, 'total': 1}
                 elif 'quote' in tweet.keys():
                     qt_count += 1
-                elif tweet['reply'] != 'null':
+                    user_id = tweet['quoted_user_id']
+                    if user_id in interactions.keys():
+                        interactions[user_id]['total'] += 1
+                        if 'quotes' in interactions[user_id].keys():
+                            interactions[user_id]['quotes'] += 1
+                        else:
+                            interactions[user_id].update({'quotes': 1})
+                    else:
+                        interactions[user_id] = {'quotes': 1, 'total': 1}
+                elif tweet['reply'] or tweet['replied_user_id']:
                     rp_count += 1
+                    user_id = tweet['replied_user_id']
+                    if user_id in interactions.keys():
+                        interactions[user_id]['total'] += 1
+                        if 'replies' in interactions[user_id].keys():
+                            interactions[user_id]['replies'] += 1
+                        else:
+                            interactions[user_id].update({'replies': 1})
+                    else:
+                        interactions[user_id] = {'replies': 1, 'total': 1}
+                else:
+                    if 'mentions' in tweet.keys():
+                        mentions = tweet['mentions']
+                        for mention in mentions:
+                            user_id = mention['screen_name']
+                            if user_id in interactions.keys():
+                                interactions[user_id]['total'] += 1
+                                if 'mentions' in interactions[user_id].keys():
+                                    interactions[user_id]['mentions'] += 1
+                                else:
+                                    interactions[user_id].update({'mentions': 1})
+                            else:
+                                interactions[user_id] = {'mentions': 1, 'total': 1}
             result['retweets_count'] = rt_count
             result['quotes_count'] = qt_count
             result['replies_count'] = rp_count
             result['original_count'] = result['tweets_count'] - (rt_count+qt_count+rp_count)
+            result['interactions'] = interactions
         return results
 
     def get_id_duplicated_tweets(self):
