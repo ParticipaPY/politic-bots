@@ -19,10 +19,12 @@ def parse_metadata(kfile):
         for line in kfile:
             keyword.append(line['keyword'])
             k_metadata.append({
-                'partido_politico': line['partido_politico'],
-                'movimiento': line['movimiento'],
-                'lider_movimiento': line['lider_movimiento'],
-                'candidatura': line['candidatura']
+                'partido_politico ': line['partido_politico'],
+                'candidatura': line['candidatura'],
+                'alianza': line['alianza'],
+                'puesto': line['puesto'],
+                'region': line['region'],
+                'tipo_keyword': line['tipo_keyword']
             })
     return keyword, k_metadata
 

@@ -1,5 +1,6 @@
 {
-  "metadata": "kwd_metadata.csv",
+  "db_name": "db_name",
+  "metadata": "generales.csv",
   "tweets_qry": 100,
   "twitter": {
     "consumer_key":"YOurCoNsuMerKEy",

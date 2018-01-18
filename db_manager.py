@@ -14,6 +14,7 @@ class DBManager:
         client = MongoClient(host+':'+port)
         config = get_config(config_fn)
         self.__db = client[config['db_name']]
+        self.__collection = collection
 
     def save_record(self, record_to_save):
         self.__db[self.__collection].insert(record_to_save)
