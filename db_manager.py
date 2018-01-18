@@ -31,8 +31,9 @@ class DBManager:
                                                        upsert=create_if_doesnt_exist)
 
     def search(self, query, only_relevant_tws=True):
-        if only_relevant_tws:
-            query.update({'relevante': 1})
+        if self.__collection == 'tweets':
+            if only_relevant_tws:
+                query.update({'relevante': 1})
         return self.__db[self.__collection].find(query)
 
     def find_tweets_by_author(self, author_screen_name, **kwargs):
