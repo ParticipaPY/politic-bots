@@ -1,19 +1,25 @@
 from collections import defaultdict
 from db_manager import DBManager
+from operator import itemgetter
+import json
 import logging
 import networkx as net
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
+
 class NetworkAnalyzer:
     __dbm_tweets = None
     __dbm_users = None
-    nodes = set()
-    unknown_users = set()
+    __dbm_networks = None
+    __network = None
+    __nodes = set()
+    __unknown_users = set()
 
     def __init__(self):
         self.__dbm_tweets = DBManager('tweets')
         self.__dbm_users = DBManager('users')
+        self.__dbm_networks = DBManager('networks')
         self.__network = []
 
     def __computer_ff_ratio(self, friends, followers):
@@ -69,38 +75,52 @@ class NetworkAnalyzer:
             return None
 
     def generate_network(self, subnet_query={}, depth=1):
-        logging.info('Generating the network, it can take several minutes, please wait_')
-        users = self.__dbm_users.search(subnet_query, only_relevant_tws=False)
-        # for each user generate his/her edges
-        for user in users:
-            self.nodes.add(user['screen_name'])
-            for interacted_user, interactions in user['interactions'].items():
-                self.nodes.add(interacted_user)
-                iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
-                if not iuser:
-                    if depth > 1:
-                        iuser_ffratio = self.__get_ffratio(interacted_user)
-                        if not iuser_ffratio:
-                            self.unknown_users.add(interacted_user)
+        ret_net = self.__dbm_networks.search({'query': subnet_query, 'depth': depth})
+        # the net doesn't exist yet, let's create it
+        if ret_net.count() == 0:
+            logging.info('Generating the network, it can take several minutes, please wait_')
+            users = self.__dbm_users.search(subnet_query)
+            # for each user generate his/her edges
+            for user in users:
+                self.__nodes.add(user['screen_name'])
+                for interacted_user, interactions in user['interactions'].items():
+                    self.__nodes.add(interacted_user)
+                    iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
+                    if not iuser:
+                        if depth > 1:
+                            iuser_ffratio = self.__get_ffratio(interacted_user)
+                            if not iuser_ffratio:
+                                self.__unknown_users.add(interacted_user)
+                                continue
+                        else:
+                            self.__unknown_users.add(interacted_user)
                             continue
                     else:
-                        self.unknown_users.add(interacted_user)
-                        continue
-                else:
-                    iuser_ffratio = iuser['ff_ratio']
-                edge = {
-                    'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': user['ff_ratio']},
-                    'nodeB': {'screen_name': interacted_user, 'ff_ratio': iuser_ffratio},
-                    'weight': interactions['total']
-                }
-                self.__network.append(edge)
-        logging.info('Created a network of {0} nodes and {1} edges'.format(len(self.nodes), len(self.__network)))
-        logging.info('Unknown users {0}'.format(len(self.unknown_users)))
+                        iuser_ffratio = iuser['ff_ratio']
+                    edge = {
+                        'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': user['ff_ratio']},
+                        'nodeB': {'screen_name': interacted_user, 'ff_ratio': iuser_ffratio},
+                        'weight': interactions['total']
+                    }
+                    self.__network.append(edge)
+            logging.info('Created a network of {0} nodes and {1} edges'.format(len(self.__nodes), len(self.__network)))
+            logging.info('Unknown users {0}'.format(len(self.__unknown_users)))
+            # save the net for posterior usage
+            dbm_net = {'query': subnet_query, 'depth': depth, 'nodes': self.__nodes, 'network': self.__network,
+                       'unknown_users': self.__unknown_users}
+            # serializing objects
+            dbm_net_json = json.dumps(dbm_net)
+            self.__dbm_networks.save_record(dbm_net_json)
+        else:
+            self.__network = json.loads(ret_net['network'])
+            self.__nodes = json.loads(ret_net['nodes'])
+            logging.info('Obtained a network of {0} nodes and {1} edges'.format(len(self.__nodes), len(self.__network)))
 
     def create_graph(self):
+        logging.info('Creating the graph, please wait_')
         graph = net.DiGraph()
         ff_ratio = defaultdict(lambda: 0.0)
-        # Create a directed graph from the edge data and populate a dictionary
+        # create a directed graph from the edge data and populate a dictionary
         # with the friends/followers ratio
         for edge in self.__network:
             user = edge['nodeA']['screen_name']
@@ -109,7 +129,18 @@ class NetworkAnalyzer:
             u_ff_ratio = edge['nodeA']['ff_ratio']
             graph.add_edge(user, interacted_with, weight=int(num_interactions))
             ff_ratio[user] = float(u_ff_ratio)
-        return graph, ff_ratio
+        # obtain central node
+        degrees = net.degree(graph)
+        (central_node, max_degree) = sorted(degrees, key=itemgetter(1))[-1]
+        # center the graph around the central node
+        ego_graph = net.DiGraph(net.ego_graph(graph, central_node))
+        return ego_graph, ff_ratio
+
+    def get_graph_nodes(self):
+        return len(self.__nodes)
+
+    def get_graph_edges(self):
+        return len(self.__network)
 
         # compute layout
         # pos = net.spring_layout(graph)
