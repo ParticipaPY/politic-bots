@@ -85,6 +85,41 @@ class DBManager:
         ]
         return self.aggregate(pipeline)
 
+    def get_hashtags_by_candidate(self, candidate_name, **kwargs):
+        match = {
+            'candidatura': {'$eq': candidate_name},
+            'relevante': {'$eq': 1},
+            'type': {'$eq': 'hashtag'}
+        }
+        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+            else:
+                logging.error('The parameter candidate_handler cannot be empty')
+        if 'limited_to_time_window' in kwargs.keys():
+            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        pipeline = [
+            {
+                '$match': match
+            },
+            {
+                '$group': {
+                    '_id': '$keyword',
+                    'num_tweets': {'$sum': 1}
+                }
+            },
+            {
+                '$project': {
+                    'hastag': '$keyword',
+                    'count': '$num_tweets'
+                }
+            },
+            {
+                '$sort': {'count': -1}
+            }
+        ]
+        return self.aggregate(pipeline)
+
     def get_unique_users(self, **kwargs):
         match = {
             'relevante': {'$eq': 1}
@@ -93,6 +128,8 @@ class DBManager:
             match.update({'partido_politico': {'$eq': kwargs['partido']}})
         if 'movimiento' in kwargs.keys():
             match.update({'movimiento': {'$eq': kwargs['movimiento']}})
+        if 'candidatura' in kwargs.keys():
+            match.update({'candidatura': {'$eq': kwargs['candidatura']}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
