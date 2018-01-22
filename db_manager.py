@@ -17,6 +17,9 @@ class DBManager:
         self.__db = client[config['db_name']]
         self.__collection = collection
 
+    def num_records_collection(self):
+        return self.__db[self.__collection].find({}).count()
+
     def clear_collection(self):
         self.__db[self.__collection].remove({})
 
@@ -120,8 +123,8 @@ class DBManager:
                     'time_zone': {'$first': '$tweet_obj.user.time_zone'},
                     'geo_enabled': {'$first': '$tweet_obj.user.geo_enabled'},
                     'language': {'$first': '$tweet_obj.user.lang'},
-                    'default_theme_background': {'$first': '$tweet_obj.user.default_profile'},
-                    'default_profile_image': {'$first': '$tweet_obj.user.default_profile_image'},
+                    'default_theme_background': {'$last': '$tweet_obj.user.default_profile'},
+                    'default_profile_image': {'$last': '$tweet_obj.user.default_profile_image'},
                     'favourites_count': {'$last': '$tweet_obj.user.favourites_count'},
                     'listed_count': {'$last': '$tweet_obj.user.listed_count'},
                     'tweets_count': {'$sum': 1},
@@ -134,9 +137,7 @@ class DBManager:
                                          'retweet': '$tweet_obj.retweeted_status.id_str',
                                          'retweeted_user_id': '$tweet_obj.retweeted_status.user.screen_name'
                                          }
-                                },
-                    'party': {'$first': '$partido_politico'},
-                    'movement': {'$first': '$movimiento'}
+                                }
                 }
             },
             {
@@ -247,6 +248,50 @@ class DBManager:
             {'$match': match},
             {'$group': group},
             {'$sort': {'num_users': -1}}
+        ]
+        return self.aggregate(pipeline)
+
+    def get_movement_user(self, username):
+        match = {
+            'tweet_obj.user.screen_name': {'$eq': username},
+            'relevante': {'$eq': 1}
+        }
+        group = {
+            '_id': '$movimiento',
+            'count': {'$sum': 1}
+        }
+        project = {
+            'movimiento': '$_id',
+            '_id': 0,
+            'count': 1
+        }
+        pipeline = [
+            {'$match': match},
+            {'$group': group},
+            {'$project': project},
+            {'$sort': {'count': -1}}
+        ]
+        return self.aggregate(pipeline)
+
+    def get_party_user(self, username):
+        match = {
+            'tweet_obj.user.screen_name': {'$eq': username},
+            'relevante': {'$eq': 1}
+        }
+        group = {
+            '_id': '$partido',
+            'count': {'$sum': 1}
+        }
+        project = {
+            'partido': '$_id',
+            '_id': 0,
+            'count': 1
+        }
+        pipeline = [
+            {'$match': match},
+            {'$group': group},
+            {'$project': project},
+            {'$sort': {'count': -1}}
         ]
         return self.aggregate(pipeline)
 
