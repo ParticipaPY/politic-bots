@@ -49,10 +49,10 @@ class NetworkAnalyzer:
             }
             # Assign the party and movement to the party and movement that are more related to the user
             user_party = self.__dbm_tweets.get_party_user(user['screen_name'])[0]
-            db_user.update({'party': user_party})
+            db_user.update({'party': user_party['partido']})
             if user_party and user_party != '':
                 user_movement = self.__dbm_tweets.get_movement_user(user['screen_name'])[0]
-                db_user.update({'movement': user_movement})
+                db_user.update({'movement': user_movement['movimiento']})
             else:
                 db_user.update({'movement': ''})
             filter_query = {'screen_name': user['screen_name']}
