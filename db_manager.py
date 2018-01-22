@@ -316,7 +316,7 @@ class DBManager:
             'relevante': {'$eq': 1}
         }
         group = {
-            '_id': '$partido',
+            '_id': '$partido_politico',
             'count': {'$sum': 1}
         }
         project = {
