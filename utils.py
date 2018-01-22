@@ -18,12 +18,7 @@ def parse_metadata(kfile):
         kfile = csv.DictReader(f)
         for line in kfile:
             keyword.append(line['keyword'])
-            k_metadata.append({
-                'partido_politico': line['partido_politico'],
-                'movimiento': line['movimiento'],
-                'lider_movimiento': line['lider_movimiento'],
-                'candidatura': line['candidatura']
-            })
+            k_metadata.append(line)
     return keyword, k_metadata
 
 
