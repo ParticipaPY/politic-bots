@@ -413,18 +413,50 @@ class DBManager:
         }
         project = {
             '_id': 0,
-            'id': '$tweet_obj.id_str',
-            'screen_name': '$tweet_obj.user.screen_name',
-            'tweet': '$tweet_obj.text',
-            'rt': '$tweet_obj.retweeted_status.text',
-            'qt': '$tweet_obj.quoted_status.text',
-            'rp': '$tweet_obj.in_reply_to_status_id_str'
+            'tweet': '$tweet_obj',
+            'screen_name': '$tweet_obj.user.screen_name'
         }
         pipeline = [
             {'$match': match},
             {'$project': project}
         ]
-        return self.aggregate(pipeline)
+        search_results = self.aggregate(pipeline)
+        results = {'rts': [], 'qts': [], 'rps': [], 'ori': []}
+        for result in search_results:
+            tweet = result['tweet']
+            if 'full_text' in tweet.keys():
+                text_tweet = tweet['full_text']
+            else:
+                text_tweet = tweet['text']
+            if 'retweeted_status' in tweet.keys():
+                if 'full_text' in tweet['retweeted_status'].keys():
+                    text_tweet = tweet['retweeted_status']['full_text']
+                else:
+                    text_tweet = tweet['retweeted_status']['text']
+                results['rts'].append({
+                    'author': tweet['retweeted_status']['user']['screen_name'],
+                    'original_text': text_tweet,
+                    'id_original_text': tweet['retweeted_status']['id_str']
+                })
+            elif 'quoted_status' in tweet.keys():
+                if 'full_text' in tweet['quoted_status'].keys():
+                    text_tweet = tweet['quoted_status']['full_text']
+                else:
+                    text_tweet = tweet['quoted_status']['text']
+                results['rts'].append({
+                    'author': tweet['quoted_status']['user']['screen_name'],
+                    'original_text': text_tweet,
+                    'id_original_text': tweet['quoted_status']['id_str']
+                })
+            elif tweet['in_reply_to_status_id_str']:
+                results['rps'].append({
+                    'replied_user': tweet['in_reply_to_user_id_str'],
+                    'reply': text_tweet,
+                    'id_tweet': tweet['id_str']
+                })
+            else:
+                results['ori'].append({'text': text_tweet, 'id_tweet': tweet['id_str']})
+        return results
 
     def add_tweet(self, tweet, type_k, keyword, extraction_date, k_metadata):
         """
