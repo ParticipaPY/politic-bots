@@ -58,7 +58,7 @@ class NetworkAnalyzer:
             filter_query = {'screen_name': user['screen_name']}
             self.__dbm_users.update_record(filter_query, db_user, create_if_doesnt_exist=True)
 
-    def generate_network(self, subnet_query={}, depth=1):
+    def generate_network(self, subnet_query={}, depth=1, file_name='network'):
         net_query = subnet_query.copy()
         net_query.update({'depth': depth})
         ret_net = self.__dbm_networks.search(net_query)
@@ -95,18 +95,15 @@ class NetworkAnalyzer:
                     self.__network.append(edge)
             logging.info('Created a network of {0} nodes and {1} edges'.format(len(self.__nodes), len(self.__network)))
             logging.info('Unknown users {0}'.format(len(self.__unknown_users)))
-            # save the net for posterior usage
-            db_net = {'nodes': list(self.__nodes), 'unknown_users': list(self.__unknown_users),
-                      'network': list(self.__network)}
+            # save the net in a gefx file for posterior usage
+            f_name = self.save_network_in_gexf_format(file_name)
+            logging.info('Saved the network in the file {0}'.format(f_name))
+            db_net = {'file_name': f_name}
             db_net.update(net_query)
             self.__dbm_networks.save_record(db_net)
         else:
-            logging.info('Obtaining the network')
-            db_net = ret_net[0]
-            self.__network = db_net['network']
-            self.__nodes = db_net['nodes']
-            self.__unknown_users = db_net['unknown_users']
-            logging.info('Obtained a network of {0} nodes and {1} edges'.format(len(self.__nodes), len(self.__network)))
+            f_net = ret_net[0]
+            logging.info('The network was already generated, please find it at {0}'.format(f_net['file_name']))
 
     def create_graph(self):
         logging.info('Creating the graph, please wait_')
@@ -163,9 +160,10 @@ class NetworkAnalyzer:
         else:
             return None
 
-    def save_network_in_gexf_format(self, name='network'):
+    def save_network_in_gexf_format(self, file_name):
         today = datetime.strftime(datetime.now(), '%m/%d/%y')
-        with open('gefx/'+name+'.gexf', 'w', encoding='utf-8') as f:
+        f_name = 'gefx/'+file_name+'.gexf'
+        with open(f_name, 'w', encoding='utf-8') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" '
                     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
@@ -173,7 +171,7 @@ class NetworkAnalyzer:
                     'version="1.2">\n')
             f.write('<meta lastmodifieddate="{0}">\n'.format(today))
             f.write('<creator>PoliticBots</creator>\n')
-            f.write('<description>{0}</description>\n'.format(name))
+            f.write('<description>{0}</description>\n'.format(file_name))
             f.write('</meta>\n')
             f.write('<graph mode="static" defaultedgetype="directed">\n')
             # add data attributes
@@ -212,3 +210,4 @@ class NetworkAnalyzer:
             f.write('</edges>\n')
             f.write('</graph>\n')
             f.write('</gexf>\n')
+        return f_name
