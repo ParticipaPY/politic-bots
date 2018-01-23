@@ -39,6 +39,12 @@ class DBManager:
                 query.update({'relevante': 1})
         return self.__db[self.__collection].find(query)
 
+    def search_one(self, query, i):
+        return self.__db[self.__collection].find(query)[i]
+
+    def remove_record(self, query):
+        self.__db[self.__collection].delete_one(query)
+
     def find_tweets_by_author(self, author_screen_name, **kwargs):
         query = {'tweet_obj.user.screen_name': author_screen_name, 'relevante': 1}
         if 'limited_to_time_window' in kwargs.keys():
