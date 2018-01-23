@@ -400,6 +400,26 @@ class DBManager:
                     ]
         return self.aggregate(pipeline)
 
+    def get_tweets_user(self, username):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.user.screen_name': {'$eq': username}
+        }
+        project = {
+            '_id': 0,
+            'id': '$tweet_obj.id_str',
+            'screen_name': '$tweet_obj.user.screen_name',
+            'tweet': '$tweet_obj.text',
+            'rt': '$tweet_obj.retweeted_status.text',
+            'qt': '$tweet_obj.quoted_status.text',
+            'rp': '$tweet_obj.in_reply_to_status_id_str'
+        }
+        pipeline = [
+            {'$match': match},
+            {'$project': project}
+        ]
+        return self.aggregate(pipeline)
+
     def add_tweet(self, tweet, type_k, keyword, extraction_date, k_metadata):
         """
         Save a tweet in the database
