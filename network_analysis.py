@@ -20,7 +20,7 @@ class NetworkAnalyzer:
     def __init__(self):
         self.__dbm_tweets = DBManager('tweets')
         self.__dbm_users = DBManager('users')
-        self.__dbm_networks = DBManager('gefx')
+        self.__dbm_networks = DBManager('networks')
         self.__network = []
 
     def __computer_ff_ratio(self, friends, followers):
