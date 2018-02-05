@@ -62,9 +62,8 @@ class DBManager:
 
     def get_hashtags_by_movement(self, movement_name, **kwargs):
         match = {
-            'movimiento': {'$eq': movement_name},
-            'relevante': {'$eq': 1},
-            'type': {'$eq': 'hashtag'}
+            'flag.movimiento.'+movement_name: {'$gt': 0},
+            'relevante': {'$eq': 1}
         }
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
@@ -78,28 +77,39 @@ class DBManager:
                 '$match': match
             },
             {
+                '$unwind': '$flag.keyword'
+            },
+            {
                 '$group': {
-                    '_id': '$keyword',
+                    '_id': '$flag.keyword',
                     'num_tweets': {'$sum': 1}
                 }
             },
             {
                 '$project': {
-                    'hastag': '$keyword',
-                    'count': '$num_tweets'
+                    'hashtag': '$_id',
+                    'count': '$num_tweets',
+                    '_id': 0
                 }
             },
             {
                 '$sort': {'count': -1}
             }
         ]
-        return self.aggregate(pipeline)
+        keywords = self.aggregate(pipeline)
+        user_handlers, hashtags = get_user_handlers_and_hashtags()
+        copy_keywords = keywords.copy()
+        for keyword in copy_keywords:
+            hashtag = '#' + keyword['hashtag'].lower()
+            # remove keywords that aren't hashtags (e.g., user mentions)
+            if hashtag not in hashtags:
+                keywords.remove(keyword)
+        return keywords
 
     def get_hashtags_by_candidate(self, candidate_name, **kwargs):
         match = {
-            'candidatura': {'$eq': candidate_name},
-            'relevante': {'$eq': 1},
-            'type': {'$eq': 'hashtag'}
+            'flag.candidatura.'+candidate_name: {'$gt': 0},
+            'relevante': {'$eq': 1}
         }
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
@@ -113,33 +123,45 @@ class DBManager:
                 '$match': match
             },
             {
+                '$unwind': '$flag.keyword'
+            },
+            {
                 '$group': {
-                    '_id': '$keyword',
+                    '_id': '$flag.keyword',
                     'num_tweets': {'$sum': 1}
                 }
             },
             {
                 '$project': {
-                    'hastag': '$keyword',
-                    'count': '$num_tweets'
+                    'hashtag': '$_id',
+                    'count': '$num_tweets',
+                    '_id': 0
                 }
             },
             {
                 '$sort': {'count': -1}
             }
         ]
-        return self.aggregate(pipeline)
+        keywords = self.aggregate(pipeline)
+        user_handlers, hashtags = get_user_handlers_and_hashtags()
+        copy_keywords = keywords.copy()
+        for keyword in copy_keywords:
+            hashtag = '#' + keyword['hashtag'].lower()
+            # remove keywords that aren't hashtags (e.g., user mentions)
+            if hashtag not in hashtags:
+                keywords.remove(keyword)
+        return keywords
 
     def get_unique_users(self, **kwargs):
         match = {
             'relevante': {'$eq': 1}
         }
         if 'partido' in kwargs.keys():
-            match.update({'partido_politico': {'$eq': kwargs['partido']}})
+            match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
         if 'movimiento' in kwargs.keys():
-            match.update({'movimiento': {'$eq': kwargs['movimiento']}})
+            match.update({'flag.movimiento.'+kwargs['movimiento']: {'$gt': 0}})
         if 'candidatura' in kwargs.keys():
-            match.update({'candidatura': {'$eq': kwargs['candidatura']}})
+            match.update({'flag.candidatura.'+kwargs['candidatura']: {'$gt': 0}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
@@ -280,8 +302,8 @@ class DBManager:
             'time_zone': {'$first': '$tweet_obj.user.time_zone'}
         }
         if 'partido' in kwargs.keys():
-            match.update({'partido_politico': {'$eq': kwargs['partido']}})
-            group.update({'partido_politico': {'$last': kwargs['partido']}})
+            match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
+            group.update({'flag.partido_politico.'+kwargs['partido']: {'$last': kwargs['partido']}})
         if 'movimiento' in kwargs.keys():
             match.update({'movimiento': {'$eq': kwargs['movimiento']}})
             group.update({'movimiento': {'$last': kwargs['movimiento']}})
