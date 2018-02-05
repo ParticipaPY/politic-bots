@@ -6,7 +6,7 @@ from collections import defaultdict
 def create_flag(metadata, val):
     flags = {}
     headers = []
-    saved = 0 
+    saved = 0
     columns = defaultdict(list) # each value in each column is appended to a list
     data = defaultdict(list)
     for row in metadata:
@@ -15,13 +15,15 @@ def create_flag(metadata, val):
             if not saved:
                 flags[key]= {}
                 headers.append(key)
-        saved = 1 
+        saved = 1
     for i in headers:
         for j in set(columns[i]):
             if i == val:
                 flags[i] = []
-            else:
+            elif j != "":
                 flags[i][j] = 0
+            else:
+                continue
     return flags, headers
 
 def get_entities_data(tweet):
@@ -37,11 +39,11 @@ def get_entities_data(tweet):
 
 def add_values_to_flags(flags, key, entities, metadata, val):
     for word in entities:
-        for row in metadata:  
+        for row in metadata:
             if row[val].lower() == word.lower() or row[val] == '@'+word:
                 for k, v in row.items():
                     if k == val:
                         flags[k].append(word)
-                    else:
+                    elif v != "":
                         flags[k][v] += 1
-    return {'flag':flags}    
+    return {'flag':flags}
