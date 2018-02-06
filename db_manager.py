@@ -9,12 +9,15 @@ logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 class DBManager:
     __db = None
+    __host = None
     __collection = ''
 
-    def __init__(self, collection, host='localhost', port='27017', config_fn='config.json'):
-        client = MongoClient(host+':'+port)
+    def __init__(self, collection, config_fn='config.json'):
         config = get_config(config_fn)
-        self.__db = client[config['db_name']]
+        self.__host = config['mongo']['host']
+        self.__port = config['mongo']['port']
+        client = MongoClient(self.__host+':'+self.__port)
+        self.__db = client[config['mongo']['db_name']]
         self.__collection = collection
 
     def num_records_collection(self):
@@ -31,6 +34,10 @@ class DBManager:
 
     def update_record(self, filter_query, new_values, create_if_doesnt_exist=False):
         return self.__db[self.__collection].update_one(filter_query, {'$set': new_values},
+                                                       upsert=create_if_doesnt_exist)
+
+    def remove_field(self, filter_query, old_values, create_if_doesnt_exist=False):
+        return self.__db[self.__collection].update_one(filter_query, {'$unset': old_values},
                                                        upsert=create_if_doesnt_exist)
 
     def search(self, query, only_relevant_tws=True):
@@ -480,7 +487,7 @@ class DBManager:
                 results['ori'].append({'text': text_tweet, 'id_tweet': tweet['id_str']})
         return results
 
-    def add_tweet(self, tweet, type_k, keyword, extraction_date, k_metadata):
+    def add_tweet(self, tweet, type_k, keyword, extraction_date, flag):
         """
         Save a tweet in the database
         :param tweet: dictionary in json format of the tweet
@@ -491,10 +498,9 @@ class DBManager:
         :return:
         """
         enriched_tweet = {'type': type_k,
-                          'keyword': keyword,
                           'tweet_obj': tweet,
                           'extraction_date': extraction_date}
-        enriched_tweet.update(k_metadata)
+        enriched_tweet.update(flag)
         id_tweet = tweet['id_str']
         num_results = self.search({'tweet_obj.id_str': id_tweet}, only_relevant_tws=False).count()
         if num_results == 0:
