@@ -306,22 +306,26 @@ class DBManager:
             '_id': '$tweet_obj.user.id_str',
             'location': {'$first': '$tweet_obj.user.location'},
             'description': {'$first': '$tweet_obj.user.description'},
-            'time_zone': {'$first': '$tweet_obj.user.time_zone'}
+            'time_zone': {'$first': '$tweet_obj.user.time_zone'},
+            'count': {'$sum': 1}
         }
         if 'partido' in kwargs.keys():
             match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
-            group.update({'flag.partido_politico.'+kwargs['partido']: {'$last': kwargs['partido']}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
         if 'movimiento' in kwargs.keys():
-            match.update({'movimiento': {'$eq': kwargs['movimiento']}})
-            group.update({'movimiento': {'$last': kwargs['movimiento']}})
+            match.update({'flag.movimiento.'+kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
         if 'limited_to_time_window' in kwargs.keys():
             match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
         pipeline = [
             {'$match': match},
             {'$group': group},
-            {'$sort': {'num_users': -1}}
+            {'$sort': {'count': -1}}
         ]
-        return self.aggregate(pipeline)
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
 
     def get_movement_user(self, username):
         match = {
@@ -329,7 +333,7 @@ class DBManager:
             'relevante': {'$eq': 1}
         }
         group = {
-            '_id': '$movimiento',
+            '_id': '$flag.movimiento',
             'count': {'$sum': 1}
         }
         project = {
@@ -343,7 +347,14 @@ class DBManager:
             {'$project': project},
             {'$sort': {'count': -1}}
         ]
-        return self.aggregate(pipeline)
+        user_docs = self.aggregate(pipeline)
+        user_movements = defaultdict(int)
+        for user_doc in user_docs:
+            for movement, flag in user_doc['movimiento'].items():
+                if movement != '' and flag > 0:
+                    user_movements[movement] += user_doc['count']
+        user_docs = [{'movimiento':k} for k in sorted(user_movements, key=user_movements.get, reverse=True)]
+        return user_docs
 
     def get_party_user(self, username):
         match = {
@@ -351,7 +362,7 @@ class DBManager:
             'relevante': {'$eq': 1}
         }
         group = {
-            '_id': '$partido_politico',
+            '_id': '$flag.partido_politico',
             'count': {'$sum': 1}
         }
         project = {
@@ -365,14 +376,21 @@ class DBManager:
             {'$project': project},
             {'$sort': {'count': -1}}
         ]
-        return self.aggregate(pipeline)
+        user_docs = self.aggregate(pipeline)
+        user_parties = defaultdict(int)
+        for user_doc in user_docs:
+            for party, flag in user_doc['partido'].items():
+                if party != '' and flag > 0:
+                    user_parties[party] += user_doc['count']
+        user_docs = [{'partido': k} for k in sorted(user_parties, key=user_parties.get, reverse=True)]
+        return user_docs
 
     def get_tweet_places(self, **kwargs):
         match = {
             'relevante': {'$eq': 1}
         }
         group = {
-            'num_tweets': {'$sum': 1}
+            'count': {'$sum': 1}
         }
         if 'location_reference' in kwargs.keys():
             if kwargs['location_reference'] == 'place':
@@ -383,19 +401,22 @@ class DBManager:
             logging.error('Missing location_reference!')
             return None
         if 'partido' in kwargs.keys():
-            match.update({'partido_politico': {'$eq': kwargs['partido']}})
-            group.update({'partido_politico': {'$last': kwargs['partido']}})
+            match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
         if 'movimiento' in kwargs.keys():
-            match.update({'movimiento': {'$eq': kwargs['movimiento']}})
-            group.update({'movimiento': {'$last': kwargs['movimiento']}})
+            match.update({'flag.movimiento.'+kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
         if 'limited_to_time_window' in kwargs.keys():
             match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
         pipeline = [
             {'$match': match},
             {'$group': group},
-            {'$sort': {'num_tweets': -1}}
+            {'$sort': {'count': -1}}
         ]
-        return self.aggregate(pipeline)
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
 
     def get_tweets_by_date(self, **kwargs):
         match = {
@@ -414,12 +435,12 @@ class DBManager:
             'count': '$num_tweets'
         }
         if 'partido' in kwargs.keys():
-            match.update({'partido_politico': {'$eq': kwargs['partido']}})
-            group.update({'partido_politico': {'$last': kwargs['partido']}})
+            match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
             project.update({'partido_politico': '$partido_politico'})
         if 'movimiento' in kwargs.keys():
-            match.update({'movimiento': {'$eq': kwargs['movimiento']}})
-            group.update({'movimiento': {'$last': kwargs['movimiento']}})
+            match.update({'flag.movimiento.'+kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
             project.update({'movimiento': '$movimiento'})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
@@ -433,7 +454,45 @@ class DBManager:
                     {'$project': project},
                     {'$sort': {'date': 1}}
                     ]
-        return self.aggregate(pipeline)
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
+    def update_counts(self, result_docs, kwargs):
+        # update tweet counts that mention more other movements/political parties
+        # than the movement/party given
+        tweets_by_date = []
+        for doc in result_docs:
+            if 'partido' in kwargs.keys():
+                parties = doc['partido_politico']
+                max_party = {}
+                for dict_party in parties:
+                    for party, count in dict_party.items():
+                        if not max_party or max_party['count'] < count:
+                            max_party['party'] = party
+                            max_party['count'] = count
+                        elif max_party['count'] == count:
+                            if max_party['party'].lower() != kwargs['partido'].lower():
+                                max_party['party'] = kwargs['partido']
+                if max_party['party'].lower() != kwargs['partido'].lower():
+                    doc['count'] -= 1
+            if 'movimiento' in kwargs.keys():
+                movements = doc['movimiento']
+                max_movement = {}
+                for dict_movement in movements:
+                    for movement, count in dict_movement.items():
+                        if not max_movement or max_movement['count'] < count:
+                            max_movement['movement'] = movement
+                            max_movement['count'] = count
+                        elif max_movement['count'] == count:
+                            if max_movement['movement'].lower() != kwargs['movimiento'].lower():
+                                max_movement['movement'] = kwargs['movimiento']
+                if max_movement['movement'].lower() != kwargs['movimiento'].lower():
+                    doc['count'] -= 1
+            tweet_by_date = {'date': doc['date'], 'count': doc['count']}
+            tweet_by_date.update(kwargs)
+            tweets_by_date.append(tweet_by_date)
 
     def get_tweets_user(self, username):
         match = {
@@ -487,12 +546,11 @@ class DBManager:
                 results['ori'].append({'text': text_tweet, 'id_tweet': tweet['id_str']})
         return results
 
-    def add_tweet(self, tweet, type_k, keyword, extraction_date, flag):
+    def add_tweet(self, tweet, type_k, extraction_date, flag):
         """
         Save a tweet in the database
         :param tweet: dictionary in json format of the tweet
         :param type_k: string, take the value 'user' or 'hashtag'
-        :param keyword: string, contains the text of the handle or hashtag
         :param extraction_date: string, date (dd/mm/yyyy) when the tweet was collected
         :param k_metadata: dictionary, metadata about the keyword
         :return:
