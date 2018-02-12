@@ -25,12 +25,12 @@ class TwitterAPIManager:
             wait_on_rate_limit_notify=worln)
 
     # Add tweets to DB
-    def process_and_store(self, tweet, keyword, ktype, k_metadata, k_file, val):
+    def process_and_store(self, tweet, ktype, k_metadata, k_file, val):
         date = time.strftime("%m/%d/%y")
         flag, headers = create_flag(k_file, val)
         entities = get_entities_data(tweet._json)
         flag = add_values_to_flags(flag, headers, entities, k_file, val)
-        self.db.add_tweet(tweet._json, ktype, keyword, date, flag)
+        self.db.add_tweet(tweet._json, ktype, date, flag)
 
     def search_tweets(self, tweets_qry, keyword, ktype, metadata, k_file): 
         count_tweets = 0
@@ -46,7 +46,7 @@ class TwitterAPIManager:
                 include_entities=True
             ).items():
                 i += 1
-                self.process_and_store(tweet, keyword, ktype, metadata, k_file, val)
+                self.process_and_store(tweet, ktype, metadata, k_file, val)
             count_tweets += i
         except tweepy.TweepError as e:
             # Exit if any error
