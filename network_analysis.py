@@ -48,13 +48,18 @@ class NetworkAnalyzer:
                 'rps': user['replies_count']
             }
             # Assign the party and movement to the party and movement that are more related to the user
-            user_party = self.__dbm_tweets.get_party_user(user['screen_name'])[0]
-            db_user.update({'party': user_party['partido']})
-            if user_party and user_party != '':
-                user_movement = self.__dbm_tweets.get_movement_user(user['screen_name'])[0]
-                db_user.update({'movement': user_movement['movimiento']})
+            user_parties = self.__dbm_tweets.get_party_user(user['screen_name'])
+            if len(user_parties) > 0:
+                user_party = user_parties[0]
+                db_user.update({'party': user_party['partido']})
+                user_movements = self.__dbm_tweets.get_movement_user(user['screen_name'])
+                if len(user_movements) > 0:
+                    user_movement = user_movements[0]
+                    db_user.update({'movement': user_movement['movimiento']})
+                else:
+                    db_user.update({'movement': ''})
             else:
-                db_user.update({'movement': ''})
+                db_user.update({'party': '', 'movement': ''})
             filter_query = {'screen_name': user['screen_name']}
             self.__dbm_users.update_record(filter_query, db_user, create_if_doesnt_exist=True)
 
