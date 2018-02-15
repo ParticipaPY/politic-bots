@@ -25,14 +25,14 @@ class TwitterAPIManager:
             wait_on_rate_limit_notify=worln)
 
     # Add tweets to DB
-    def process_and_store(self, tweet, ktype, k_metadata, k_file, val):
+    def process_and_store(self, tweet, ktype, k_file, val):
         date = time.strftime("%m/%d/%y")
         flag, headers = create_flag(k_file, val)
         entities = get_entities_data(tweet._json)
         flag = add_values_to_flags(flag, headers, entities, k_file, val)
         self.db.add_tweet(tweet._json, ktype, date, flag)
 
-    def search_tweets(self, tweets_qry, keyword, ktype, metadata, k_file): 
+    def search_tweets(self, tweets_qry, keyword, ktype, k_file):
         count_tweets = 0
         i = 0
         val = "keyword"
@@ -46,7 +46,7 @@ class TwitterAPIManager:
                 include_entities=True
             ).items():
                 i += 1
-                self.process_and_store(tweet, ktype, metadata, k_file, val)
+                self.process_and_store(tweet, ktype, k_file, val)
             count_tweets += i
         except tweepy.TweepError as e:
             # Exit if any error
@@ -66,9 +66,9 @@ if __name__ == "__main__":
         if j['tipo_keyword'] == "org" or j['tipo_keyword'] == "general":
             logging.info('Searching tweets for %s' % i)
             if '@' in i:
-                tm.search_tweets(configuration['tweets_qry'], i, 'user', j, k_metadata)
+                tm.search_tweets(configuration['tweets_qry'], i, 'user', j)
             else:
-                tm.search_tweets(configuration['tweets_qry'], i, 'hashtag', j, k_metadata)
+                tm.search_tweets(configuration['tweets_qry'], i, 'hashtag', j)
         break
     logging.info('Evaluating the relevance of the new tweets...')
     te = TweetEvaluator()
