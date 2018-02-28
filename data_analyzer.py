@@ -1,24 +1,28 @@
-import indicoio
+import json
 import logging
-from utils import get_config
-from sentiment_analyzer import SentimentAnalyzer
-from aylienapiclient import textapi
+import requests
+import string
+import time
+from utils import get_config, update_config
 from db_manager import DBManager
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
+_BOUNDARY_CHARS = string.digits + string.ascii_letters
+
 class SentimentAnalysis:
+    config_file_name = 'config.json'
     config = None
     language = ''
     method = ''
     __db = None
 
-    def __init__(self, method='in_house', language='spanish'):
-        self.config = get_config('config.json')
+    def __init__(self, collection='tweets', method='in_house', language='spanish'):
+        self.config = get_config(self.config_file_name)
         self.language = language
         self.method = method
-        self.__dbm = DBManager('tweets')
+        self.__dbm = DBManager(collection)
 
     def __get_analyzed_tweet(self, analyzed_tweets, id_tweet_to_search):
         for analyzed_tweet in analyzed_tweets:
@@ -26,19 +30,72 @@ class SentimentAnalysis:
                 return analyzed_tweet
         return None
 
+    def update_sentiment_of_non_original_tweets(self, query={}):
+        query.update({
+            'relevante': 1,
+            'sentimiento': {'$exists': 0},
+        })
+        tweet_regs = self.__dbm.search(query)
+        rts_wo_tw = []
+        for tweet_reg in tweet_regs:
+            if 'retweeted_status' in tweet_reg['tweet_obj'].keys():
+                id_original_tweet = tweet_reg['tweet_obj']['retweeted_status']['id_str']
+                original_tweet_reg = self.__dbm.find_record({'tweet_obj.id_str': id_original_tweet})
+                if original_tweet_reg:
+                    sentiment_ot = original_tweet_reg['sentimiento']
+                    if sentiment_ot:
+                        self.__dbm.update_record({'tweet_obj.id_str': tweet_reg['tweet_obj']['id_str']},
+                                                 {'sentimiento': sentiment_ot})
+                    else:
+                        raise Exception('Error, found an original tweet without sentiment')
+                else:
+                    rts_wo_tw.append(tweet_reg['tweet_obj'])
+            elif tweet_reg['tweet_obj']['in_reply_to_status_id_str']:
+                rts_wo_tw.append(tweet_reg['tweet_obj'])
+                logging.info('Tweet not RT {0}'.format(tweet_reg['tweet_obj']['id_str']))
+        self.__analyze_sentiment_of_rt_wo_tws(rts_wo_tw)
+
     def __update_sentimient_rts(self, analyzed_tweets):
         for analyzed_tweet in analyzed_tweets:
             # search rts of the analyzed tweet
-            rts = self.__db.search({'tweet_obj.retweeted_status.id_str': analyzed_tweet['id']})
+            rts = self.__dbm.search({'tweet_obj.retweeted_status.id_str': analyzed_tweet['id']})
             for rt in rts:
-                rt['sentimiento'] = analyzed_tweet['sentimiento']
-                self.__dbm.save_record(rt)
+                self.__dbm.update_record({'tweet_obj.id_str': rt['tweet_obj']['id_str']},
+                                         {'sentimiento': analyzed_tweet['sentimiento']})
+
+    def __analyze_sentiment_of_rt_wo_tws(self, tweets):
+        tot_tws = len(tweets)
+        batch_size = 1000
+        tweets_to_analyze = []
+        for current_tw in range(tot_tws):
+            tweet_id = tweets[current_tw]['id_str']
+            if 'retweeted_status' in tweets[current_tw].keys():
+                tweet = tweets[current_tw]['retweeted_status']
+            else:
+                tweet = tweets[current_tw]
+            if 'full_text' in tweet.keys():
+                tweet_text = tweet['full_text']
+            else:
+                tweet_text = tweet['text']
+            if len(tweets_to_analyze) < batch_size and current_tw < tot_tws:
+                tweets_to_analyze.append({'id': tweet_id, 'text': tweet_text})
+                if len(tweets_to_analyze) < batch_size and current_tw < (tot_tws-1):
+                    continue
+            sentiment_results = self.in_house_sentiment_analysis(tweets_to_analyze)
+            tweets_to_analyze = []
+            for sentiment_result in sentiment_results:
+                sentiment_info = sentiment_result['sentimiento']
+                tweet_id = sentiment_result['id']
+                tweet_text = sentiment_result['text']
+                self.__dbm.update_record({'tweet_obj.id_str': tweet_id}, {'sentimiento': sentiment_info})
+                logging.debug('Tweet text: {0}, Sentimiento: {1} ({2})'.format(tweet_text.encode('utf-8'),
+                                                                               sentiment_info['tono'],
+                                                                               sentiment_info['score']))
 
     def analyze_sentiments(self, query={}):
         """
         :param query: dictionary of <key, value> terms to be used in querying the db
         """
-        logging.debug('Analyzing sentiment of tweets...')
         query.update({
             'relevante': 1,
             'tweet_obj.retweeted_status': {'$exists': 0},
@@ -46,34 +103,38 @@ class SentimentAnalysis:
         })
         tweet_regs = self.__dbm.search(query)
         analyzed_tweets = []
-        #limit = 60
-        call_counter = 0
+        tot_reg = tweet_regs.count()
+        logging.info('Analyzing the sentiment of {0} tweets, '
+                     'it can take several minutes, please wait...'.format(tot_reg))
+        batch_size = 1000
+        tweets_to_analyze = []
         try:
-            for tweet_reg in tweet_regs:
+            for current_reg in range(tot_reg):
+                tweet_reg = tweet_regs[current_reg]
                 tweet = tweet_reg['tweet_obj']
                 if 'full_text' in tweet.keys():
                     tweet_text = tweet['full_text']
                 else:
                     tweet_text = tweet['text']
-                if self.method == 'in_house':
-                    sentiment_result = self.in_house_sentiment_analysis(tweet_text)
-                elif self.method == 'indico':
-                    sentiment_result = self.indicoio_sentiment_analysis(tweet_text)
-                elif self.method == 'aylien':
-                    sentiment_result = self.aylien_sentiment_analysis(tweet_text)
-                else:
-                    raise Exception('Sentiment analysis method unknown!')
-                tweet_reg['sentimiento'] = sentiment_result
-                self.__dbm.save_record(tweet_reg)
-                analyzed_tweets.append({
-                    'id': tweet['id_str'],
-                    'texto': tweet_text,
-                    'sentimiento': sentiment_result
-                })
-                call_counter += 1
-                logging.debug('Call: {0} - Tweet text: {1}, Sentimiento: {2} ({3})'.format(call_counter, tweet_text.encode('utf-8'),
-                                                                               sentiment_result['tono'],
-                                                                               sentiment_result['score']))
+                if len(tweets_to_analyze) < batch_size and current_reg < tot_reg:
+                    tweets_to_analyze.append({'id': tweet['id_str'], 'text': tweet_text})
+                    if len(tweets_to_analyze) < batch_size:
+                        continue
+                sentiment_results = self.in_house_sentiment_analysis(tweets_to_analyze)
+                tweets_to_analyze = []
+                for sentiment_result in sentiment_results:
+                    sentiment_info = sentiment_result['sentimiento']
+                    tweet_id = sentiment_result['id']
+                    tweet_text = sentiment_result['text']
+                    self.__dbm.update_record({'tweet_obj.id_str': tweet_id}, {'sentimiento': sentiment_info})
+                    analyzed_tweets.append({
+                        'id': tweet_id,
+                        'texto': tweet_text,
+                        'sentimiento': sentiment_info
+                    })
+                    logging.debug('Tweet text: {0}, Sentimiento: {1} ({2})'.format(tweet_text.encode('utf-8'),
+                                                                                   sentiment_info['tono'],
+                                                                                   sentiment_info['score']))
         except Exception as e:
             logging.error(e)
         finally:
@@ -81,45 +142,74 @@ class SentimentAnalysis:
 
         return analyzed_tweets
 
-    def in_house_sentiment_analysis(self, text):
-        sa = SentimentAnalyzer(language=self.language)
-        sa_result = sa.analyze_doc(text)
-        return {
-            'tono': sa_result[1],
-            'score': sa_result[2],
-            'servicio': 'local'
-        }
-
-    def indicoio_sentiment_analysis(self, text):
-        indicoio.config.api_key = self.config['indicoio']['api_key']
-        sa_result = indicoio.sentiment(text, language=self.language)
-        if sa_result <= 0.35:
-            tono = 'negative'
-        elif sa_result <= 0.65:
-            tono = 'neutral'
+    def in_house_sentiment_analysis(self, tweets):
+        accepted_codes = [200, 201, 202]
+        error_codes = [400, 401]
+        url_base = 'http://159.203.77.35:8080/api'
+        url_sentiment = url_base + '/analysis/sentiment-analysis/'
+        url_auth = url_base + '/auth/'
+        headers = {'Authorization': 'JWT ' + self.config['inhouse']['api_key']}
+        tweet_texts = []
+        for tweet in tweets:
+            tweet_texts.append(tweet['text'] + ' -$%#$&- {0}'.format(tweet['id']))
+        parameters = {'neu_inf_lim': -0.3, 'neu_sup_lim': 0.3, 'language': 'spanish'}
+        data = {'name': (None, 'politic-bots'),
+                'parameters': (None, json.dumps(parameters), 'application/json'),
+                'data_object': (None, json.dumps(tweet_texts), 'application/json')
+                }
+        ret = []
+        logging.info('Computing the sentiment of {0} tweets'.format(len(tweet_texts)))
+        resp = requests.post(url_sentiment, headers=headers, files=data)
+        if resp.status_code in error_codes:
+            # have to renew the api token
+            body_auth = {'username': self.config['inhouse']['username'],
+                         'password': self.config['inhouse']['password']}
+            resp = requests.post(url_auth, data=body_auth)
+            if resp.status_code in accepted_codes:
+                resp_json = resp.json()
+                api_token = resp_json['token']
+                self.config['inhouse']['api_key'] = api_token
+                update_config(self.config_file_name, self.config)
+                resp = requests.post(url_sentiment, headers=headers, files=data)
+            else:
+                raise Exception('Error {0} when trying to renew the token of the api'.format(resp.status_code))
+        if resp.status_code in accepted_codes:
+            resp_json = resp.json()
+            get_url = url_sentiment+str(resp_json['id'])+'/'
+            results = []
+            # wait some time before trying to get
+            # the results
+            time.sleep(60)
+            while len(results) == 0:
+                # wait some time before trying to
+                # get the results
+                time.sleep(30)
+                resp = requests.get(get_url, headers=headers)
+                if resp.status_code in accepted_codes:
+                    resp_json = resp.json()
+                    results = json.loads(resp_json['result'])
+                else:
+                    raise Exception('Got an unexpected response, code: {0}'.format(resp.status_code))
+            logging.info('Obtained the results of sentiment analysis, now the results are going to be processed...')
+            for result in results:
+                if result['sentiment'] == 'neg':
+                    sentiment = 'negative'
+                elif result['sentiment'] == 'pos':
+                    sentiment = 'positive'
+                else:
+                    sentiment = 'neutral'
+                for text in result['ideas']:
+                    tw_text_id = text['idea'].split('-$%#$&-')
+                    id_tweet = tw_text_id[1].strip()
+                    text_tweet = tw_text_id[0].strip()
+                    dic_ret = {
+                        'id': id_tweet,
+                        'text': text_tweet,
+                        'sentimiento': {'tono': sentiment, 'score': text['score']},
+                        'servicio': 'civic_crowdanalytics'
+                    }
+                    ret.append(dic_ret)
         else:
-            tono = 'positive'
-        return {
-            'tono': tono,
-            'score': sa_result,
-            'servicio': 'indicoio'
-        }
-
-    def aylien_sentiment_analysis(self, text):
-        app_id = self.config['aylien']['app_id']
-        key = self.config['aylien']['key']
-        client = textapi.Client(app_id, key)
-        if self.language == 'spanish':
-            lang = 'es'
-        elif self.language == 'italian':
-            lang = 'it'
-        elif self.language == 'french':
-            lang = 'fr'
-        else:
-            lang = 'en'
-        sa_result = client.Sentiment({'text': text, 'mode': 'tweet', 'language': lang})
-        return {
-            'tono': sa_result['polarity'],
-            'score': sa_result['polarity_confidence'],
-            'servicio': 'aylien'
-        }
+            logging.error('Error {0} when trying to compute the sentiment of the tweets'.format(resp.status_code))
+        logging.info('Computed correctly the sentiment of {0} tweets'.format(len(tweet_texts)))
+        return ret
