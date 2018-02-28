@@ -10,6 +10,12 @@ def get_config(config_file):
     return config
 
 
+def update_config(config_file, new_data):
+    json_file = open(config_file, "w+")
+    json_file.write(json.dumps(new_data))
+    json_file.close()
+
+
 # Get keywords and metadata from csv file
 def parse_metadata(kfile):
     keyword = []
