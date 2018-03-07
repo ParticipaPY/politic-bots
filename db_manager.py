@@ -385,21 +385,17 @@ class DBManager:
         user_docs = [{'partido': k} for k in sorted(user_parties, key=user_parties.get, reverse=True)]
         return user_docs
 
-    def get_tweet_places(self, **kwargs):
+    def get_tweet_places(self, location_reference, **kwargs):
         match = {
             'relevante': {'$eq': 1}
         }
         group = {
             'count': {'$sum': 1}
         }
-        if 'location_reference' in kwargs.keys():
-            if kwargs['location_reference'] == 'place':
-                group.update({'_id': '$tweet_obj.place.country'})
-            else:
-                group.update({'_id': '$tweet_obj.user.time_zone'})
+        if location_reference == 'place':
+            group.update({'_id': '$tweet_obj.place.country'})
         else:
-            logging.error('Missing location_reference!')
-            return None
+            group.update({'_id': '$tweet_obj.user.time_zone'})
         if 'partido' in kwargs.keys():
             match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
             group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
@@ -462,8 +458,9 @@ class DBManager:
     def update_counts(self, result_docs, **kwargs):
         # update tweet counts that mention more other movements/political parties
         # than the movement/party given
-        tweets_by_date = []
+        tweets_updated = []
         for doc in result_docs:
+            keys = doc.keys()
             if 'partido' in kwargs.keys():
                 parties = doc['partido_politico']
                 max_party = {}
@@ -490,10 +487,13 @@ class DBManager:
                                 max_movement['movement'] = kwargs['movimiento']
                 if max_movement['movement'].lower() != kwargs['movimiento'].lower():
                     doc['count'] -= 1
-            tweet_by_date = {'date': doc['date'], 'count': doc['count'], '_id': doc['_id']}
-            tweet_by_date.update(kwargs)
-            tweets_by_date.append(tweet_by_date)
-        return tweets_by_date
+            tweet_updated = {}
+            for key in keys:
+                if key != 'partido_politico' and key != 'movimiento':
+                    tweet_updated[key] = doc[key]
+            tweet_updated.update(kwargs)
+            tweets_updated.append(tweet_updated)
+        return tweets_updated
 
     def get_tweets_user(self, username):
         match = {
