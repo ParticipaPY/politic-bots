@@ -459,7 +459,7 @@ class DBManager:
             return self.update_counts(result_docs, **kwargs)
         return result_docs
 
-    def update_counts(self, result_docs, kwargs):
+    def update_counts(self, result_docs, **kwargs):
         # update tweet counts that mention more other movements/political parties
         # than the movement/party given
         tweets_by_date = []
@@ -490,9 +490,10 @@ class DBManager:
                                 max_movement['movement'] = kwargs['movimiento']
                 if max_movement['movement'].lower() != kwargs['movimiento'].lower():
                     doc['count'] -= 1
-            tweet_by_date = {'date': doc['date'], 'count': doc['count']}
+            tweet_by_date = {'date': doc['date'], 'count': doc['count'], '_id': doc['_id']}
             tweet_by_date.update(kwargs)
             tweets_by_date.append(tweet_by_date)
+        return tweets_by_date
 
     def get_tweets_user(self, username):
         match = {
