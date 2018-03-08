@@ -325,5 +325,6 @@ def compute_tweets_local_date(force_computation=False):
         tweet = s_obj['tweet_obj']
         py_pub_dt = get_py_date(tweet)
         dbm.update_record({'tweet_obj.id_str': tweet['id_str']},
-                          {'tweet_py_date': datetime.strftime(py_pub_dt, '%m/%d/%y')})
+                          {'tweet_py_date': datetime.strftime(py_pub_dt, '%m/%d/%y'),
+                           'tweet_py_hour': datetime.strftime(py_pub_dt, '%H')})
     return
