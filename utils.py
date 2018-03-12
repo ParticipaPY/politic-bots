@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from datetime import datetime, timedelta, tzinfo
 
 
@@ -67,3 +68,13 @@ def get_py_date(tweet):
     pub_dt = datetime.strptime(str_pub_dt, '%a %b %d %H:%M:%S %z %Y')
     # convert to paraguayan timezone
     return pub_dt.astimezone(PYT)
+
+
+def clean_emojis(doc):
+    emoji_pattern = re.compile("["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                           "]+", flags=re.UNICODE)
+    return emoji_pattern.sub(r'', doc)
