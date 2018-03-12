@@ -1,9 +1,10 @@
 from collections import defaultdict
 from datetime import datetime
 from db_manager import DBManager
-from utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date
-import re
+from utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+import csv
 import logging
+import re
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
@@ -287,7 +288,6 @@ class HashtagDiscoverer:
     def coccurence_hashtags(self, query={}, sorted_results=True):
         coccurence_hashtags_dict = defaultdict(int)
         tweet_regs = self.__dbm.search(query)
-        hashtags, user_handlers = get_user_handlers_and_hashtags()
         for tweet_reg in tweet_regs:
             tweet = tweet_reg['tweet_obj']
             if 'retweeted_status' in tweet.keys():
@@ -328,3 +328,30 @@ def compute_tweets_local_date(force_computation=False):
                           {'tweet_py_date': datetime.strftime(py_pub_dt, '%m/%d/%y'),
                            'tweet_py_hour': datetime.strftime(py_pub_dt, '%H')})
     return
+
+
+def save_original_tweets_file():
+    dbm = DBManager('tweets')
+    query = {
+        'tweet_obj.retweeted_status': {'$exists': 0},
+        'sentimiento': {'$exists': 1},
+    }
+    s_objs = dbm.search(query)
+    with open('tweet_sentiments.csv', 'w', encoding='utf-8') as f_csv:
+        fieldnames = ['id', 'text', 'tone', 'score']
+        writer = csv.DictWriter(f_csv, fieldnames=fieldnames)
+        writer.writeheader()
+        for s_obj in s_objs:
+            tweet = s_obj['tweet_obj']
+            if 'full_text' in tweet.keys():
+                tweet_text = tweet['full_text']
+            else:
+                tweet_text = tweet['text']
+            tweet_text = clean_emojis(tweet_text)
+            tweet_text = tweet_text.replace('\r', '')
+            tweet_text = tweet_text.replace('\n', '')
+            tweet_text = tweet_text.replace(',', '')
+            tweet_dict = {'id': tweet['id_str'], 'text': tweet_text,
+                          'tone': s_obj['sentimiento']['tono'],
+                          'score': s_obj['sentimiento']['score']}
+            writer.writerow(tweet_dict)
