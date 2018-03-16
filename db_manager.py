@@ -455,6 +455,44 @@ class DBManager:
             return self.update_counts(result_docs, **kwargs)
         return result_docs
 
+    def get_tweets_by_hour(self, interested_date, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_py_date': {'$eq': interested_date}
+        }
+        group = {
+            '_id': '$tweet_py_hour',
+            'num_tweets': {'$sum': 1}
+        }
+        project = {
+            'hour': '$_id',
+            'count': '$num_tweets'
+        }
+        if 'partido' in kwargs.keys():
+            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
+            project.update({'partido_politico': '$partido_politico'})
+        if 'movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
+            project.update({'movimiento': '$movimiento'})
+        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+            else:
+                logging.error('The parameter candidate_handler cannot be empty')
+        if 'limited_to_time_window' in kwargs.keys():
+            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        pipeline = [{'$match': match},
+                    {'$group': group},
+                    {'$project': project},
+                    {'$sort': {'hour': 1}}
+                    ]
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
     def update_counts(self, result_docs, **kwargs):
         # update tweet counts that mention more other movements/political parties
         # than the movement/party given
