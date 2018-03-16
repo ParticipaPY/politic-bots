@@ -312,21 +312,26 @@ class HashtagDiscoverer:
             return coccurence_hashtags_dict
 
 
-def compute_tweets_local_date(force_computation=False):
+def compute_tweets_local_date(force_computation=False, include_hour=False):
     dbm = DBManager('tweets')
     if force_computation:
         query = {}
     else:
         query = {
-            'tweet_py_date': {'$exists': 0}
+            'tweet_py_datetime': {'$exists': 0}
         }
     s_objs = dbm.search(query, only_relevant_tws=False)
     for s_obj in s_objs:
         tweet = s_obj['tweet_obj']
         py_pub_dt = get_py_date(tweet)
+        dict_to_update = {
+            'tweet_py_datetime': datetime.strftime(py_pub_dt, '%m/%d/%y %H:%M:%S'),
+            'tweet_py_date': datetime.strftime(py_pub_dt, '%m/%d/%y')
+        }
+        if include_hour:
+            dict_to_update.update({'tweet_py_hour': datetime.strftime(py_pub_dt, '%H')})
         dbm.update_record({'tweet_obj.id_str': tweet['id_str']},
-                          {'tweet_py_date': datetime.strftime(py_pub_dt, '%m/%d/%y'),
-                           'tweet_py_hour': datetime.strftime(py_pub_dt, '%H')})
+                          dict_to_update)
     return
 
 
