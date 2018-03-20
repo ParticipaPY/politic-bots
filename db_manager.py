@@ -67,6 +67,52 @@ class DBManager:
     def aggregate(self, pipeline):
         return [doc for doc in self.__db[self.__collection].aggregate(pipeline, allowDiskUse=True)]
 
+    def get_sentiment_tweets(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1}
+        }
+        group = {
+            '_id': '$sentimiento.tono',
+            'num_tweets': {'$sum': 1}
+        }
+        project = {
+            'sentiment': '$_id',
+            'count': '$num_tweets'
+        }
+        if 'partido' in kwargs.keys():
+            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
+            project.update({'partido_politico': '$partido_politico'})
+        if 'movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
+            project.update({'movimiento': '$movimiento'})
+        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+            else:
+                logging.error('The parameter candidate_handler cannot be empty')
+        if 'limited_to_time_window' in kwargs.keys():
+            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        pipeline = [
+            {
+                '$match': match
+            },
+            {
+                '$group': group
+            },
+            {
+                '$project': project
+            },
+            {
+                '$sort': {'count': -1}
+            }
+        ]
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
     def get_hashtags_by_movement(self, movement_name, **kwargs):
         match = {
             'flag.movimiento.'+movement_name: {'$gt': 0},
