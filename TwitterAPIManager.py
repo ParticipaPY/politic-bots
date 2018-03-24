@@ -61,16 +61,15 @@ if __name__ == "__main__":
     credentials = {'key': configuration['twitter']['consumer_key'],
                    'secret': configuration['twitter']['consumer_secret']}
     keyword, k_metadata = parse_metadata(configuration['metadata'])
-    dbm = DBManager('tweet')
+    dbm = DBManager('tweets')
     tm = TwitterAPIManager(credentials, dbm)
     for i, j in zip(keyword, k_metadata):
-        if j['tipo_keyword'] == "org" or j['tipo_keyword'] == "general":
+        if j['tipo_keyword'] == "org" or j['tipo_keyword'] == "general" or j['tipo_keyword'] == "personal":
             logging.info('Searching tweets for %s' % i)
             if '@' in i:
                 tm.search_tweets(configuration['tweets_qry'], i, 'user', j)
             else:
                 tm.search_tweets(configuration['tweets_qry'], i, 'hashtag', j)
-        break
     logging.info('Evaluating the relevance of the new tweets...')
     te = TweetEvaluator()
     te.identify_relevant_tweets()
