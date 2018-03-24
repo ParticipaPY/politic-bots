@@ -49,18 +49,13 @@ def get_entities_data(tweet):
 # -- if val == keyword => must contain keywords we are searching for (see config for metadata csv)
 # TODO: rename 'val' for easier understanding
 def add_values_to_flags(flags, key, entities, metadata, val):
-    logging.debug('Initial dictionary of flags = {0}'.format(flags))
-    logging.debug('Keywords for the flags dictionary = {0}'.format(key))
-    logging.debug('Entities in the tweet = {0}'.format(entities))
-    logging.debug('Metadata for the flags dictionary = {0}'.format(metadata))
-    logging.debug('Controlling Val = {0}'.format(val))
+    for word in entities:
+        for row in metadata:
+            if row[val].lower() == word.lower() or row[val] == '@'+word:
+                for k, v in row.items():
+                    if k == val:
+                        flags[k].append(word)
+                    elif v != "":
+                        flags[k][v] += 1
     for k,v in metadata.items():
-        if k == val:
-            for word in entities:
-                if v.lower() == word.lower() or v == '@'+word:
-                    flags[k].append(word)
-        elif v != "":
-            flags[k][v] += 1
-    logging.debug('Resulting flags dictionary = {0}'.format(flags)) # this variable is a mystery
     return {'flag':flags}
-
