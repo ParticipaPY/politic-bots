@@ -45,17 +45,15 @@ def get_entities_data(tweet):
 # - key = Keywords for the flags dictionary
 # - entities = Entities in the tweet
 # - metadata = Metadata for the flags dictionary
-# - val = indicates an attribute of the flags dict that will be treated as array
+# - val = indicates an attribute of the flags dict that will be treated as array of keywords
 # -- if val == keyword => must contain keywords we are searching for (see config for metadata csv)
 # TODO: rename 'val' for easier understanding
 def add_values_to_flags(flags, key, entities, metadata, val):
     for word in entities:
-        for row in metadata:
-            if row[val].lower() == word.lower() or row[val] == '@'+word:
-                for k, v in row.items():
-                    if k == val:
-                        flags[k].append(word)
-                    elif v != "":
-                        flags[k][v] += 1
-    for k,v in metadata.items():
+        if metadata[val].lower() == word.lower() or metadata[val] == '@'+word:
+            for k,v in metadata.items():
+                if k == val:
+                    flags[k].append(word)
+                elif v != "":
+                    flags[k][v] += 1
     return {'flag':flags}
