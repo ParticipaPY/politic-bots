@@ -35,6 +35,7 @@ class TwitterAPIManager:
     def search_tweets(self, tweets_qry, keyword, ktype, k_file):
         count_tweets = 0
         i = 0
+        # TODO: needs some explanation about what's the role of val
         val = "keyword"
         try:
             for tweet in tweepy.Cursor(

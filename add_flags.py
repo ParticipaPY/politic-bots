@@ -1,16 +1,19 @@
 from collections import defaultdict
 
 import logging
+# TODO: need improved documentation, added basic information
 
+# create_flag takes a dictionary of metadata and a value to create the initial flags dictionary
+# - metadata contains tuples of keys and values that must be added to the flags dictionary
+# - val represents a value we want to use as an array in the flags dictionary
 def create_flag(metadata, val):
     flags = {}
     headers = []
     saved = 0
     columns = defaultdict(list)  # each value in each column is appended to a list
-    #logging.info('Metadata is {0}'.format(metadata))
-    #logging.info('Val is {0}'.format(val))
+    logging.debug('Creating Flags for metadata = {0}'.format(metadata))
+    logging.debug('Creating Flags with val = {0}'.format(val))
     for key, value in metadata.items():
-        #logging.info('Key,Value = {0},{1}'.format(key, value))
         columns[key].append(value)
         if not saved:
             flags[key]= {}
@@ -37,22 +40,27 @@ def get_entities_data(tweet):
         user_mentions.append(m['screen_name']) 
     return set(hashtags+user_mentions)
 
-
+# add_values_to_flags populates the flags dictionary of a tweet according to the metadata it contains
+# - flags = Initial dictionary of flags
+# - key = Keywords for the flags dictionary
+# - entities = Entities in the tweet
+# - metadata = Metadata for the flags dictionary
+# - val = indicates an attribute of the flags dict that will be treated as array
+# -- if val == keyword => must contain keywords we are searching for (see config for metadata csv)
+# TODO: rename 'val' for easier understanding
 def add_values_to_flags(flags, key, entities, metadata, val):
-    #logging.info('Flags is {0}'.format(flags))
-    #logging.info('Key is {0}'.format(key))
-    #logging.info('Entities is {0}'.format(entities))
-    #logging.info('Metadata is {0}'.format(metadata))
-    #logging.info('Val is {0}'.format(val))
-    for word in entities:
-        for k,v in metadata.items():
-            logging.info('k is {0}'.format(k))
-            logging.info('v is {0}'.format(v))
-            if (v != '' and (v.lower() == word.lower() or v == '@'+word)):
-               # for k, v in row.items():
-                if k == val:
+    logging.debug('Initial dictionary of flags = {0}'.format(flags))
+    logging.debug('Keywords for the flags dictionary = {0}'.format(key))
+    logging.debug('Entities in the tweet = {0}'.format(entities))
+    logging.debug('Metadata for the flags dictionary = {0}'.format(metadata))
+    logging.debug('Controlling Val = {0}'.format(val))
+    for k,v in metadata.items():
+        if k == val:
+            for word in entities:
+                if v.lower() == word.lower() or v == '@'+word:
                     flags[k].append(word)
-                elif v != "":
-                    flags[k][v] += 1
+        elif v != "":
+            flags[k][v] += 1
+    logging.debug('Resulting flags dictionary = {0}'.format(flags)) # this variable is a mystery
     return {'flag':flags}
 
