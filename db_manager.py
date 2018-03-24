@@ -653,4 +653,5 @@ class DBManager:
             logging.info('Inserted tweet: {0}'.format(id_tweet))
             return True
         else:
+            logging.info('Tweet not inserted because num_results = {0}'.format(num_results))
             return False
