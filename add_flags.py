@@ -1,21 +1,16 @@
-from db_manager import DBManager
-from pymongo import MongoClient
-from utils import *
 from collections import defaultdict
+
 
 def create_flag(metadata, val):
     flags = {}
     headers = []
     saved = 0
-    columns = defaultdict(list) # each value in each column is appended to a list
-    data = defaultdict(list)
-    for row in metadata:
-        for key, value in row.items():
-            columns[key].append(value)
-            if not saved:
-                flags[key]= {}
-                headers.append(key)
-        saved = 1
+    columns = defaultdict(list)  # each value in each column is appended to a list
+    for key, value in metadata.items():
+        columns[key].append(value)
+        if not saved:
+            flags[key]= {}
+            headers.append(key)
     for i in headers:
         for j in set(columns[i]):
             if i == val:
@@ -25,6 +20,7 @@ def create_flag(metadata, val):
             else:
                 continue
     return flags, headers
+
 
 def get_entities_data(tweet):
     hashtags = []
@@ -36,6 +32,7 @@ def get_entities_data(tweet):
     for m in e_user_mentions:
         user_mentions.append(m['screen_name']) 
     return set(hashtags+user_mentions)
+
 
 def add_values_to_flags(flags, key, entities, metadata, val):
     for word in entities:
