@@ -205,6 +205,7 @@ class TweetEvaluator:
                     self.__dbm.save_record(s_obj)
         return num_fixed_tweets
 
+
 class HashtagDiscoverer:
     user_handlers, hashtags = [], []
     __dbm = None
