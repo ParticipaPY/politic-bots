@@ -1,4 +1,7 @@
 keyword,partido_politico,candidatura,alianza,puesto,region,tipo_keyword
+@aldocenturion,partido democrata cristiano,aldo centurion,,,,personal
+@AlianzaGanar,ganar,efrain alegre,ganar,presidente,,org
+@AndresCabapy,ppc,andres caballero,ganar,diputados,central,personal
 @ANRParaguay,anr,mario abdo,,presidente,,org
 @MaritoAbdo‏,anr,mario abdo,,presidente,,personal
 Lista1,anr,mario abdo,,presidente,,org
@@ -9,78 +12,79 @@ ParaguayDeLaGente,anr,mario abdo,,presidente,,org
 paraguayelige,,,,,,general
 @avancemos_pais,avancemos,,ganar,,,org
 @BuyeBuongermini,avancemos,rodrigo buongermini,ganar,diputados,asu,personal
-@IvnAllende,avancemos,ivan allende,ganar,diputados,central,personal
-@Pykare,avancemos,adolfo ferreiro,ganar,senado,,personal
-@rociocasco2,avancemos,rocio casco,ganar,diputados,central,personal
-@senadorMLopezP,avancemos,miguel lopez perito,ganar,senado,,personal
-@MartinezToppi,compromiso,Richard Martínez Toppi,,diputados,capital,personal
-@caramarillapy,compromiso,carlos amarilla,,senado,,personal
-@MCC_prensa,compromiso,,,,,org
-@olgadiputada,compromiso,olga ferreira,,diputados,asu,personal
-@paola_horita,compromiso,paola horita,,diputados,alto parana,personal
-@MaRuMa79,de la a,mario ruben marecos,,diputados,asu,personal
-@milibritez,de la a,mili britez,,senado,,personal
-@partidodla,de la a,,,,,org
-@FrenteGuasuPY,frente guazu,,ganar,,,org
-@leitorubin,frente guazu,,ganar,,,personal
-@AlianzaGanar,ganar,efrain alegre,ganar,presidente,,org
-@EDUARDOVIEDMA,hagamos,eduardo viedma,,diputados,asu,personal
-@partidohagamos,hagamos,,,,,org
-@tonyapuril,hagamos,tony apuril,,senado,,personal
-@ultrazoquet,hagamos,Tito Ibarrola,,diputados,central,personal
-@fidelzavala2018,patria querida,fidel zavala,,senado,,personal
-@MarioAPazC,patria querida,mario paz castaing,,parlasur,,personal
-@patriaquerida,patria querida,,,,,org
-@RocioVallejoA,patria querida,rocio vallejo,,diputados,central,personal
-@sebavillarejo,patria querida,sebastian villarejo,,diputados,asu,personal
-@srasmusseng,patria querida,Stephan Rasmussen,,senado,,personal
-Renovemos,patria querida,,,,,org
-@carlosarreguipy,pdp,carlos arregui,ganar,diputados,asu,personal
-@casanaslevi,pdp,jose casañas levi,ganar,diputados,central,personal
-@desimasi2,pdp,desire masi,ganar,senado,,personal
-@gduartcacavelos,pdp,guillermo duarte,ganar,senado,,personal
-@pdpprogresista,pdp,,ganar,,,org
-ElCambioJuntos,pdp,,ganar,,,org
-Elegi100,pdp,,ganar,,,org
-ElegiBien,pdp,,ganar,,,org
-@HugoRubinPy,pen,hugo rubin,,senado,,personal
-@KattyaGonzalez9,pen,kattya gonzalez,,diputados,central,personal
-@OmarOcamposPy,pen,omar ocampos,,diputados,asu,personal
-@terisilvero,pen,teresita silvero,,parlasur,,personal
-@raulmelamed,pj,raul melamed,,diputados,asu,personal
-@EfrainAlegre,plra,efrain alegre,ganar,presidente,,personal
-@PLRAPY,plra,efrain alegre,ganar,presidente,,org
-EsAhora,plra,efrain alegre,ganar,presidente,,org
-Lista2,plra,efrain alegre,ganar,presidente,,org
-VamosAGanarTodos,plra,efrain alegre,ganar,presidente,,org
+@CabralRomi,cruzada nacional,,,diputados,central,personal
 @CamiloSoaresM,pmas,camilo soares,,senado,,personal
-@JorgeRolonLuna,pmas,jorge rolon luna,,diputados,asu,personal
-@OcamposRoge,pmas,rogelio ocampos,,parlasur,,personal
-@pmaspy,pmas,,ganar,,,org
-@RamonVeraV,pmas,ramon vera venialgo,,diputados,central,personal
-@PodemosPais,podemos,,ganar,,,org
-@KunaPyrenda,Kuna pyrenda,,,,,org
-@LilianSotoB,Kuna pyrenda,Lilian Soto,,senado,,personal
-@NoeliaQuintana9,soberania,Noelia Quintana,,diputados,asu,personal
-@arnaldogiuzzio,somos py,arnaldo giuzzio,,senado,,personal
-@emiliofuster1,somos py,emilio fuster,,diputados,asu,personal
-@OvejerJorge,somos py,jorge ovejero,,parlasur,,personal
-@rogeliocentral1,somos py,rogelio delgado,,diputados,central,personal
-@somos_paraguay,somos py,,,,,org
-@clariarias,unace,Clari Arias,,diputados,central,personal
-@PartidoUnace,unace,,,,,org
-Elecciones2018,,,,,,general
-AlianzaGANAR,,,ganar,,,org
-GanarElCambio ,,,ganar,,,org
-@ppcpy,ppc,,ganar,,,org
-@AndresCabapy,ppc,andres caballero,ganar,diputados,central,personal
-@jcastrotenor,pdc,jorge castro,,diputados,asu,personal
-ParticipaciónCiudadana,ppc,,ganar,,,org
-@esperanza_py,frente guazu,esperanza martinez,ganar,senado,,personal
-@AQEpy,,,,,,general
-@HugoRicher_,frente guazu,hugo richer,ganar,senado,,personal
-@RicardoCanese,por vos,ricardo canese,ganar,parlasur,,personal
+@caramarillapy,compromiso,carlos amarilla,,senado,,personal
+@carlosarreguipy,pdp,carlos arregui,ganar,diputados,asu,personal
+@carlosfilizzola ,frente guazu,carlos filizzola,,senado,,personal
+@casanaslevi,pdp,jose casañas levi,ganar,diputados,central,personal
 @CasartelliMa,por vos,mario casartelli,ganar,diputados,asu,personal
+@clariarias,unace,clari arias,,diputados,central,personal
+@ConvergenciaFG,frente guazu,,ganar,,,org
+@desimasi2,pdp,desire masi,ganar,senado,,personal
+@EDUARDOVIEDMA,hagamos,eduardo viedma,,diputados,asu,personal
+@EfrainAlegre,plra,efrain alegre,ganar,presidente,,personal
+@emiliofuster1,somos py,emilio fuster,,diputados,asu,personal
+@esperanza_py,frente guazu,esperanza martinez,ganar,senado,,personal
+@fidelzavala2018,patria querida,fidel zavala,,senado,,personal
+@frenteampliopy,partido frente amplio,,,,,org
+@FrenteGuasuPY,frente guazu,,ganar,,,org
+@gduartcacavelos,pdp,guillermo duarte,ganar,senado,,personal
+@GeronimoAyala4,mpip,geronimo ayala,,senado,,personal
+@hermannpankow,cruzada nacional,,,diputados,asu,personal
+@HugoRicher_,frente guazu,hugo richer,ganar,senado,,personal
+@HugoRubinPy,pen,hugo rubin,,senado,,personal
+@IvnAllende,avancemos,ivan allende,ganar,diputados,central,personal
+@jcastrotenor,pdc,jorge castro,,diputados,asu,personal
+@JorgeRolonLuna,pmas,jorge rolon luna,,diputados,asu,personal
+@josefinaduarteb,prf,josefina duarte,ganar,senado,,personal
+@KattyaGonzalez9,pen,kattya gonzalez,,diputados,central,personal
+@KunaPyrenda,kuna pyrenda,,,,,org
+@leitorubin,frente guazu,,ganar,,,personal
+@LilianSotoB,kuna pyrenda,lilian soto,,senado,,personal
+@lilioirale,nosotros,lilio irala,,senado,,personal
+@MarioAPazC,patria querida,mario paz castaing,,parlasur,,personal
+@MaritoAbdo ‏,anr,mario abdo,,presidente,,personal
+@MartinezToppi,compromiso,richard martínez toppi,,diputados,capital,personal
+@MaRuMa79,de la a,mario ruben marecos,,diputados,asu,personal
+@MCC_prensa,compromiso,,,,,org
+@milibritez,de la a,mili britez,,senado,,personal
+@NoeliaQuintana9,soberania,noelia quintana,,diputados,asu,personal
+@OcamposRoge,pmas,rogelio ocampos,,parlasur,,personal
+@olgadiputada,compromiso,olga ferreira,,diputados,asu,personal
+@OmarOcamposPy,pen,omar ocampos,,diputados,asu,personal
+@OmarOcamposPy ,pen,,,diputado,,personal
+@OvejerJorge,somos py,jorge ovejero,,parlasur,,personal
+@PaisSolidario,pais solidario,,ganar,,,org
+@paola_horita,compromiso,paola horita,,diputados,alto parana,personal
+@ParaguayoCubas,cruzada nacional,,,senado,,personal
+@partidodla,de la a,,,,,org
+@partidohagamos,hagamos,,,,,org
+@PartidoUnace,unace,,,,,org
+@patriaquerida,patria querida,,,,,org
+@pdpprogresista,pdp,,ganar,,,org
+@PLRAPY,plra,efrain alegre,ganar,presidente,,org
+@pmaspy,pmas,,ganar,,,org
+@PodemosPais,podemos,,ganar,,,org
+@ppcpy,ppc,,ganar,,,org
+@Prf_Paraguay,prf,,ganar,,,org
+@Pykare,avancemos,adolfo ferreiro,ganar,senado,,personal
+@RamonVeraV,pmas,ramon vera venialgo,,diputados,central,personal
+@raulmelamed,pj,raul melamed,,diputados,asu,personal
+@RicardoCanese,por vos,ricardo canese,ganar,parlasur,,personal
+@rociocasco2,avancemos,rocio casco,ganar,diputados,central,personal
+@RocioVallejoA,patria querida,rocio vallejo,,diputados,central,personal
+@rogeliocentral1,somos py,rogelio delgado,,diputados,central,personal
+@RPatriotica,reserva patriotica,,,,,org
+@sebavillarejo,patria querida,sebastian villarejo,,diputados,asu,personal
+@senadorMLopezP,avancemos,miguel lopez perito,ganar,senado,,personal
+@somos_paraguay,somos py,,,,,org
+@srasmusseng,patria querida,stephan rasmussen,,senado,,personal
+@terisilvero,pen,teresita silvero,,parlasur,,personal
+@tonyapuril,hagamos,tony apuril,,senado,,personal
+@ultrazoquet,hagamos,tito ibarrola,,diputados,central,personal
+@VargasDaniel01,partido democrata cristiano,daniel vargas,,central,,personal
+AlianzaGANAR,,,ganar,,,org
 AsunciónPorVos,por vos,,,,,org
 @ConvergenciaFG,frente guazu,,ganar,,,org
 @ParaguayoCubas,cruzada nacional,,,senado,,personal
@@ -95,6 +99,22 @@ AsunciónPorVos,por vos,,,,,org
 @carlosfilizzola,frente guazu,carlos filizzola,,senado,,personal
 YoMeSumo,patria querida,,,,,org
 DesiConLaGente,pdp,desire masi,ganar,senado,,personal
+ElCambioJuntos,pdp,,ganar,,,org
+Elecciones2018,,,,,,general
+Elegi100,pdp,,ganar,,,org
+ElegiBien,pdp,,ganar,,,org
+EsAhora,plra,efrain alegre,ganar,presidente,,org
+EscuchandoteAVos,plra,efrain alegre,ganar,presidente,,org
+GanarElCambio ,,,ganar,,,org
+Hagamos,partido hagamos,tony apuril,,senado,,org
+lista 20,partido hagamos,tony apuril,,senado,,org
+Lista1,anr,mario abdo,,presidente,,org
+Lista2,plra,efrain alegre,ganar,presidente,,org
+MaritoDeLaGente,anr,mario abdo,,presidente,,org
+MaritoPresidente,anr,mario abdo,,presidente,,org
+NicanorSenador,anr,nicanor duarte frutos,,presidente,,personal
+ParaguayDeLaGente,anr,mario abdo,,presidente,,org
+paraguayelige,,,,,,general
 ParaguayMbarete,pdp,desire masi,ganar,senado,,personal
 ParaguaySeMueve,anr,mario abdo benitez,,presidente,,org
 EscuchandoteAVos,plra,efrain alegre,ganar,presidente,,org

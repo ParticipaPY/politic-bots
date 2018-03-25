@@ -35,6 +35,7 @@ class TwitterAPIManager:
     def search_tweets(self, tweets_qry, keyword, keyword_type, metadata):
         count_tweets = 0
         i = 0
+        # TODO: needs some explanation about what's the role of val
         val = "keyword"
         try:
             for tweet in tweepy.Cursor(
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     credentials = {'key': configuration['twitter']['consumer_key'],
                    'secret': configuration['twitter']['consumer_secret']}
     keyword, k_metadata = parse_metadata(configuration['metadata'])
-    dbm = DBManager('tweet')
+    dbm = DBManager('tweets')
     tm = TwitterAPIManager(credentials, dbm)
     for current_keyword, keyword_row in zip(keyword, k_metadata):
         if keyword_row['tipo_keyword'] == "org" or keyword_row['tipo_keyword'] == "general":

@@ -1,6 +1,11 @@
 from collections import defaultdict
 
+import logging
+# TODO: need improved documentation, added basic information
 
+# create_flag takes a dictionary of metadata and a value to create the initial flags dictionary
+# - metadata contains tuples of keys and values that must be added to the flags dictionary
+# - val represents a value we want to use as an array in the flags dictionary
 def create_flag(metadata, val):
     flags = {}
     headers = []
