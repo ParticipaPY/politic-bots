@@ -64,7 +64,8 @@ if __name__ == "__main__":
     dbm = DBManager('tweets')
     tm = TwitterAPIManager(credentials, dbm)
     for current_keyword, keyword_row in zip(keyword, k_metadata):
-        if keyword_row['tipo_keyword'] == "org" or keyword_row['tipo_keyword'] == "general":
+        if keyword_row['tipo_keyword'] == "org" or keyword_row['tipo_keyword'] == "general" or \
+           keyword_row['tipo_keyword'] == "personal":
             logging.info('Searching tweets for %s' % current_keyword)
             if '@' in current_keyword:
                 tm.search_tweets(configuration['tweets_qry'], current_keyword, 'user', k_metadata)
