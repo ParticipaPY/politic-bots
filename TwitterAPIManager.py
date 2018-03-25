@@ -71,7 +71,8 @@ if __name__ == "__main__":
                 tm.search_tweets(configuration['tweets_qry'], current_keyword, 'user', k_metadata)
             else:
                 tm.search_tweets(configuration['tweets_qry'], current_keyword, 'hashtag', k_metadata)
-        break
+        else:
+            continue
     logging.info('Evaluating the relevance of the new tweets...')
     te = TweetEvaluator()
     te.identify_relevant_tweets()
