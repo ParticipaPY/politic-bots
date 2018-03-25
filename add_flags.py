@@ -45,7 +45,7 @@ def get_entities_tweet(tweet):
     entities = do_get_entities_tweet(tweet)
     # if the tweet is a RT, add also the entities
     # of the original tweet
-    if tweet['retweeted_status']:
+    if 'retweeted_status' in tweet.keys():
         entities.update(do_get_entities_tweet(tweet['retweeted_status']))
     return entities
 
