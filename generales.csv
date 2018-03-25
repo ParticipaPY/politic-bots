@@ -1,6 +1,6 @@
 keyword,partido_politico,candidatura,alianza,puesto,region,tipo_keyword
 @ANRParaguay,anr,mario abdo,,presidente,,org
-@MaritoAbdo ‏,anr,mario abdo,,presidente,,personal
+@MaritoAbdo‏,anr,mario abdo,,presidente,,personal
 Lista1,anr,mario abdo,,presidente,,org
 MaritoDeLaGente,anr,mario abdo,,presidente,,org
 MaritoPresidente,anr,mario abdo,,presidente,,org
@@ -92,18 +92,17 @@ AsunciónPorVos,por vos,,,,,org
 @AuroraLezcano,prf,aurora lezcano,ganar,diputados,central,personal
 @PaisSolidario,pais solidario,,ganar,,,org
 @lilioirale,nosotros,lilio irala,,senado,,personal
-@carlosfilizzola ,frente guazu,carlos filizzola,,senado,,personal
+@carlosfilizzola,frente guazu,carlos filizzola,,senado,,personal
 YoMeSumo,patria querida,,,,,org
 DesiConLaGente,pdp,desire masi,ganar,senado,,personal
 ParaguayMbarete,pdp,desire masi,ganar,senado,,personal
 ParaguaySeMueve,anr,mario abdo benitez,,presidente,,org
 EscuchandoteAVos,plra,efrain alegre,ganar,presidente,,org
-@OmarOcamposPy ,PEN,,,diputado,,personal
-Hagamos,partido hagamos,,,Tony Apuril,,
-@RPatriotica,,reserva patriotica,,,,,
-lista 20,partido hagamos,,,Tony Apuril,,
+@OmarOcamposPy,PEN,,,diputado,,personal
+Hagamos,partido hagamos,,,,,org
+@RPatriotica,,reserva patriotica,,,,org
 @atanasiogaleano ,partido del movimiento patriotico,,,diputado,,personal
-@VargasDaniel01,Partido Demócrata Cristiano,Daniel Vargas,,central,,
-@RPatriotica, Movimiento Reserva Patriotica      ,,,,,
-@aldocenturion,Partido Demócrata Cristiano,Aldo Centurión ,,,,
-@frenteampliopy,,Partido Frente amplio PY,,,,,,
+@VargasDaniel01,Partido Demócrata Cristiano,Daniel Vargas,,central,,personal
+@RPatriotica,Movimiento Reserva Patriotica,,,,,org
+@aldocenturion,Partido Demócrata Cristiano,Aldo Centurión,,,,personal
+@frenteampliopy,,Partido Frente amplio PY,,,,personal
