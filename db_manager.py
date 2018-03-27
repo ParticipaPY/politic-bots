@@ -631,6 +631,18 @@ class DBManager:
                 results['ori'].append({'text': text_tweet, 'id_tweet': tweet['id_str']})
         return results
 
+    def get_users_and_activity(self, **kwargs):
+        match = {}
+        if 'partido' in kwargs.keys():
+            match.update({'party': {'$eq': kwargs['partido']}})
+        if 'movimiento' in kwargs.keys():
+            match.update({'movement': {'$eq': kwargs['movimiento']}})
+        pipeline = [
+            {'$match': match},
+            {'$sort': {'tweets': -1}}
+        ]
+        return self.aggregate(pipeline)
+
     def add_tweet(self, tweet, type_k, extraction_date, flag):
         """
         Save a tweet in the database
