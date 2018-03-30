@@ -11,9 +11,12 @@ def get_config(config_file):
     return config
 
 def get_db():
-    client = MongoClient('10.20.121.153:27017')
     config = get_config('config.json')
+    host = config['mongo']['host']
+    port = config['mongo']['port']
+    client = MongoClient(host + ':' + port)
     db = client[config['mongo']['db_name']]
+
     return db
 
 def parse_date(date):
