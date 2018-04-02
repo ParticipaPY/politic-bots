@@ -8,7 +8,7 @@ class BotDetector:
     __dbm_users = DBManager('users')
     __api = None
     __conf = None
-    __implemented_heuristics = 7
+    __analyzed_features = 8
 
     def __init__(self, name_config_file='config.json'):
         self.__conf = self.__get_config(name_config_file)
@@ -53,13 +53,20 @@ class BotDetector:
             return 1
 
     # Check the number of retweets in a given timeline
+    # return True if the number of retweets is greater or equal
+    # than a defined threshold (e.g., 90%), False otherwise
     def __is_retweet_bot(self, timeline):
-        i = j = 0
-        for line in timeline:
-            i += 1
-            if 'RT' in line['text']:
-                j += 1
-        return 1 if 90 >= (100*j)/i else 0
+        num_tweets = num_rts = 0
+        threshold = 90
+        for tweet in timeline:
+            num_tweets += 1
+            if 'RT' in tweet['text']:
+                num_rts += 1
+        per_rts = (100*num_rts)/num_tweets
+        if per_rts >= threshold:
+            return True
+        else:
+            return False
 
     # Check the presence/absent of default elements in the profile of a given user
     def __default_twitter_account(self, user):
@@ -112,7 +119,7 @@ class BotDetector:
             bot_score = bot_score + self.__location(data)
             bot_score = bot_score + self.__followers_ratio(data)
             print('There are a {0}% of probability that the user {1} would be bot'.format(
-                  round((bot_score/self.__implemented_heuristics)*100, 2), user))
+                  round((bot_score/self.__analyzed_features)*100, 2), user))
 
 
 if __name__ == "__main__":
