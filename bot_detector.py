@@ -49,7 +49,7 @@ def is_retweet_bot(tl): # Retweet bot
         i += 1
         if "RT" in line['text']:
             j += 1
-    return 1 if 90 >= (100*j)/i else 0
+    return 1 if 90 <= (100*j)/i else 0
     
 
 def default_twitter_account(user):
@@ -58,7 +58,7 @@ def default_twitter_account(user):
         count += 1
     if user['default_profile_image'] is True: #Default profile image
         count += 1
-    if user['profile_use_background_image'] is True: # Background image
+    if user['profile_use_background_image'] is False: # Background image
         count += 1
     if user['description'] == "": # None description
         count += 1
@@ -86,7 +86,7 @@ def bot_detector(conf, users):
         auth,
         wait_on_rate_limit=True,
         wait_on_rate_limit_notify=True)
-    characterisctics = 7 # number of analyzed characteristics
+    characterisctics = 8 # number of analyzed characteristics
     bot = 0
     for user in users:
         print(user)
