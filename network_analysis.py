@@ -29,6 +29,44 @@ class NetworkAnalyzer:
         else:
             return 0
 
+    # Get interactions (in and out) of a given users
+    def get_interactions(self, user_screen_name):
+        user = self.__dbm_users.search({'screen_name': user_screen_name})[0]
+        # compute out interactions
+        user_interactions = user['interactions']
+        out_interactions_dict = {}
+        for recipient, interactions in user_interactions.items():
+            out_interactions_dict[recipient] = interactions
+        out_interactions = [k for k in sorted(out_interactions_dict.items(),
+                                              key=lambda k_v: k_v[1]['total'],
+                                              reverse=True)]
+        # compute in interactions
+        in_inter_query = {'interactions.'+user_screen_name: {'$exists': 1},
+                          'screen_name': {'$ne': user_screen_name}}
+        n_users = self.__dbm_users.search(in_inter_query)
+        in_interactions_dict = {}
+        for n_user in n_users:
+            n_user_interactions = n_user['interactions']
+            for i_user, interactions in n_user_interactions.items():
+                if i_user == user_screen_name:
+                    in_interactions_dict[n_user['screen_name']] = interactions
+        in_interactions = [k for k in sorted(in_interactions_dict.items(),
+                                             key=lambda k_v: k_v[1]['total'],
+                                             reverse=True)]
+        # compile all information in a dictionary
+        user_dict = {
+            'activity': {
+                'total_tweets': user['tweets'],
+                'original_tweets': user['original_tweets'],
+                'retweets': user['rts'],
+                'replies': user['rps'],
+                'qoutes': user['qts']
+            },
+            'in_interactions': in_interactions,
+            'out_interactions': out_interactions
+        }
+        return user_dict
+
     def create_users_db(self, clear_collection=False):
         logging.info('Creating database of users, it can take several minutes, please wait_')
         if clear_collection:
