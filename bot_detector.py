@@ -78,7 +78,7 @@ class BotDetector:
         if user['default_profile_image'] is True:
             count += 1
         # Background image
-        if user['profile_use_background_image'] is True:
+        if user['profile_use_background_image'] is False:
             count += 1
         # None description
         if user['description'] == '':
