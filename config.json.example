@@ -5,6 +5,7 @@
     "consumer_key":"YOurCoNsuMerKEy",
     "consumer_secret":"yOuRconSumERseCrEt"
   },
+  "current_year": 2018,
   "mongo": {
     "host": "localhost",
     "port": "27017",
