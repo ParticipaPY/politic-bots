@@ -101,8 +101,8 @@ class BotDetector:
             return 0
 
     def compute_bot_probability(self, users):
-        bot_score = 0
         for user in users:
+            bot_score = 0
             print('Computing the probability of the user {0}'.format(user))
             # Get information about the user, check
             # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
