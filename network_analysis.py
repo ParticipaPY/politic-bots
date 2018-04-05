@@ -35,30 +35,98 @@ class NetworkAnalyzer:
         # compute out interactions, meaning, interactions originated by
         # the user
         user_interactions = user['interactions']
-        out_interactions_dict = {}
-        total_out_interactions = 0
+        out_interactions_dict, out_rts = {}, {}
+        out_rps, out_qts, out_mts = {}, {}, {}
+        total_out_interactions, total_out_retweets = 0, 0
+        total_out_mentions, total_out_replies = 0, 0
+        total_out_quotes = 0
         for recipient, interactions in user_interactions.items():
-            out_interactions_dict[recipient] = interactions
+            out_interactions_dict[recipient] = interactions['total']
             total_out_interactions += interactions['total']
-        out_interactions = [k for k in sorted(out_interactions_dict.items(),
-                                              key=lambda k_v: k_v[1]['total'],
-                                              reverse=True)]
+            if 'retweets' in interactions:
+                total_out_retweets += interactions['retweets']
+                out_rts[recipient] = interactions['retweets']
+            if 'replies' in interactions:
+                total_out_replies += interactions['replies']
+                out_rps[recipient] = interactions['replies']
+            if 'mentions' in interactions:
+                total_out_mentions += interactions['mentions']
+                out_mts[recipient] = interactions['mentions']
+            if 'quotes' in interactions:
+                total_out_quotes += interactions['quotes']
+                out_qts[recipient] = interactions['quotes']
+        out_interactions_obj = {
+            'total': {
+                'count': total_out_interactions,
+                'details': [k for k in sorted(out_interactions_dict.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'replies': {
+                'count': total_out_replies,
+                'details': [k for k in sorted(out_rps.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'retweets': {
+                'count': total_out_retweets,
+                'details': [k for k in sorted(out_rts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'mentions': {
+                'count': total_out_mentions,
+                'details': [k for k in sorted(out_mts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'quotes': {
+                'count': total_out_quotes,
+                'details': [k for k in sorted(out_qts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            }
+        }
         # compute in interactions, meaning, interactions in which the user
         # was mentioned, retweeted, quoted, replied
         in_inter_query = {'interactions.'+user_screen_name: {'$exists': 1},
                           'screen_name': {'$ne': user_screen_name}}
         n_users = self.__dbm_users.search(in_inter_query)
-        in_interactions_dict = {}
+        in_interactions_dict, in_rts, in_rps = {}, {}, {}
+        in_qts, in_mts = {}, {}
         total_in_interactions = 0
+        total_in_retweets, total_in_replies = 0, 0
+        total_in_mentions, total_in_quotes  = 0, 0
         for n_user in n_users:
             n_user_interactions = n_user['interactions']
             for i_user, interactions in n_user_interactions.items():
                 if i_user == user_screen_name:
-                    in_interactions_dict[n_user['screen_name']] = interactions
+                    in_interactions_dict[n_user['screen_name']] = interactions['total']
                     total_in_interactions += interactions['total']
-        in_interactions = [k for k in sorted(in_interactions_dict.items(),
-                                             key=lambda k_v: k_v[1]['total'],
-                                             reverse=True)]
+                    if 'retweets' in interactions.keys():
+                        total_in_retweets += interactions['retweets']
+                        in_rts[n_user['screen_name']] = interactions['retweets']
+                    if 'replies' in interactions.keys():
+                        total_in_replies += interactions['replies']
+                        in_rps[n_user['screen_name']] = interactions['replies']
+                    if 'mentions' in interactions.keys():
+                        total_in_mentions += interactions['mentions']
+                        in_mts[n_user['screen_name']] = interactions['mentions']
+                    if 'quotes' in interactions.keys():
+                        total_in_quotes += interactions['quotes']
+                        in_qts[n_user['screen_name']] = interactions['quotes']
+        in_interactions_obj = {
+            'total': {
+                'count': total_in_interactions,
+                'details': [k for k in sorted(in_interactions_dict.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'replies': {
+                'count': total_in_replies,
+                'details': [k for k in sorted(in_rps.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'retweets': {
+                'count': total_in_retweets,
+                'details': [k for k in sorted(in_rts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'mentions': {
+                'count': total_in_mentions,
+                'details': [k for k in sorted(in_mts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            },
+            'quotes': {
+                'count': total_in_quotes,
+                'details': [k for k in sorted(in_qts.items(), key=lambda k_v: k_v[1], reverse=True)]
+            }
+        }
         # compile all information in a dictionary
         user_dict = {
             'activity': {
@@ -66,12 +134,10 @@ class NetworkAnalyzer:
                 'original_tweets': user['original_tweets'],
                 'retweets': user['rts'],
                 'replies': user['rps'],
-                'qoutes': user['qts']
+                'quotes': user['qts']
             },
-            'in_interactions': in_interactions,
-            'out_interactions': out_interactions,
-            'total_in_interactions': total_in_interactions,
-            'total_out_interactions': total_out_interactions
+            'in_interactions': in_interactions_obj,
+            'out_interactions': out_interactions_obj
         }
         return user_dict
 
