@@ -32,24 +32,30 @@ class NetworkAnalyzer:
     # Get interactions (in and out) of a given users
     def get_interactions(self, user_screen_name):
         user = self.__dbm_users.search({'screen_name': user_screen_name})[0]
-        # compute out interactions
+        # compute out interactions, meaning, interactions originated by
+        # the user
         user_interactions = user['interactions']
         out_interactions_dict = {}
+        total_out_interactions = 0
         for recipient, interactions in user_interactions.items():
             out_interactions_dict[recipient] = interactions
+            total_out_interactions += interactions['total']
         out_interactions = [k for k in sorted(out_interactions_dict.items(),
                                               key=lambda k_v: k_v[1]['total'],
                                               reverse=True)]
-        # compute in interactions
+        # compute in interactions, meaning, interactions in which the user
+        # was mentioned, retweeted, quoted, replied
         in_inter_query = {'interactions.'+user_screen_name: {'$exists': 1},
                           'screen_name': {'$ne': user_screen_name}}
         n_users = self.__dbm_users.search(in_inter_query)
         in_interactions_dict = {}
+        total_in_interactions = 0
         for n_user in n_users:
             n_user_interactions = n_user['interactions']
             for i_user, interactions in n_user_interactions.items():
                 if i_user == user_screen_name:
                     in_interactions_dict[n_user['screen_name']] = interactions
+                    total_in_interactions += interactions['total']
         in_interactions = [k for k in sorted(in_interactions_dict.items(),
                                              key=lambda k_v: k_v[1]['total'],
                                              reverse=True)]
@@ -63,7 +69,9 @@ class NetworkAnalyzer:
                 'qoutes': user['qts']
             },
             'in_interactions': in_interactions,
-            'out_interactions': out_interactions
+            'out_interactions': out_interactions,
+            'total_in_interactions': total_in_interactions,
+            'total_out_interactions': total_out_interactions
         }
         return user_dict
 
