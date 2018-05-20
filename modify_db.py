@@ -74,7 +74,7 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
         user_screen_name = user['screen_name']
 
         if 'bot_detector_pbb' in user.keys():
-            print('Pbb already calculated for user {}.\n'.format(user_screen_name))
+            print('Pbb already calculated for user {} = {}.\n'.format(user_screen_name, user['bot_detector_pbb']))
         else:
             # Compute the bot_pbb for the current user and store it into the db
             user_pbb = bot_detector.compute_bot_probability([user_screen_name])
@@ -93,16 +93,23 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
         for interacted_user, interaction in user_interactions.items():
             if interacted_users_count >= no_interacted_users:
                 break
+
+            # If pbb already computed for the interacted user in question, no need to re-compute it
+            interacted_user_record = dbm_users.find_record({'screen_name': interacted_user})
+            if 'bot_detector_pbb' in interacted_user_record.keys():
+                print('Pbb already calculated = {}.\n'.format(interacted_user_record['bot_detector_pbb']))
+                new_values = {'interactions.{0}.bot_detector_pbb'\
+                  .format(interacted_user): interacted_user_record['bot_detector_pbb']}
+                dbm_users.update_record({'screen_name': user_screen_name}, new_values)
+                continue
+            # If pbb hasn't been computed yet
             interacted_user_db_count = dbm_tweets.search({'tweet_obj.user.screen_name': interacted_user}).count()
             print('User: {2}. Interacted_user: {0}. DB_Count: {1}.\n'\
                 .format(interacted_user, interacted_user_db_count, user_screen_name))
             if interacted_user_db_count > 0:
-                if 'bot_detector_pbb' in users[interacted_user].keys():
-                    print('Pbb already calculated.\n')
-                else:
-                    interacted_users_count += 1
-                    print('Pbb will be calculated for her/him.\n')
-                    interacted_users += [interacted_user]
+                interacted_users_count += 1
+                print('Pbb will be calculated for her/him.\n')
+                interacted_users += [interacted_user]
         
         # Then a dictionary that maps each screen_name with its bot_detector_pbb
         interacted_users_pbbs = bot_detector.compute_bot_probability(interacted_users)
@@ -111,6 +118,8 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
             new_values = {'interactions.{0}.bot_detector_pbb'.format(interacted_user): bot_detector_pbb}
             print("Updating {}.{}\n".format(user_screen_name, repr(new_values)))
             dbm_users.update_record({'screen_name': user_screen_name}, new_values)
+            # Since we've already computed the pbbs for this user and they lack that attribute
+            dbm_users.update_record({'screen_name': interacted_user}, {'bot_detector_pbb': bot_detector_pbb})
 
 
 if __name__ == "__main__":
