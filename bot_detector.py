@@ -33,8 +33,12 @@ class BotDetector:
         return date
 
     def __get_user(self, screen_name):
-        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})[0]
-        return user['tweet_obj']['user']
+        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})
+        user_count = user.count()
+        if user_count > 0:
+            user = user[0]
+            return user['tweet_obj']['user']
+        return None
 
     # Get tweets in the timeline of a given user
     def __get_timeline(self, user):
@@ -101,6 +105,7 @@ class BotDetector:
             return 0
 
     def compute_bot_probability(self, users):
+        users_pbb = {}
         for user in users:
             bot_score = 0
             print('Computing the probability of the user {0}'.format(user))
@@ -118,8 +123,10 @@ class BotDetector:
             bot_score = bot_score + self.__default_twitter_account(data)
             bot_score = bot_score + self.__location(data)
             bot_score = bot_score + self.__followers_ratio(data)
+            users_pbb[user] = bot_score/self.__analyzed_features
             print('There are a {0}% of probability that the user {1} would be bot'.format(
-                  round((bot_score/self.__analyzed_features)*100, 2), user))
+                  round((users_pbb[user])*100, 2), user))
+        return users_pbb
 
 
 if __name__ == "__main__":
