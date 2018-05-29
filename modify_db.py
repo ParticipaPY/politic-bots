@@ -1,5 +1,7 @@
 from bot_detector import BotDetector
 
+import time
+
 def attribute_in_dict(dict_, attr_name):
     """Given a dictionary, it checks whether it has a key (nested in any level) with name attr_name."""
     # print(type(dict_))
@@ -37,10 +39,10 @@ def append_interactions_bot_pbb(bot_detector, dbm_users, dbm_tweets, users, no_i
         for interacted_user, interaction in user_interactions.items():
             if interacted_users_count >= no_interacted_users:
                 break
-            interacted_user_db_count = dbm_tweets.search({'tweet_obj.user.screen_name': interacted_user}).count()
+            interacted_user_db_tweets_count = dbm_tweets.search({'tweet_obj.user.screen_name': interacted_user}).count()
             print('User: {2}. Interacted_user: {0}. DB_Count: {1}.\n'\
-                .format(interacted_user, interacted_user_db_count, user['screen_name']))
-            if interacted_user_db_count > 0:
+                .format(interacted_user, interacted_user_db_tweets_count, user['screen_name']))
+            if interacted_user_db_tweets_count > 0:
                 interacted_users_count += 1
                 print('Pbb will be calculated for her/him.\n')
                 interacted_users += [interacted_user]
@@ -63,19 +65,26 @@ def append_interactions_bot_pbb(bot_detector, dbm_users, dbm_tweets, users, no_i
 #     # Do the same for each user's interactions
 #     append_interactions_bot_pbb(bot_detector, dbm_users, dbm_tweets, users, no_interacted_users)
 
-def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, no_interacted_users):
+def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, ignore_list, no_interacted_users):
     """Compute the bot_pbbs for no_users users in the 'users' list
-        and store it and his/her interactions' pbbs in the db"""
+        and store it and his/her first no_interacted_users interacted_users' pbbs in the db"""
     for user_number, user in enumerate(users):
         if user_number >= no_users:
             break
+        if user in ignore_list:
+            print('User: {} is in the ignore_list. Ignoring him...\n.'.format(user))
+            continue
         # Force assignations instead of accessing dict every time
         user_interactions = user['interactions']
         user_screen_name = user['screen_name']
 
+        # if user_screen_name not in 'CESARSANCHEZ553':
+        #     print("user_screen_name: {}. Is not {}. Passing...\n".format(user_screen_name, 'CESARSANCHEZ553'))
+        #     continue
+
         user_record = dbm_users.find_record({'screen_name': user_screen_name})
         if 'bot_detector_pbb' in user_record.keys():
-            print('Pbb already calculated for user {} = {}.\n'.format(user_screen_name, user_record['bot_detector_pbb'])) 
+            print('Pbb already calculated for user {} = {}.\n'.format(user_screen_name, user_record['bot_detector_pbb']))
         else:
             # Compute the bot_pbb for the current user and store it into the db
             user_pbb = bot_detector.compute_bot_probability([user_screen_name])
@@ -91,10 +100,15 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
         # Temporarily, the list only will have users that have at least one tweet stored in the db.
         interacted_users = []
         interacted_users_count = 0
-        for interacted_user, interaction in user_interactions.items():
+        # Iterate over the user_interactions in interaction-total-descending order 
+        for interacted_user in sorted(user_interactions, key=lambda interactions: user_interactions[interactions]['total'], reverse=True):
             if interacted_users_count >= no_interacted_users:
                 break
-            
+            interactions = user_interactions[interacted_user]
+            print('No. interactions with {}: {}.\n'.format(interacted_user, interactions['total']))
+            if interacted_user in ignore_list:
+                print('User: {} is in the ignore_list. Ignoring him...\n.'.format(interacted_user))
+                continue
             # If pbb already computed for the interacted user in question, no need to re-compute it 
             interacted_user_record = dbm_users.find_record({'screen_name': interacted_user})
             if 'bot_detector_pbb' in interacted_user_record.keys(): 
@@ -105,10 +119,10 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
                 dbm_users.update_record({'screen_name': user_screen_name}, new_values) 
                 continue 
             # If pbb hasn't been computed yet 
-            interacted_user_db_count = dbm_tweets.search({'tweet_obj.user.screen_name': interacted_user}).count()
+            interacted_user_db_tweets_count = dbm_tweets.search({'tweet_obj.user.screen_name': interacted_user}).count()
             print('User: {2}. Interacted_user: {0}. DB_Count: {1}.\n'\
-                .format(interacted_user, interacted_user_db_count, user_screen_name))
-            if interacted_user_db_count > 0:
+                .format(interacted_user, interacted_user_db_tweets_count, user_screen_name))
+            if interacted_user_db_tweets_count > 0:
                 interacted_users_count += 1
                 print('Pbb will be calculated for her/him.\n')
                 interacted_users += [interacted_user]
@@ -121,16 +135,20 @@ def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users
             print("Updating {}.{}\n".format(user_screen_name, repr(new_values)))
             dbm_users.update_record({'screen_name': user_screen_name}, new_values)
             # Since we've already computed the pbbs for this user and they lack that attribute 
-            dbm_users.update_record({'screen_name': interacted_user}, {'bot_detector_pbb': bot_detector_pbb}) 
+            dbm_users.update_record({'screen_name': interacted_user}, {'bot_detector_pbb': bot_detector_pbb})
+            print("Sleeping for 5 seconds...\n")
+            time.sleep(5)
 
 if __name__ == "__main__":
     myconf = 'config.json'
     bot_detector = BotDetector(myconf)
     # Number of users whose bot_pbb will be calculated
-    no_users = 1
+    no_users = 5
     # Max number of users in the interactions of a user to be updated
     # (it is assumed that is interaction_count-descent-ordered)
-    no_interacted_users = 5
+    no_interacted_users = 1
+
+    ignore_list = ['JovenAnetete']  # Temporary list. Because some of the accounts may have been deleted
 
     # Instantiate DBManager objects.  
     # Not sure if the following is good practice. Did it only to avoid importing DBManager again.
@@ -146,12 +164,12 @@ if __name__ == "__main__":
     user_record = dbm_users.find_record({})
     if 'bot_detector_pbb' not in user_record.keys():
         # append_bot_pbb(bot_detector, dbm_users, users)
-        append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, no_interacted_users)
+        append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, ignore_list, no_interacted_users)
     else:
         print("Fetched a user that already has the attribute 'bot_detector_pbb'.\n")
         # dbm_users.remove_field({'screen_name': user_record['screen_name']}\
         #     , {'bot_detector_pbb': user_record['bot_detector_pbb']})
-        append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, no_interacted_users)
+        append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, ignore_list, no_interacted_users)
 
     # if not attribute_in_dict(user_record['interactions'], 'bot_detector_pbb'):
     #     append_interactions_bot_pbb(bot_detector, dbm_users, dbm_tweets, users, no_interacted_users)
