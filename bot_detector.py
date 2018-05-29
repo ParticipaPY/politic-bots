@@ -66,7 +66,7 @@ class BotDetector:
             num_tweets += 1
             if 'RT' in tweet['text']:
                 num_rts += 1
-        per_rts = (100*num_rts)/num_tweets
+        per_rts = (100*num_rts)/num_tweets if num_tweets != 0 else -1  # If it doesn't have any tweets, can't be a RT-bot
         if per_rts >= threshold:
             return True
         else:
