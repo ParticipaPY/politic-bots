@@ -1,7 +1,10 @@
+import string
+
 import json
 import tweepy
+
 from db_manager import DBManager
-import string
+import network_analysis as NA
 
 
 class BotDetector:
@@ -11,7 +14,7 @@ class BotDetector:
     __dbm_usersAUX = DBManager('usersAUX')
     __api = None
     __conf = None
-    __analyzed_features = 7
+    __analyzed_features = 11
 
     def __init__(self, name_config_file='config.json'):
         self.__conf = self.__get_config(name_config_file)
@@ -36,8 +39,12 @@ class BotDetector:
         return date
 
     def __get_user(self, screen_name):
-        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})[0]
-        return user['tweet_obj']['user']
+        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})
+        user_count = user.count()
+        if user_count > 0:
+            user = user[0]
+            return user['tweet_obj']['user']
+        return None
 
     # Get tweets in the timeline of a given user
     def __get_timeline(self, user):
@@ -50,10 +57,12 @@ class BotDetector:
 
     # Check when the account was created
     def __creation_date(self, creation, current_year):
-        if int(creation['year']) < current_year or int(creation['year']) < current_year -1:
+        if int(creation['year']) < current_year:
             return 0
         else:
             return 1
+    def __db_aux(self):
+        print("Please wait, the userAUX collection is being updated \n")
 
 
     def __db_aux(self):
@@ -125,7 +134,7 @@ class BotDetector:
             num_tweets += 1
             if 'RT' in tweet['text']:
                 num_rts += 1
-        per_rts = (100*num_rts)/num_tweets
+        per_rts = (100*num_rts)/num_tweets if num_tweets != 0 else -1  # If it doesn't have any tweets, can't be a RT-bot
         if per_rts >= threshold:
             return True
         else:
@@ -293,8 +302,94 @@ class BotDetector:
         else:
             return 0
 
+    def promoter_user_heuristic(self, user_screen_name, NO_USERS):
+        """Given a BotDetector object, it computes the value of the heuristic that estimates the pbb of user
+        'user_screen_name' being promotioning other bot-like accounts
+        """
+        network_analysis = NA.NetworkAnalyzer()
+        # Instantiate DBManager objects.  
+        # Not sure if the following is good practice. Did it only to avoid importing DBManager again.
+        dbm_users = self.__dbm_users
+        dbm_tweets = self.__dbm_tweets
+
+        BOT_DET_PBB_THRS = 0.55  # Pbb from which we count a user into the computation of the avg_pbb_weighted_interactions
+
+        interactions = [(interaction_with, interaction_count) \
+          for interaction_with, interaction_count \
+            in network_analysis.get_interactions(user_screen_name)["out_interactions"]["total"]["details"]]
+
+        # Calculate total number of interactions of a user
+        # and the number of interactions with the top NO_USERS different from that user
+        interacted_users_count = 0
+        total_top_interactions = 0
+        total_interactions = 0
+        for interaction_with, interaction_count in interactions:
+            if interacted_users_count < NO_USERS and interaction_with != user_screen_name:
+                # We only care about top NO_USERS accounts different from the analyzed user for this accumulator
+                total_top_interactions += interaction_count
+                interacted_users_count += 1
+            total_interactions += interaction_count
+
+        if total_top_interactions == 0:
+            print("The user {} has no interactions. It can't be a promoter-bot.\n".format(user_screen_name))
+            return 0
+
+        interacted_users_count_2 = 0
+        sum_of_pbbs = 0
+        sum_of_prods_all = 0
+        sum_of_prods_top = 0
+        sum_of_pbb_wghtd_intrctns = 0
+        total_pbbs_weight = 0
+        for interaction_with, interaction_count in interactions:
+            if interacted_users_count_2 >= NO_USERS: break
+            if interaction_with == user_screen_name:  # We only care about accounts different from the analyzed user
+                continue
+            # print("Fetching bot_detector_pbb of 'screen_name': {}.\n".format(interaction_with))
+            interacted_user_record = dbm_users.find_record({'screen_name': interaction_with})
+            # print(repr(interacted_user_record) + '\n')
+            interacted_user_bot_detector_pbb = interacted_user_record['bot_detector_pbb']
+            interactions_all_prcntg = interaction_count / total_interactions
+            interactions_top_prcntg = interaction_count / total_top_interactions
+            interactions_all_pbb_product = interactions_all_prcntg * interacted_user_bot_detector_pbb
+            interactions_top_pbb_product = interactions_top_prcntg * interacted_user_bot_detector_pbb
+            print("{}, {}: {} % from total, {} % from top users. bot_detector_pbb: {}. Product (top): {}. Product (all): {}.\n" \
+                .format(interaction_with, interaction_count, interactions_all_prcntg*100, interactions_top_prcntg*100 \
+                    , interacted_users_count, interacted_user_bot_detector_pbb, interactions_top_pbb_product, interactions_all_pbb_product))
+
+            # Accumulate different measures for different types of avg
+            if interacted_user_bot_detector_pbb >= BOT_DET_PBB_THRS:
+                # For this avg, accumulate only interactions with users with bot_detector_pbb greater or equal to BOT_DET_PBB_THRS.
+                # The avg interactions are weighted by the bot_detector_pbb of each interacted user
+                sum_of_pbb_wghtd_intrctns += interacted_user_bot_detector_pbb * interaction_count
+                total_pbbs_weight += interacted_user_bot_detector_pbb        
+            sum_of_pbbs += interacted_user_bot_detector_pbb
+            sum_of_prods_top += interactions_top_pbb_product
+            sum_of_prods_all += interactions_all_pbb_product
+            interacted_users_count_2 += 1
+
+        avg_pbb_weighted_interactions = sum_of_pbb_wghtd_intrctns / total_pbbs_weight if total_pbbs_weight > 0 else 0
+        avg_bot_det_pbb = sum_of_pbbs / interacted_users_count
+        avg_prod_top = sum_of_prods_top / interacted_users_count
+        avg_prod_all = sum_of_prods_all / interacted_users_count
+        print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
+        print("Average interactions count (pbb weighted) with users of pbb above {} %: {}.\n"\
+            .format(BOT_DET_PBB_THRS*100, avg_pbb_weighted_interactions))
+        print("Average interactions' bot_detector_pbb: {} %.\n".format(avg_bot_det_pbb*100))
+        print("Average interactions' product interactions_top_prcntg*bot_detector_pbb: {} %.\n".format(avg_prod_top*100))
+        print("Average interactions' product interactions_all_prcntg*bot_detector_pbb: {} %.\n".format(avg_prod_all*100))
+        
+        AVG_PBB_WGHTD_INTRCTNS_THRESHOLD = 10  # Threshold of pbb weighted avg interactions with users with a bot_det_pbb of at least BOT_DET_PBB_THRS
+        AVG_PROD_ALL_THRESHOLD = 0.0035  # Threshold of avg prod, with the interactions % over all interacted users
+        AVG_PROD_TOP_THRESHOLD = 0.05  # Threshold of avg prod, with the interactions % over top NO_USERS interacted users
+        AVG_PBB_THRESHOLD = 0.05  # Threshold of avg bot_detector_pbb (without considering the present heuristic)
+        THRESHOLD = AVG_PBB_WGHTD_INTRCTNS_THRESHOLD   # Select what threshold are you going to have into account
+
+        avg = avg_pbb_weighted_interactions
+        return 1 if avg >= THRESHOLD else 0
+
     def compute_bot_probability(self, users):
         # self.__db_aux()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
+        users_pbb = {}
         for user in users:
             bot_score = 0
             print('Computing the probability of the user {0}'.format(user))
@@ -306,16 +401,18 @@ class BotDetector:
             # Using the Twitter API get tweets of the user's timeline
             timeline = self.__get_timeline(user)
             # Check heuristics
-            bot_score += self.__is_retweet_bot(timeline)
-            bot_score = bot_score + self.__creation_date(self.__parse_date(data['created_at']),
+            bot_score += 1 if self.__is_retweet_bot(timeline) else 0
+            bot_score += self.__creation_date(self.__parse_date(data['created_at']),
                                                          self.__conf['current_year'])
-            bot_score = bot_score + self.__random_account_number(data)
-            bot_score = bot_score + self.__similar_account_name(data)
-            bot_score = bot_score + self.__default_twitter_account(data)
-            bot_score = bot_score + self.__location(data)
-            bot_score = bot_score + self.__followers_ratio(data)
+            bot_score += self.__random_account_number(data)
+            bot_score += self.__similar_account_name(data)
+            bot_score += self.__default_twitter_account(data)
+            bot_score += self.__location(data)
+            bot_score += self.__followers_ratio(data)
+            users_pbb[user] = bot_score/self.__analyzed_features
             print('There are a {0}% of probability that the user {1} would be bot'.format(
-                  round((bot_score/self.__analyzed_features)*100, 2), user))
+                  round((users_pbb[user])*100, 2), user))
+        return users_pbb
 
 
 if __name__ == "__main__":

@@ -9,3 +9,9 @@ __pycache__
 *.bkp
 
 *.log
+
+queries\.txt
+
+dump_2018-05-20/politic_bots/
+
+bot_detector\.pyc
