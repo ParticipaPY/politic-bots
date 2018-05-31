@@ -67,16 +67,17 @@ def append_interactions_bot_pbb(bot_detector, dbm_users, dbm_tweets, users, no_i
 
 def append_user_interactions_bot_ppbs(bot_detector, dbm_users, dbm_tweets, users, no_users, ignore_list, no_interacted_users):
     """Compute the bot_pbbs for no_users users in the 'users' list
-        and store it and his/her first no_interacted_users interacted_users' pbbs in the db"""
+    and store it and his/her first no_interacted_users interacted_users' pbbs in the db
+    """
     for user_number, user in enumerate(users):
         if user_number >= no_users:
             break
-        if user in ignore_list:
-            print('User: {} is in the ignore_list. Ignoring him...\n.'.format(user))
-            continue
         # Force assignations instead of accessing dict every time
         user_interactions = user['interactions']
         user_screen_name = user['screen_name']
+        if user_screen_name in ignore_list:
+            print('User: {} is in the ignore_list. Ignoring him...\n.'.format(user))
+            continue
 
         # if user_screen_name not in 'CESARSANCHEZ553':
         #     print("user_screen_name: {}. Is not {}. Passing...\n".format(user_screen_name, 'CESARSANCHEZ553'))
@@ -143,10 +144,10 @@ if __name__ == "__main__":
     myconf = 'config.json'
     bot_detector = BotDetector(myconf)
     # Number of users whose bot_pbb will be calculated
-    no_users = 5
+    no_users = 10
     # Max number of users in the interactions of a user to be updated
     # (it is assumed that is interaction_count-descent-ordered)
-    no_interacted_users = 1
+    no_interacted_users = 3
 
     ignore_list = ['JovenAnetete']  # Temporary list. Because some of the accounts may have been deleted
 
