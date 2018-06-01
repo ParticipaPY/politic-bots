@@ -302,7 +302,7 @@ class BotDetector:
         else:
             return 0
 
-    def promoter_user_heuristic(self, user_screen_name, NO_USERS):
+    def __promoter_user_heuristic(self, user_screen_name, NO_USERS):
         """Given a BotDetector object, it computes the value of the heuristic that estimates the pbb of user
         'user_screen_name' being promotioning other bot-like accounts
         """
@@ -312,7 +312,7 @@ class BotDetector:
         dbm_users = self.__dbm_users
         dbm_tweets = self.__dbm_tweets
 
-        BOT_DET_PBB_THRS = 0.55  # Pbb from which we count a user into the computation of the avg_pbb_weighted_interactions
+        BOT_DET_PBB_THRS = 0.70  # Pbb from which we count a user into the computation of the avg_pbb_weighted_interactions
 
         interactions = [(interaction_with, interaction_count) \
           for interaction_with, interaction_count \
@@ -336,8 +336,8 @@ class BotDetector:
 
         interacted_users_count_2 = 0
         sum_of_pbbs = 0
-        sum_of_prods_all = 0
-        sum_of_prods_top = 0
+        sum_of_all_intrctns_wghtd_pbbs = 0
+        sum_of_top_intrctns_wghtd_pbbs = 0
         sum_of_pbb_wghtd_intrctns = 0
         total_pbbs_weight = 0
         for interaction_with, interaction_count in interactions:
@@ -352,7 +352,7 @@ class BotDetector:
             interactions_top_prcntg = interaction_count / total_top_interactions
             interactions_all_pbb_product = interactions_all_prcntg * interacted_user_bot_detector_pbb
             interactions_top_pbb_product = interactions_top_prcntg * interacted_user_bot_detector_pbb
-            print("{}, {}: {} % from total, {} % from top users. bot_detector_pbb: {}. Product (top): {}. Product (all): {}.\n" \
+            print("{}, {}: {} % from total, {} % from top {} interacted users. bot_detector_pbb: {}. Product (top): {}. Product (all): {}.\n" \
                 .format(interaction_with, interaction_count, interactions_all_prcntg*100, interactions_top_prcntg*100 \
                     , interacted_users_count, interacted_user_bot_detector_pbb, interactions_top_pbb_product, interactions_all_pbb_product))
 
@@ -363,35 +363,50 @@ class BotDetector:
                 sum_of_pbb_wghtd_intrctns += interacted_user_bot_detector_pbb * interaction_count
                 total_pbbs_weight += interacted_user_bot_detector_pbb        
             sum_of_pbbs += interacted_user_bot_detector_pbb
-            sum_of_prods_top += interactions_top_pbb_product
-            sum_of_prods_all += interactions_all_pbb_product
+            sum_of_top_intrctns_wghtd_pbbs += interactions_top_pbb_product
+            sum_of_all_intrctns_wghtd_pbbs += interactions_all_pbb_product
             interacted_users_count_2 += 1
 
-        avg_pbb_weighted_interactions = sum_of_pbb_wghtd_intrctns / total_pbbs_weight if total_pbbs_weight > 0 else 0
+        avg_pbb_wghtd_top_intrctns = sum_of_pbb_wghtd_intrctns/total_pbbs_weight if total_pbbs_weight > 0 else 0
+        avg_pbb_wghtd_top_intrctns_prcntg = avg_pbb_wghtd_top_intrctns / total_top_interactions
         avg_bot_det_pbb = sum_of_pbbs / interacted_users_count
-        avg_prod_top = sum_of_prods_top / interacted_users_count
-        avg_prod_all = sum_of_prods_all / interacted_users_count
+        avg_top_intrctns_wghtd_pbbs = sum_of_top_intrctns_wghtd_pbbs / interacted_users_count
+        avg_all_intrctns_wghtd_pbbs = sum_of_all_intrctns_wghtd_pbbs / interacted_users_count
         print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
-        print("Average interactions count (pbb weighted) with users of pbb above {} %: {}.\n"\
-            .format(BOT_DET_PBB_THRS*100, avg_pbb_weighted_interactions))
-        print("Average interactions' bot_detector_pbb: {} %.\n".format(avg_bot_det_pbb*100))
-        print("Average interactions' product interactions_top_prcntg*bot_detector_pbb: {} %.\n".format(avg_prod_top*100))
-        print("Average interactions' product interactions_all_prcntg*bot_detector_pbb: {} %.\n".format(avg_prod_all*100))
+        print("Average top {} interacted users' count (pbb weighted) with users of pbb above {} %: {}.\n"\
+            .format(interacted_users_count, BOT_DET_PBB_THRS*100, avg_pbb_wghtd_top_intrctns))
+        print("Average top {} interacted users' percentage (pbb weighted) with users of pbb above {} %: {} %.\n"\
+            .format(interacted_users_count, BOT_DET_PBB_THRS*100, avg_pbb_wghtd_top_intrctns_prcntg*100))
+        print("Average top {} interacted users' bot_detector_pbb: {} %.\n"\
+            .format(interacted_users_count, avg_bot_det_pbb*100))
+        print("Average top {0} interacted users' bot_detector_pbb (top-{0}-relative-weighted) : {1} %.\n"\
+            .format(interacted_users_count, avg_top_intrctns_wghtd_pbbs*100))
+        print("Average top {} interacted users' bot_detector_pbb (total-relative-weighted): {} %.\n"\
+            .format(interacted_users_count, avg_all_intrctns_wghtd_pbbs*100))
         
-        AVG_PBB_WGHTD_INTRCTNS_THRESHOLD = 10  # Threshold of pbb weighted avg interactions with users with a bot_det_pbb of at least BOT_DET_PBB_THRS
-        AVG_PROD_ALL_THRESHOLD = 0.0035  # Threshold of avg prod, with the interactions % over all interacted users
-        AVG_PROD_TOP_THRESHOLD = 0.05  # Threshold of avg prod, with the interactions % over top NO_USERS interacted users
+        AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD = 10  # Threshold of pbb weighted avg interactions with users with a bot_det_pbb of at least BOT_DET_PBB_THRS
+        AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD = 0.80
+        AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD = 0.0035  # Threshold of avg prod, with the interactions % over all interacted users
+        AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD = 0.05  # Threshold of avg prod, with the interactions % over top NO_USERS interacted users
         AVG_PBB_THRESHOLD = 0.05  # Threshold of avg bot_detector_pbb (without considering the present heuristic)
-        THRESHOLD = AVG_PBB_WGHTD_INTRCTNS_THRESHOLD   # Select what threshold are you going to have into account
+        # THRESHOLD = AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD   # Select what threshold are you going to have into account
 
-        avg = avg_pbb_weighted_interactions
-        return 1 if avg >= THRESHOLD else 0
+        # avg = avg_pbb_wghtd_top_intrctns
+
+        if (avg_pbb_wghtd_top_intrctns >= AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD \
+                or avg_pbb_wghtd_top_intrctns_prcntg >= AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD):
+            return 1
+        else:
+            return 0
 
     def compute_bot_probability(self, users):
         # self.__db_aux()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
         users_pbb = {}
         for user in users:
             bot_score = 0
+            
+            NO_TOP_USERS = 5
+
             print('Computing the probability of the user {0}'.format(user))
             # Get information about the user, check
             # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
@@ -409,6 +424,7 @@ class BotDetector:
             bot_score += self.__default_twitter_account(data)
             bot_score += self.__location(data)
             bot_score += self.__followers_ratio(data)
+            bot_score += self.__promoter_user_heuristic(user, NO_TOP_USERS)
             users_pbb[user] = bot_score/self.__analyzed_features
             print('There are a {0}% of probability that the user {1} would be bot'.format(
                   round((users_pbb[user])*100, 2), user))
@@ -427,9 +443,10 @@ if __name__ == "__main__":
 
     # sample of users
 
-    users = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
-             'federicotorale2', 'VyfQXRgEXdFmF1X']
-    users = users + ['AM_1080', 'CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar',
-                      'Mercede80963021', 'MaritoAbdo', 'SantiPenap']
+    # users = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
+    #          'federicotorale2', 'VyfQXRgEXdFmF1X']
+    # users = users + ['AM_1080', 'CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar',
+    #                   'Mercede80963021', 'MaritoAbdo', 'SantiPenap']
+    users = ['CESARSANCHEZ553', 'Paraguaynosune']
     bot_detector = BotDetector(myconf)
     bot_detector.compute_bot_probability(users)
