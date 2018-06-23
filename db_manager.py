@@ -58,9 +58,6 @@ class DBManager:
             query.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
         return self.search(query)
 
-    def find_all(self):
-        return self.__db[self.__collection].find()
-
     def find_tweets_by_hashtag(self, hashtag, **kwargs):
         query = {'type': 'hashtag', 'keyword': hashtag, 'relevante': 1}
         if 'limited_to_time_window' in kwargs.keys():
