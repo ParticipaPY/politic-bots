@@ -206,6 +206,7 @@ class BotDetector:
             return 0
 
     def compute_bot_probability(self, users):
+    	users_pbb = {}
         for user in users:
             bot_score = 0
             
