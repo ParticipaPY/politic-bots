@@ -1,14 +1,17 @@
 import json
 import tweepy
 from db_manager import DBManager
-
+import string
+import datetime
 
 class BotDetector:
+
     __dbm_tweets = DBManager('tweets')
     __dbm_users = DBManager('users')
+    __dbm_trustworthy_users = DBManager('trustworthy_users')
     __api = None
     __conf = None
-    __analyzed_features = 8
+    __analyzed_features = 7
 
     def __init__(self, name_config_file='config.json'):
         self.__conf = self.__get_config(name_config_file)
@@ -47,10 +50,43 @@ class BotDetector:
 
     # Check when the account was created
     def __creation_date(self, creation, current_year):
-        if int(creation['year']) < current_year or int(creation['year']) < current_year -1:
+        if int(creation['year']) < current_year or int(creation['year']) < current_year - 1:
             return 0
         else:
             return 1
+
+    def __db_trustworthy_users(self):
+        print("Please wait, the trustworthy_users collection is being updated")
+        for doc in self.__dbm_users.find_all():
+            data = self.__get_user(doc['screen_name'])
+            if data['verified'] or int(data['followers_count']) > 5000:
+                if not self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}):
+                    self.__dbm_trustworthy_users.save_record({'screen_name': doc['screen_name'], 'name': data['name'],
+                                                     'created_at': data['created_at'],
+                                                     'followers_count': data['followers_count'],
+                                                     'verified': data['verified']})
+        print("Done")
+        return 0
+
+    # Take a string and return a list of bigrams.
+    def __get_bigrams(self, s):
+
+        s = s.lower()
+        return [s[i:i + 2] for i in list(range(len(s) - 1))]
+
+    # Perform bigram comparison between two strings and return a percentage match in decimal form.
+    def __string_similarity(self, str1, str2):
+
+        pairs1 = self.__get_bigrams(str1)
+        pairs2 = self.__get_bigrams(str2)
+        union = len(pairs1) + len(pairs2)
+        hit_count = 0
+        for x in pairs1:
+            for y in pairs2:
+                if x == y:
+                    hit_count += 1
+                    break
+        return (2.0 * hit_count) / union
 
     # Check the number of retweets in a given timeline
     # return True if the number of retweets is greater or equal
@@ -67,6 +103,132 @@ class BotDetector:
             return True
         else:
             return False
+
+    def __similar_account_name(self, data):
+        mini_sn = 0.0
+        mini_n = 0.0
+        if self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}) and \
+                self.__dbm_trustworthy_users.find_record({'name': data['name']}):
+            return 0
+        elif "jr" in data['screen_name'] and \
+                self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name'].replace("jr", "")}):
+            return 1
+        elif "junior" in data['screen_name'] and \
+                self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name'].replace("junior", "")}):
+            return 1
+        else:
+            for doc in self.__dbm_trustworthy_users.find_all():
+                dist_sn = self.__string_similarity(doc['screen_name'], data['screen_name'])
+                dist_n = self.__string_similarity(doc['name'], data['name'])
+                if doc['name'] in data['screen_name'] or doc['screen_name'] in data['screen_name']:
+                    return 1
+                if doc['name'] in data['name'] or doc['screen_name'] in data['name']:
+                    return 1
+                if mini_sn < dist_sn:
+                    mini_sn = dist_sn
+                if mini_n < dist_n:
+                    mini_n = dist_n
+            if mini_n > 0.75 or mini_sn > 0.75:
+                return 1
+            else:
+                return 0
+
+    def __random_account_letter(self,data):
+        result = 0
+        # random letters
+        vocal="aeiouAEIOU"
+        consonant = "bcdfghjklmnñpqrstvwxyzBCDFGHJKLMNÑPQRSTVWXYZ"
+        count_vocal = 0
+        count_consonant = 0
+        #analyze the screen_name
+        for letter in data['screen_name']:
+            if letter in vocal:
+                count_vocal += 1
+            elif letter in consonant:
+                count_consonant += 1
+        if 3*count_vocal < count_consonant:
+            result += 1
+        letter = ""
+        for k in data['screen_name']:  # separate numbers of the name to analyze
+            if k in vocal or k in consonant:
+                letter = letter + k
+            else:
+                letter = letter + " "
+        letters = letter.split(" ")
+        while '' in letters:
+            letters.remove('')  # delete blank spaces
+        if len(letters) > 2:  # add the remaining number of numbers and increases the probability that it is a bot
+            result += 1
+        #analyze the name
+        count_vocal = 0
+        count_consonant = 0
+        for letter in data['name']:
+            if letter in vocal:
+                count_vocal += 1
+            elif letter in consonant:
+                count_consonant += 1
+        if 3*count_vocal < count_consonant:
+            result += 1
+        letter = ""
+        for k in data['name']:  # separate numbers of the name to analyze
+            if k in vocal or k in consonant:
+                letter = letter + k
+            else:
+                letter = letter + " "
+        letters = letter.split(" ")
+        while '' in letters:
+            letters.remove('')  # delete blank spaces
+        if len(letters) > 2:  # add the remaining number of numbers and increases the probability that it is a bot
+            result += 1
+        if result > 1 or result:
+            return 1
+        return 0
+
+    def __random_account_number(self, data):
+        result = 0  # the number that return
+        # random numbers
+        # verify if the screen_name is compoust only of numbers
+        if data['screen_name'].isdigit() or data['name'].isdigit():
+            return 1
+        number = ""
+        for k in data['screen_name']:  # separate numbers of the name to analyze
+            if k in string.digits:
+                number = number + k
+            else:
+                number = number + " "
+        numbers = number.split(" ")
+        while '' in numbers:
+            numbers.remove('')  # delete blank spaces
+        if len(numbers) > 1:  # add the remaining number of numbers and increases the probability that it is a bot
+            result = 1
+        partial_result = 1
+        for n in numbers:
+            num = int(n)
+            if num > 31129999:
+                partial_result = 1
+            else:
+                if num in range(10000000, 99999999, 1):  # num > 10000000 and num < 99999999
+                    if num in range(110000, 31129999, 1):  # num > 110000 and num < 31129999
+                        # yyyy mm dd
+                        year = int(int(n) / 10000)
+                        month = int(int(n) % 100)
+                        day = int(int(n) % 100)
+                        if year < 1000 or month > 12 or day > 31:
+                            partial_result = 1
+                        # dd mm yyyy
+                        day = int(int(n) / 10000)
+                        month = int(int(n) % 100)
+                        year = int(int(n) % 100)
+                        if year < 1000 or month > 12 or day > 31:
+                            partial_result = 1
+                if num in range(999, 10000, 1) or num < 100 or (data['created_at'].split()[5] in n) or str(
+                        int(data['created_at'].split()[5]) - 2000) in n:
+                    partial_result = 0
+
+            result += partial_result
+        if result > 1 or result:
+            return 1
+        return 0
 
     # Check the presence/absent of default elements in the profile of a given user
     def __default_twitter_account(self, user):
@@ -101,6 +263,7 @@ class BotDetector:
             return 0
 
     def compute_bot_probability(self, users):
+        # self.__db_trustworthy_users()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
         for user in users:
             bot_score = 0
             print('Computing the probability of the user {0}'.format(user))
@@ -114,21 +277,31 @@ class BotDetector:
             # Check heuristics
             bot_score += self.__is_retweet_bot(timeline)
             bot_score = bot_score + self.__creation_date(self.__parse_date(data['created_at']),
-                                                         self.__conf['current_year'])
+                                                         datetime.datetime.now().year)
+            bot_score = bot_score + self.__random_account_letter(data)
+            bot_score = bot_score + self.__random_account_number(data)
+            bot_score = bot_score + self.__similar_account_name(data)
             bot_score = bot_score + self.__default_twitter_account(data)
             bot_score = bot_score + self.__location(data)
             bot_score = bot_score + self.__followers_ratio(data)
             print('There are a {0}% of probability that the user {1} would be bot'.format(
                   round((bot_score/self.__analyzed_features)*100, 2), user))
 
-
 if __name__ == "__main__":
     myconf = 'config.json'
     # To extract and analyzed all users from DB
+    # l_usr=[]
+    # dbm= DBManager('users')
     # users = dbm.get_unique_users() #get users from DB
     # for u in users:
-    #    l_usr.append(u['screen_name'])
+       # l_usr.append(u['screen_name'])
+    # print(l_usr)
+
     # sample of users
-    users = ['CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar']
+
+    users = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
+             'federicotorale2', 'VyfQXRgEXdFmF1X']
+    users = users + ['AM_1080', 'CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar',
+                     'Mercede80963021', 'MaritoAbdo', 'SantiPenap']
     bot_detector = BotDetector(myconf)
     bot_detector.compute_bot_probability(users)
