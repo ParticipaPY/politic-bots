@@ -3,7 +3,10 @@ from bot_detector import BotDetector
 import time
 
 def attribute_in_dict(dict_, attr_name):
-    """Given a dictionary, it checks whether it has
+    """
+    Check an attribute's presence on a dictionary.
+
+    Given a dictionary dict_, check whether it has
     a key (nested in any level) with name attr_name.
     """
     # print(type(dict_))
@@ -19,9 +22,13 @@ def attribute_in_dict(dict_, attr_name):
     return False
 
 def append_bot_pbb(bot_detector, dbm_users, users):
-    """Append the bot_detector_pbb for each user
-    in the list 'users' in a database, and if indicated,
-    the bot_detector_pbb for each one of their top interactions.
+    """
+    Append the bot_detector_pbb for users in a database.
+
+    Compute and append the bot_detector_pbb for each user
+    in the list 'users' in a database instantiated in dbm_users
+    , and if indicated
+    , the bot_detector_pbb for each one of their top interactions.
     """
 
     # Create a list with the screen_name
