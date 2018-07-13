@@ -471,10 +471,7 @@ class BotDetector:
         # Select what threshold you are going to have into account
         # THRESHOLD = AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD
         return AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD \
-            , AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD \
-            , AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD \
-            , AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD \
-            , AVG_PBB_THRESHOLD
+            , AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD
 
     def __promoter_user_heuristic(self, user_screen_name, NO_USERS):
         """
@@ -491,7 +488,7 @@ class BotDetector:
         dbm_users = self.__dbm_users
         # Pbb from which we count a user
         # into the computation of the average interactions
-        # that use their bot_detector_pbbs as weights
+        # that use its bot_detector_pbb as weight
         BOT_DET_PBB_THRS = 0.70
 
         # Create a list of interacted users and no. interactions.
@@ -507,6 +504,7 @@ class BotDetector:
           for interaction_with, interaction_count
             in network_analysis.get_interactions( \
                 user_screen_name)["out_interactions"]["total"]["details"]]
+        # Compute different values for later use
         interacted_users_count, total_interactions, total_top_interactions \
              = self.__computations_num_intrctns(
                 user_screen_name, NO_USERS, interactions)
@@ -518,7 +516,7 @@ class BotDetector:
                 "It can't be a promoter-bot.\n".format(user_screen_name))
             return 0
 
-        # Compute values for computing the averages
+        # Compute values used in the averages' calculations
         sum_of_pbbs, sum_of_all_intrctns_wghtd_pbbs \
             , sum_of_top_intrctns_wghtd_pbbs, sum_of_pbb_wghtd_intrctns \
             , total_pbbs_weight \
@@ -528,7 +526,7 @@ class BotDetector:
                 , BOT_DET_PBB_THRS)
 
         print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
-        # Compute different averages
+        # Compute the different averages
         avg_pbb_wghtd_top_intrctns, avg_pbb_wghtd_top_intrctns_prcntg \
             , avg_bot_det_pbb, avg_top_intrctns_wghtd_pbbs \
             , avg_all_intrctns_wghtd_pbbs \
@@ -539,18 +537,17 @@ class BotDetector:
                 , sum_of_top_intrctns_wghtd_pbbs
                 , sum_of_all_intrctns_wghtd_pbbs)
         
-        # Get Thresholds values, included the Threshold to be evaluated
+        # Get Thresholds values
         AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD \
             , AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD \
-            , AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD \
-            , AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD \
-            , AVG_PBB_THRESHOLD \
              = self.__promoter_user_thresholds()
-        
-        # Select average to evaluate
-        # avg = avg_pbb_wghtd_top_intrctns
 
-        # Return 1 if either the absolute or relative no. interactions
+        # Since the top_interactions-avg_value, pbb-weighted approach
+        # is implemented, two evaluations are performed
+        # instead of just one.
+        # 
+        # Return 1 if either the absolute or relative
+        # average no. interactions
         # was greater than or equal to the corresponding threshold
         if (
             (avg_pbb_wghtd_top_intrctns
