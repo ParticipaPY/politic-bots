@@ -4,6 +4,7 @@ import json
 import tweepy
 
 from db_manager import DBManager
+import modify_db
 import datetime
 import network_analysis as NA
 
@@ -481,6 +482,9 @@ class BotDetector:
          of the heuristic that estimates the pbb of user
         'user_screen_name' being promotioning other bot-like accounts
         """
+        # Verify db structure, and modify it if necessary
+        modify_db.modify_db(self)
+
         network_analysis = NA.NetworkAnalyzer()
         # Instantiate DBManager objects.  
         # Not sure if the following is good practice.  
@@ -560,12 +564,14 @@ class BotDetector:
         else:
             return 0
 
-    def compute_bot_probability(self, users):
+    def compute_bot_probability(self, users, promotion_heur_flag):
         # self.__db_trustworthy_users()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
         users_pbb = {}
         for user in users:
             bot_score = 0
-            
+            # Number of most-interacted users
+            # to have into consideration
+            # for the promoter-user heuristic
             NO_TOP_USERS = 5
 
             print('\nComputing the probability of the user {0}'.format(user))
@@ -588,10 +594,14 @@ class BotDetector:
             bot_score += self.__default_twitter_account(data)
             bot_score += self.__location(data)
             bot_score += self.__followers_ratio(data)
-            bot_score += self.__promoter_user_heuristic(user, NO_TOP_USERS)
+            # Check if the flag that indicates
+            # that the promoter-user heuristic should be considered
+            # is set
+            if promotion_heur_flag:
+                bot_score += self.__promoter_user_heuristic(user, NO_TOP_USERS)
             users_pbb[user] = bot_score/self.__analyzed_features 
-            print('There are a {0}% of probability that the user {1} \
-                would be bot'.format(round((users_pbb[user])*100, 2), user))
+            print('There are a {0}% of probability that the user {1}'
+                ' would be bot'.format(round((users_pbb[user])*100, 2), user))
         return users_pbb
 
 if __name__ == "__main__":
@@ -612,4 +622,4 @@ if __name__ == "__main__":
     usrs_prom_bots_tst = ['CESARSANCHEZ553', 'Paraguaynosune']
 
     bot_detector = BotDetector(myconf)
-    bot_detector.compute_bot_probability(usrs_prom_bots_tst)
+    bot_detector.compute_bot_probability(usrs_prom_bots_tst, True)

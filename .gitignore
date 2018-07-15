@@ -15,3 +15,5 @@ queries\.txt
 dump_2018-05-20/politic_bots/
 
 bot_detector\.pyc
+
+politic_bots_sample_db/dump_2018-07-14\.gz
