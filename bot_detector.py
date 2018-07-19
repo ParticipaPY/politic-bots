@@ -4,7 +4,7 @@ import json
 import tweepy
 
 from db_manager import DBManager
-import modify_db
+import fake_promoter
 import datetime
 import network_analysis as NA
 
@@ -270,210 +270,6 @@ class BotDetector:
         else:
             return 0
 
-    def __computations_num_intrctns(self, user_screen_name
-        , NO_USERS, interactions):
-        """
-        Compute values related to the no. interactions of a user.
-
-        The values to be computed are:
-            - The total number of users
-            that the user 'user_screen_name'
-            started an interaction with
-            (Not counting interactions with him/herself).  
-            - The total number of interactions started by a user.  
-            - The number of interactions
-            with the NO_USERS most interacted users.  
-        """
-        interacted_users_count = 0
-        total_interactions = 0
-        total_top_interactions = 0
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NO_USERS users
-            # different from the analyzed user for these accumulators
-            if (interacted_users_count < NO_USERS
-                    and interaction_with != user_screen_name):
-                interacted_users_count += 1
-                total_top_interactions += interaction_count
-            # Accumulate no. interactions with all users
-            total_interactions += interaction_count
-        return interacted_users_count, total_interactions, total_top_interactions
-
-    def __compute_sums_totals(self, dbm_users
-        , user_screen_name, interactions
-        , interacted_users_count, total_interactions
-        , total_top_interactions, NO_USERS
-        , BOT_DET_PBB_THRS):
-        """Compute the sums for the different averages."""
-        # Iterator that counts the no. interacted users so far
-        interacted_users_count_2 = 0
-        # Accumulator of the bot_detector_pbbs of each of the
-        # NO_USERS most interacted users
-        sum_of_pbbs = 0
-        # Accumulator of the products
-        # interactions_count*bot_detector_pbb
-        # of each of the interacted users
-        sum_of_all_intrctns_wghtd_pbbs = 0
-        # Accumulator of the products
-        # interactions_count*bot_detector_pbb
-        # of each of the NO_USERS most interacted users
-        sum_of_top_intrctns_wghtd_pbbs = 0
-        # Accumulator of the products
-        # bot_detector_pbb*interactions_count
-        # of each of the NO_USERS most interacted users
-        # with a bot_detector_pbb >= BOT_DET_PBB_THRS
-        sum_of_pbb_wghtd_intrctns = 0
-        total_pbbs_weight = 0
-        print("Top-{} Interacted-users of user {}:\n"
-            .format(interacted_users_count, user_screen_name))
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NO_USERS accounts
-            if interacted_users_count_2 >= NO_USERS: break
-            # We only care about accounts different from the analyzed user
-            if interaction_with == user_screen_name:
-                continue
-            # Fetch the interacted user's bot_detector_pbb from the db
-            interacted_user_record = dbm_users.find_record(
-                {'screen_name': interaction_with})
-            interacted_user_bot_detector_pbb = (
-                interacted_user_record['bot_detector_pbb'])
-            # Compute what fraction of the total no. interactions
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_all_prcntg = (
-                interaction_count / total_interactions)
-            # Compute what fraction of the no. interactions
-            # with the most NO_USERS interacted users
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_top_prcntg = (
-                interaction_count / total_top_interactions)
-            # "Weight" the interactions percentage (over the total)
-            # using the bot_detector_pbb of the current interacted user
-            # as the weight
-            interactions_all_pbb_product = (
-                interactions_all_prcntg * interacted_user_bot_detector_pbb)
-            # "Weight" the interactions percentage
-            # (over the most NO_USERS interacted users)
-            # using the bot_detector_pbb of the current interacted user
-            # as the weight
-            interactions_top_pbb_product = (
-                interactions_top_prcntg * interacted_user_bot_detector_pbb)
-            print("{}, {}: {} % from total, {} % from top {} interacted users"
-                ". bot_detector_pbb: {}. Product (top): {}."
-                " Product (all): {}.\n" \
-                .format(interaction_with, interaction_count
-                    , interactions_all_prcntg*100, interactions_top_prcntg*100
-                    , interacted_users_count, interacted_user_bot_detector_pbb
-                    , interactions_top_pbb_product
-                    , interactions_all_pbb_product))
-
-            # Accumulate different measures for different types of avg.
-            #
-            # For the first avg accumulate only interactions with users
-            # with a bot_detector_pbb of at least BOT_DET_PBB_THRS.  
-            # The avg interactions are weighted
-            # by the bot_detector_pbb of each interacted user
-            if interacted_user_bot_detector_pbb >= BOT_DET_PBB_THRS:
-                # Accumulate the no. interactions
-                # with the current interacted user
-                # using her/his bot_detector_pbb as weight
-                sum_of_pbb_wghtd_intrctns += (
-                    interacted_user_bot_detector_pbb * interaction_count)
-                # Accumulate her/his bot_detector_pbb
-                # into the total sum of weights for this average
-                total_pbbs_weight += interacted_user_bot_detector_pbb
-            # Accumulate the bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding average
-            sum_of_pbbs += interacted_user_bot_detector_pbb
-            # Accumulate the interactions-weighted bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding average
-            sum_of_all_intrctns_wghtd_pbbs += interactions_all_pbb_product
-            # Accumulate the top-interactions-weighted bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding average
-            sum_of_top_intrctns_wghtd_pbbs += interactions_top_pbb_product
-            interacted_users_count_2 += 1  # Increment temporary counter
-        return sum_of_pbbs, sum_of_all_intrctns_wghtd_pbbs \
-            , sum_of_top_intrctns_wghtd_pbbs, sum_of_pbb_wghtd_intrctns \
-            , total_pbbs_weight
-
-    def __compute_averages(self
-        , sum_of_pbb_wghtd_intrctns, total_pbbs_weight, BOT_DET_PBB_THRS
-        , total_top_interactions
-        , sum_of_pbbs, interacted_users_count
-        , sum_of_top_intrctns_wghtd_pbbs
-        , sum_of_all_intrctns_wghtd_pbbs):
-        """Compute the different averages.
-
-        Compute each one of the averages
-        by dividing the corresponding weighted and not-weighted sums
-        over the total or the total sum of weights.
-        """
-        # For the first avg, do an extra checking
-        # for a possible division by zero
-        # (in case there hasn't been any interacted users
-        # with a bot_detector_pbb >= BOT_DET_PBB_THRS)
-        avg_pbb_wghtd_top_intrctns = (
-            (sum_of_pbb_wghtd_intrctns/total_pbbs_weight)
-            if total_pbbs_weight > 0 else 0)
-        avg_pbb_wghtd_top_intrctns_prcntg = (
-            avg_pbb_wghtd_top_intrctns / total_top_interactions)
-        avg_bot_det_pbb = sum_of_pbbs / interacted_users_count
-        avg_top_intrctns_wghtd_pbbs = (
-            sum_of_top_intrctns_wghtd_pbbs / interacted_users_count)
-        avg_all_intrctns_wghtd_pbbs = (
-            sum_of_all_intrctns_wghtd_pbbs / interacted_users_count)
-        print("Average top {} interacted users' count (pbb weighted) "
-         "with users of pbb above {} %: {}.\n".format(interacted_users_count
-            , BOT_DET_PBB_THRS*100, avg_pbb_wghtd_top_intrctns))
-        print("Average top {} interacted users' percentage (pbb weighted) "
-         "with users of pbb above {} %: {} %.\n".format(interacted_users_count
-            , BOT_DET_PBB_THRS*100, avg_pbb_wghtd_top_intrctns_prcntg*100))
-        print("Average top {} interacted users' bot_detector_pbb: {} %.\n"\
-            .format(interacted_users_count, avg_bot_det_pbb*100))
-        print("Average top {0} interacted users' bot_detector_pbb "
-         "(top-{0}-relative-weighted) : {1} %.\n".format(interacted_users_count
-            , avg_top_intrctns_wghtd_pbbs*100))
-        print("Average top {} interacted users' bot_detector_pbb "
-         "(total-relative-weighted): {} %.\n".format(interacted_users_count
-            , avg_all_intrctns_wghtd_pbbs*100))
-        return avg_pbb_wghtd_top_intrctns, avg_pbb_wghtd_top_intrctns_prcntg \
-            , avg_bot_det_pbb, avg_top_intrctns_wghtd_pbbs \
-            , avg_all_intrctns_wghtd_pbbs
-
-    def __promoter_user_thresholds(self):
-        """Return the thresholds needed for evaluating the heuristic.
-
-        Manually set the desired Threshold Values
-         for each type of average.
-        """
-        # Threshold of pbb weighted avg interactions
-        # with users with a bot_det_pbb
-        # of at least BOT_DET_PBB_THRS.
-        #
-        # Average absolute no. interactions
-        AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD = 10
-        # Average relative no. interactions 
-        AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD = 0.80
-        # Threshold of avg prod, with the interactions %
-        # over all interacted users
-        AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD = 0.0035
-        # Threshold of avg prod, with the interactions %
-        # over top NO_USERS interacted users
-        AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD = 0.05
-        # Threshold of avg bot_detector_pbb
-        # (without considering the present heuristic)
-        AVG_PBB_THRESHOLD = 0.05
-        # Select what threshold you are going to have into account
-        # THRESHOLD = AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD
-        return AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD \
-            , AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD
-
     def __promoter_user_heuristic(self, user_screen_name, NO_USERS):
         """
         Compute heuristic for determining bot-like promoters accounts.
@@ -483,7 +279,7 @@ class BotDetector:
         'user_screen_name' being promotioning other bot-like accounts
         """
         # Verify db structure, and modify it if necessary
-        modify_db.modify_db(self)
+        fake_promoter.modify_db(self)
 
         network_analysis = NA.NetworkAnalyzer()
         # Instantiate DBManager objects.  
@@ -510,7 +306,7 @@ class BotDetector:
                 user_screen_name)["out_interactions"]["total"]["details"]]
         # Compute different values for later use
         interacted_users_count, total_interactions, total_top_interactions \
-             = self.__computations_num_intrctns(
+             = fake_promoter.computations_num_intrctns(
                 user_screen_name, NO_USERS, interactions)
         # If the user didn't start any interactions
         # with a different user, then it cannot be
@@ -524,7 +320,7 @@ class BotDetector:
         sum_of_pbbs, sum_of_all_intrctns_wghtd_pbbs \
             , sum_of_top_intrctns_wghtd_pbbs, sum_of_pbb_wghtd_intrctns \
             , total_pbbs_weight \
-             = self.__compute_sums_totals(dbm_users, user_screen_name, interactions
+             = fake_promoter.compute_sums_totals(dbm_users, user_screen_name, interactions
                 , interacted_users_count, total_interactions
                 , total_top_interactions, NO_USERS
                 , BOT_DET_PBB_THRS)
@@ -534,7 +330,7 @@ class BotDetector:
         avg_pbb_wghtd_top_intrctns, avg_pbb_wghtd_top_intrctns_prcntg \
             , avg_bot_det_pbb, avg_top_intrctns_wghtd_pbbs \
             , avg_all_intrctns_wghtd_pbbs \
-             = self.__compute_averages(sum_of_pbb_wghtd_intrctns
+             = fake_promoter.compute_averages(sum_of_pbb_wghtd_intrctns
                 , total_pbbs_weight, BOT_DET_PBB_THRS
                 , total_top_interactions
                 , sum_of_pbbs, interacted_users_count
@@ -544,7 +340,7 @@ class BotDetector:
         # Get Thresholds values
         AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD \
             , AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD \
-             = self.__promoter_user_thresholds()
+             = fake_promoter.promoter_user_thresholds()
 
         # Since the top_interactions-avg_value, pbb-weighted approach
         # is implemented, two evaluations are performed
