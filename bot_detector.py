@@ -271,7 +271,7 @@ class BotDetector:
             return 0
 
     def __promoter_user_heuristic(self, user_screen_name
-        , NUM_USERS, FAKE_PROMOTER_HEUR):
+        , NUM_INTERACTED_USERS, FAKE_PROMOTER_HEUR):
         """
         Compute heuristic for determining bot-like-promoters accounts.
 
@@ -286,22 +286,22 @@ class BotDetector:
         user_screen_name : Screen name of the user 
         evaluated in the heuristic.
 
-        NUM_USERS : Number of interacted-users to consider 
+        NUM_INTERACTED_USERS : Number of interacted-users to consider 
         for the heuristic's computations.
 
         FAKE_PROMOTER_HEUR : Determines which heuristic to use.
-            0: Top-NUM_USERS-interacted users'
+            0: Top-NUM_INTERACTED_USERS-interacted users'
              interactions count with users of pbb above
             BOT_DET_PBB_THRS,
             in addition with
-            Top NUM_USERS interacted users' percentage 
+            Top NUM_INTERACTED_USERS interacted users' percentage 
             with users of pbb above
             BOT_DET_PBB_THRS.
-            1: Average top NUM_USERS interacted users'
+            1: Average top NUM_INTERACTED_USERS interacted users'
             bot_detector_pbb.
-            2: Average top NUM_USERS interacted users'
+            2: Average top NUM_INTERACTED_USERS interacted users'
             bot_detector_pbb (total-relative-weighted).
-            3: Average top NUM_USERS interacted users'
+            3: Average top NUM_INTERACTED_USERS interacted users'
             bot_detector_pbb (top-5-relative-weighted).            
         By default is 0.
 
@@ -345,7 +345,7 @@ class BotDetector:
         totals_dict = {}
         # Compute different values for later use
         totals_dict = fake_promoter.computations_num_intrctns(
-                        user_screen_name, NUM_USERS, interactions
+                        user_screen_name, NUM_INTERACTED_USERS, interactions
                         , FAKE_PROMOTER_HEUR)
         # If the user didn't start any interactions
         # with a different user, then it cannot be
@@ -357,7 +357,7 @@ class BotDetector:
         # Compute values used in the scores' calculations
         sums_dict = fake_promoter.compute_sums_totals(
                 dbm_users, user_screen_name, interactions
-                , totals_dict, NUM_USERS
+                , totals_dict, NUM_INTERACTED_USERS
                 , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR)
         print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
         # Compute the different scores
@@ -403,22 +403,22 @@ class BotDetector:
             # Number of most-interacted users
             # to have into consideration
             # for the promoter-user heuristic
-            NUM_USERS = 5
+            NUM_INTERACTED_USERS = 5
             # Number that indicates which heuristic is to be used
             # in the Fake-Promoter Heuristic.
             # 
-            # 0: Top NUM_USERS interacted users' interactions count
+            # 0: Top NUM_INTERACTED_USERS interacted users' interactions count
             # with users of pbb above
             # BOT_DET_PBB_THRS,
             # in addition with
-            # Top NUM_USERS interacted users' percentage 
+            # Top NUM_INTERACTED_USERS interacted users' percentage 
             # with users of pbb above
             # BOT_DET_PBB_THRS.
-            # 1: Average top NUM_USERS interacted users'
+            # 1: Average top NUM_INTERACTED_USERS interacted users'
             # bot_detector_pbb.
-            # 2: Average top NUM_USERS interacted users'
+            # 2: Average top NUM_INTERACTED_USERS interacted users'
             # bot_detector_pbb (total-relative-weighted).
-            # 3: Average top NUM_USERS interacted users'
+            # 3: Average top NUM_INTERACTED_USERS interacted users'
             # bot_detector_pbb (top-5-relative-weighted).
             # 
             # By default is 0
@@ -448,7 +448,7 @@ class BotDetector:
             # that the promoter-user heuristic should be considered
             # is set
             if promotion_heur_flag:
-                bot_score += self.__promoter_user_heuristic(user, NUM_USERS, FAKE_PROMOTER_HEUR)
+                bot_score += self.__promoter_user_heuristic(user, NUM_INTERACTED_USERS, FAKE_PROMOTER_HEUR)
             users_pbb[user] = bot_score/self.__analyzed_features 
             print('There are a {0}% of probability that the user {1}'
                 ' would be bot'.format(round((users_pbb[user])*100, 2), user))
