@@ -290,13 +290,13 @@ class BotDetector:
         for the heuristic's computations.
 
         FAKE_PROMOTER_HEUR : Determines which heuristic to use.
-            0: Average top-NUM_USERS-interacted users'
-             interactions count (pbb-weighted) with users of pbb above
-            AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD,
+            0: Top-NUM_USERS-interacted users'
+             interactions count with users of pbb above
+            BOT_DET_PBB_THRS,
             in addition with
-            Average top NUM_USERS interacted users' percentage
-            (pbb weighted) with users of pbb above
-            AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD.
+            Top NUM_USERS interacted users' percentage 
+            with users of pbb above
+            BOT_DET_PBB_THRS.
             1: Average top NUM_USERS interacted users'
             bot_detector_pbb.
             2: Average top NUM_USERS interacted users'
@@ -326,9 +326,8 @@ class BotDetector:
         # Did it only to avoid importing DBManager again.
         dbm_users = self.__dbm_users
         # Pbb from which we count a user
-        # into the computation of the average interactions
-        # that use its bot_detector_pbb as weight
-        BOT_DET_PBB_THRS = 0.50
+        # into the computation of the interactions total
+        BOT_DET_PBB_THRS = 0.75
 
         # Create a list of interacted users and no. interactions.
         # 
@@ -355,14 +354,14 @@ class BotDetector:
             print("The user {} has no interactions. "
                 "It can't be a promoter-bot.\n".format(user_screen_name))
             return 0
-        # Compute values used in the averages' calculations
-        sums_dict, totals_dict = fake_promoter.compute_sums_totals(
+        # Compute values used in the scores' calculations
+        sums_dict = fake_promoter.compute_sums_totals(
                 dbm_users, user_screen_name, interactions
                 , totals_dict, NUM_USERS
                 , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR)
         print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
-        # Compute the different averages
-        avgs_dict = fake_promoter.compute_averages(
+        # Compute the different scores
+        scores_dict = fake_promoter.compute_scores(
                 sums_dict, totals_dict
                 , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR)
         # Get Thresholds values
@@ -373,15 +372,15 @@ class BotDetector:
             # instead of just one.
             # 
             # Return 1 if either the absolute or relative
-            # average no. interactions
-            # was greater than or equal to the corresponding threshold
+            # no. interactions
+            # was greater than to the corresponding threshold
             if (
-                (avgs_dict["avg_pbb_wghtd_top_intrctns"]
-                >= thresholds_dict["AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD"])
+                (scores_dict["score_top_intrctns"]
+                > thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"])
               or
-                (avgs_dict["avg_pbb_wghtd_top_intrctns_prcntg"]
-                >= thresholds_dict[
-                    "AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD"])
+                (scores_dict["score_top_intrctns_prcntg"]
+                > thresholds_dict[
+                    "SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"])
             ):
                 return 1
             else:
@@ -389,9 +388,9 @@ class BotDetector:
         elif (FAKE_PROMOTER_HEUR == 1 or FAKE_PROMOTER_HEUR == 2
                  or FAKE_PROMOTER_HEUR == 3):
             # Since all these heuristics evaluate
-            # if an avg is grtr or eql to a Threshold,
+            # if an avg is grtr than a Threshold,
             # encapsulate the behavior into one single evaluation
-            if (avgs_dict["selected_avg"] >= thresholds_dict["SELECTED_AVG"]):
+            if (scores_dict["selected_avg"] > thresholds_dict["SELECTED_AVG"]):
                 return 1
             else:
                 return 0
@@ -408,13 +407,13 @@ class BotDetector:
             # Number that indicates which heuristic is to be used
             # in the Fake-Promoter Heuristic.
             # 
-            # 0: Average top NUM_USERS interacted users' count
-            # (pbb-weighted) with users of pbb above
-            # AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD,
+            # 0: Top NUM_USERS interacted users' interactions count
+            # with users of pbb above
+            # BOT_DET_PBB_THRS,
             # in addition with
-            # Average top NUM_USERS interacted users' percentage
-            # (pbb weighted) with users of pbb above
-            # AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD.
+            # Top NUM_USERS interacted users' percentage 
+            # with users of pbb above
+            # BOT_DET_PBB_THRS.
             # 1: Average top NUM_USERS interacted users'
             # bot_detector_pbb.
             # 2: Average top NUM_USERS interacted users'

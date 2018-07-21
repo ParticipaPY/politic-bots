@@ -229,7 +229,7 @@ def computations_num_intrctns(user_screen_name
 def compute_sums_totals(dbm_users
     , user_screen_name, interactions, totals_dict
     , NUM_USERS, BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR):
-    """Compute the sums for the different averages.
+    """Compute the sums for the different scores.
 
     Parameters
     ----------
@@ -250,7 +250,7 @@ def compute_sums_totals(dbm_users
     
     BOT_DET_PBB_THRS : Threshold used for the 
     interactions-count heuristic. Only users with a bot_detector_pbb 
-    of at least this number are considered for those averages.
+    of at least this number are considered for those scores.
     
     FAKE_PROMOTER_HEUR : Determines which heuristic to use, and
     consequently the computations to be performed.
@@ -271,8 +271,7 @@ def compute_sums_totals(dbm_users
         # bot_detector_pbb*interactions_count
         # of each of the NUM_USERS most interacted users
         # with a bot_detector_pbb >= BOT_DET_PBB_THRS
-        sum_of_pbb_wghtd_intrctns = 0
-        total_pbbs_weight = 0
+        sum_of_intrctns = 0
         print("Top-{} Interacted-users of user {}:\n"
             .format(interacted_users_count, user_screen_name))
         for interaction_with, interaction_count in interactions:
@@ -309,22 +308,15 @@ def compute_sums_totals(dbm_users
                     , interacted_user_bot_detector_pbb))
 
             # Accumulate only interactions with users
-            # with a bot_detector_pbb of at least BOT_DET_PBB_THRS.  
-            # The avg interactions are weighted
-            # by the bot_detector_pbb of each interacted user
+            # with a bot_detector_pbb of at least BOT_DET_PBB_THRS.
             if interacted_user_bot_detector_pbb >= BOT_DET_PBB_THRS:
                 # Accumulate the no. interactions
                 # with the current interacted user
-                # using her/his bot_detector_pbb as weight
-                sum_of_pbb_wghtd_intrctns += (
-                    interacted_user_bot_detector_pbb * interaction_count)
-                # Accumulate her/his bot_detector_pbb
-                # into the total sum of weights for this average
-                total_pbbs_weight += interacted_user_bot_detector_pbb
+                sum_of_intrctns += (
+                    interaction_count)
             interacted_users_count_2 += 1  # Increment temporary counter
 
-        totals_dict["total_pbbs_weight"] = total_pbbs_weight
-        sums_dict["sum_of_pbb_wghtd_intrctns"] = sum_of_pbb_wghtd_intrctns
+        sums_dict["sum_of_intrctns"] = sum_of_intrctns
 
     elif FAKE_PROMOTER_HEUR == 1:
         # Iterator that counts the no. interacted users so far
@@ -364,8 +356,8 @@ def compute_sums_totals(dbm_users
                     , interacted_user_bot_detector_pbb))
             # Accumulate the bot_detector_pbb
             # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding average
+            # into the total sum of pbbs
+            # for the corresponding score
             sum_of_pbbs += interacted_user_bot_detector_pbb
             interacted_users_count_2 += 1  # Increment temporary counter
         
@@ -402,14 +394,14 @@ def compute_sums_totals(dbm_users
             # with the current interacted user
             interactions_top_prcntg = (
                 interaction_count / total_top_interactions)
-            # "Weight" the interactions percentage (over the total)
-            # using the bot_detector_pbb of the current interacted user
+            # "Weight" the bot_detector_pbb of the current interacted user
+            # using the interactions percentage (over the total)
             # as the weight
             interactions_all_pbb_product = (
                 interactions_all_prcntg * interacted_user_bot_detector_pbb)
-            # "Weight" the interactions percentage
+            # "Weight" the bot_detector_pbb of the current interacted user
+            # using the interactions percentage
             # (over the most NUM_USERS interacted users)
-            # using the bot_detector_pbb of the current interacted user
             # as the weight
             interactions_top_pbb_product = (
                 interactions_top_prcntg * interacted_user_bot_detector_pbb)
@@ -424,12 +416,12 @@ def compute_sums_totals(dbm_users
             # Accumulate the interactions-weighted bot_detector_pbb
             # of the current interacted user
             # into the total sum of weights
-            # for the corresponding average
+            # for the corresponding score
             sum_of_all_intrctns_wghtd_pbbs += interactions_all_pbb_product
             # Accumulate the top-interactions-weighted bot_detector_pbb
             # of the current interacted user
             # into the total sum of weights
-            # for the corresponding average
+            # for the corresponding score
             interacted_users_count_2 += 1  # Increment temporary counter
         
         sums_dict["sum_of_all_intrctns_wghtd_pbbs"] \
@@ -466,14 +458,14 @@ def compute_sums_totals(dbm_users
             # with the current interacted user
             interactions_top_prcntg = (
                 interaction_count / total_top_interactions)
-            # "Weight" the interactions percentage (over the total)
-            # using the bot_detector_pbb of the current interacted user
+            # "Weight" the bot_detector_pbb of the current interacted user
+            # using the interactions percentage (over the total)
             # as the weight
             interactions_all_pbb_product = (
                 interactions_all_prcntg * interacted_user_bot_detector_pbb)
-            # "Weight" the interactions percentage
+            # "Weight" the bot_detector_pbb of the current interacted user
+            # using the interactions percentage
             # (over the most NUM_USERS interacted users)
-            # using the bot_detector_pbb of the current interacted user
             # as the weight
             interactions_top_pbb_product = (
                 interactions_top_prcntg * interacted_user_bot_detector_pbb)
@@ -488,93 +480,87 @@ def compute_sums_totals(dbm_users
             # Accumulate the top-interactions-weighted bot_detector_pbb
             # of the current interacted user
             # into the total sum of weights
-            # for the corresponding average
+            # for the corresponding score
             sum_of_top_intrctns_wghtd_pbbs += interactions_top_pbb_product
             interacted_users_count_2 += 1  # Increment temporary counter
         
         sums_dict["sum_of_top_intrctns_wghtd_pbbs"] \
              = sum_of_top_intrctns_wghtd_pbbs
 
-    return sums_dict, totals_dict
+    return sums_dict
 
-def compute_averages(sums_dict, totals_dict
+def compute_scores(sums_dict, totals_dict
     , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR):
-    """Compute the corresponding averages.
+    """Compute the corresponding scores.
 
-    Compute the averages for the specified heuristic 
+    Compute the scores for the specified heuristic 
     by dividing the corresponding weighted and not-weighted sums
     over the total or the total sum of weights.
 
     Parameters
     ----------
-    sums_dict, totals_dict: Sums needed to compute the average(s)
+    sums_dict, totals_dict: Sums needed to compute the score(s)
     for the specified heuristic, encapsulated in a dictionary.
     
     BOT_DET_PBB_THRS : Threshold used for the 
     interactions-count heuristic. Only users with a bot_detector_pbb 
-    of at least this number are considered for those averages.
+    of at least this number are considered for those scores.
     
     FAKE_PROMOTER_HEUR : Determines which heuristic to use, and
     consequently the computations to be performed.
 
     Returns
     -------
-    avgs_dict : The average(s) needed 
+    scores_dict : The score(s) needed 
     by the specified heuristic, encapsulated in a dictionary.
     """
-    avgs_dict = {}
+    scores_dict = {}
     interacted_users_count = totals_dict["interacted_users_count"]
     if FAKE_PROMOTER_HEUR == 0:
-        # For the first avg, do an extra checking
-        # for a possible division by zero
-        # (in case there hasn't been any interacted users
-        # with a bot_detector_pbb >= BOT_DET_PBB_THRS)
-        total_pbbs_weight = totals_dict["total_pbbs_weight"]
-        avgs_dict["avg_pbb_wghtd_top_intrctns"] = (
-            (sums_dict["sum_of_pbb_wghtd_intrctns"]/total_pbbs_weight)
-                if total_pbbs_weight > 0 else 0)
-        avgs_dict["avg_pbb_wghtd_top_intrctns_prcntg"] = (
-            avgs_dict["avg_pbb_wghtd_top_intrctns"]
-             / totals_dict["total_top_interactions"])
-        print("Average top {} interacted users' count (pbb weighted) "
+        scores_dict["score_top_intrctns"] = \
+            sums_dict["sum_of_intrctns"]
+        scores_dict["score_top_intrctns_prcntg"] = (
+            scores_dict["score_top_intrctns"]
+             / totals_dict["total_interactions"])
+        print("Top {} interacted users' count "
          "with users of pbb above {} %: {}.\n".format(interacted_users_count
-            , BOT_DET_PBB_THRS*100, avgs_dict["avg_pbb_wghtd_top_intrctns"]))
-        print("Average top {} interacted users' percentage (pbb weighted) "
+            , BOT_DET_PBB_THRS*100, scores_dict["score_top_intrctns"]))
+        print("Top {} interacted users' percentage "
          "with users of pbb above {} %: {} %.\n".format(interacted_users_count
                 , BOT_DET_PBB_THRS*100
-                , avgs_dict["avg_pbb_wghtd_top_intrctns_prcntg"]*100))
+                , scores_dict["score_top_intrctns_prcntg"]*100))
     elif FAKE_PROMOTER_HEUR == 1:
-        avgs_dict["avg_bot_det_pbb"] \
+        scores_dict["avg_bot_det_pbb"] \
              = (sums_dict["sum_of_pbbs"]
                  / interacted_users_count)
         print("Average top {} interacted users' bot_detector_pbb: {} %.\n"
-            .format(interacted_users_count, avgs_dict["avg_bot_det_pbb"]*100))
-        avgs_dict["selected_avg"] = avgs_dict["avg_bot_det_pbb"]
+            .format(interacted_users_count, scores_dict["avg_bot_det_pbb"]*100))
+        scores_dict["selected_avg"] = scores_dict["avg_bot_det_pbb"]
     elif FAKE_PROMOTER_HEUR == 2:
-        avgs_dict["avg_all_intrctns_wghtd_pbbs"] = (
+        scores_dict["avg_all_intrctns_wghtd_pbbs"] = (
             sums_dict["sum_of_all_intrctns_wghtd_pbbs"]
              / interacted_users_count)
         print("Average top {} interacted users' bot_detector_pbb "
          "(total-relative-weighted): {} %.\n".format(interacted_users_count
-            , avgs_dict["avg_all_intrctns_wghtd_pbbs"]*100))
-        avgs_dict["selected_avg"] = avgs_dict["avg_all_intrctns_wghtd_pbbs"]
+            , scores_dict["avg_all_intrctns_wghtd_pbbs"]*100))
+        scores_dict["selected_avg"] = scores_dict["avg_all_intrctns_wghtd_pbbs"]
     elif FAKE_PROMOTER_HEUR == 3:
-        avgs_dict["avg_top_intrctns_wghtd_pbbs"] = (
+        scores_dict["avg_top_intrctns_wghtd_pbbs"] = (
             sums_dict["sum_of_top_intrctns_wghtd_pbbs"]
              / interacted_users_count)
         print("Average top {0} interacted users' bot_detector_pbb "
          "(top-{0}-relative-weighted) : {1} %.\n".format(
             interacted_users_count
-            , avgs_dict["avg_top_intrctns_wghtd_pbbs"]*100))
-        avgs_dict["selected_avg"] = avgs_dict["avg_top_intrctns_wghtd_pbbs"]
+            , scores_dict["avg_top_intrctns_wghtd_pbbs"]*100))
+        scores_dict["selected_avg"] = scores_dict["avg_top_intrctns_wghtd_pbbs"]
 
-    return avgs_dict
+    return scores_dict
 
 def promoter_user_thresholds(FAKE_PROMOTER_HEUR):
     """Return the thresholds needed for evaluating the heuristic.
 
     Manually set the desired Threshold Values
-     for each type of average.
+     for each type of score.
 
     Parameters
     FAKE_PROMOTER_HEUR : Determines which heuristic to use, and 
@@ -587,14 +573,14 @@ def promoter_user_thresholds(FAKE_PROMOTER_HEUR):
     """
     thresholds_dict = {}
     if FAKE_PROMOTER_HEUR == 0:
-        # Threshold of pbb-weighted avg interactions
+        # Threshold of interactions
         # with users with a bot_det_pbb
         # of at least BOT_DET_PBB_THRS.
         #
-        # Average absolute no. interactions
-        thresholds_dict["AVG_PBB_WGHTD_TOP_INTRCTNS_THRESHOLD"] = 10
-        # Average relative no. interactions 
-        thresholds_dict["AVG_PBB_WGHTD_TOP_INTRCTNS_PRCNTG_THRESHOLD"] = 0.80
+        # Absolute no. interactions
+        thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"] = 50
+        # Relative no. interactions 
+        thresholds_dict["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"] = 0.50
     elif FAKE_PROMOTER_HEUR == 1:
         # Threshold of avg bot_detector_pbb
         # (without considering the present heuristic)
