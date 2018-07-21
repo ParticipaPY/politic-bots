@@ -143,7 +143,8 @@ def modify_db(bot_detector):
     NUM_INTERACTED_USERS = 5
 
     # Provisory list of users to be skipped during evaluation.  
-    # Because some of the accounts may have been deleted
+    # Is meant for accounts that may have problems when evaluating them,
+    # For exaple, it has been deleted
     ignore_list = ['JovenAnetete']
 
     # Instantiate DBManager objects.  
