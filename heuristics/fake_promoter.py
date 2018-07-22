@@ -21,6 +21,16 @@ def append_bot_detector_pbbs(
 
     users : object with the users' data.  
     Their bot_detector_pbbs are to be calculated.
+
+    NUM_USERS : Maximum number of users, or rather documents
+    of the db that are going to be updated.
+
+    ignore_list : list of users that are not going to be updated
+    (due to some problem that may arise when evaluating him, e.g.
+    the user was deleted)
+
+    NUM_INTERACTED_USERS : Max number of interacted users of each user 
+    whose bot_detector_pbbs are going to be computed and appended.
     """
     for user_number, user in enumerate(users):
         if user_number >= NUM_USERS:
@@ -169,14 +179,9 @@ def modify_db(bot_detector):
         print(
             "Fetched a user that already has the attribute 'bot_detector_pbb'"
             ".\n")
-        # append_bot_detector_pbbs(
-        #     bot_detector, dbm_users, dbm_tweets
-        #     , users, NUM_USERS, ignore_list, NUM_INTERACTED_USERS)
 
-
-
-def computations_num_intrctns(user_screen_name
-    , NUM_INTERACTED_USERS, interactions, FAKE_PROMOTER_HEUR):
+def computations_num_interactions(user_screen_name
+    , NUM_INTERACTED_USERS, interactions):
     """
     Compute values related to the no. interactions of a user.
 
@@ -200,9 +205,6 @@ def computations_num_intrctns(user_screen_name
     interactions : List of tuples.  
     The first element is the screen name of an interacted user
     and the second is the number of interactions with her/him.
-    
-    FAKE_PROMOTER_HEUR : Determines which heuristic to use, and
-    consequently the computations to be performed.
 
     Returns
     -------
@@ -251,7 +253,7 @@ def compute_sums_totals(dbm_users
     
     BOT_DET_PBB_THRS : Threshold used for the 
     interactions-count heuristic. Only users with a bot_detector_pbb 
-    of at least this number are considered for those scores.
+    greater than this number are considered for those scores.
     
     FAKE_PROMOTER_HEUR : Determines which heuristic to use, and
     consequently the computations to be performed.
@@ -265,136 +267,81 @@ def compute_sums_totals(dbm_users
     interacted_users_count = totals_dict["interacted_users_count"]
     total_interactions = totals_dict["total_interactions"]
     total_top_interactions = totals_dict["total_top_interactions"]
+
+    # Iterator that counts the no. interacted users so far
+    interacted_users_count_2 = 0
     if FAKE_PROMOTER_HEUR == 0:
-        # Iterator that counts the no. interacted users so far
-        interacted_users_count_2 = 0
         # Accumulator of the products
         # bot_detector_pbb*interactions_count
         # of each of the NUM_INTERACTED_USERS most interacted users
-        # with a bot_detector_pbb >= BOT_DET_PBB_THRS
+        # with a bot_detector_pbb > BOT_DET_PBB_THRS
         sum_of_intrctns = 0
-        print("Top-{} Interacted-users of user {}:\n"
-            .format(interacted_users_count, user_screen_name))
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NUM_INTERACTED_USERS accounts
-            if interacted_users_count_2 >= NUM_INTERACTED_USERS: break
-            # We only care about accounts
-            # different from the analyzed user
-            if interaction_with == user_screen_name:
-                continue
-            # Fetch the interacted user's bot_detector_pbb from the db
-            interacted_user_record = dbm_users.find_record(
-                {'screen_name': interaction_with})
-            interacted_user_bot_detector_pbb = (
-                interacted_user_record['bot_detector_pbb'])
-            # Compute what fraction of the total no. interactions
-            # represents the no. of interactions
-            # with the current interacted user.  
-            # Only used for informative purposes in this heuristic.
-            interactions_all_prcntg = (
-                interaction_count / totals_dict["total_interactions"])
-            # Compute what fraction of the no. interactions
-            # with the most NUM_INTERACTED_USERS interacted users
-            # represents the no. of interactions
-            # with the current interacted user.  
-            # Only used for informative purposes in this heuristic.
-            interactions_top_prcntg = (
-                interaction_count / totals_dict["total_top_interactions"])
-            print("{}, {}: {} % from total"
-                ", {} % from top {} interacted users"
-                ". bot_detector_pbb: {}.\n".format(
-                    interaction_with, interaction_count
-                    , interactions_all_prcntg*100
-                    , interactions_top_prcntg*100, interacted_users_count
-                    , interacted_user_bot_detector_pbb))
+    elif FAKE_PROMOTER_HEUR == 1: 
+        # Accumulator of the bot_detector_pbbs of each of the 
+        # NUM_INTERACTED_USERS most interacted users 
+        sum_of_pbbs = 0 
+    elif FAKE_PROMOTER_HEUR == 2:
+        # Accumulator of the products
+        # interactions_count*bot_detector_pbb
+        # of each of the NUM_INTERACTED_USERS
+        #  most interacted users
+        sum_of_all_intrctns_wghtd_pbbs = 0
+    elif FAKE_PROMOTER_HEUR == 3:
+        # Accumulator of the products
+        # interactions_count*bot_detector_pbb
+        # of each of the NUM_INTERACTED_USERS most interacted users
+        sum_of_top_intrctns_wghtd_pbbs = 0
 
+    print("Top-{} Interacted-users of user {}:\n"
+        .format(interacted_users_count, user_screen_name))
+    for interaction_with, interaction_count in interactions:
+        # We only care about top NUM_INTERACTED_USERS accounts
+        if interacted_users_count_2 >= NUM_INTERACTED_USERS: break
+        # We only care about accounts
+        # different from the analyzed user
+        if interaction_with == user_screen_name:
+            continue
+        # Fetch the interacted user's bot_detector_pbb from the db
+        interacted_user_record = dbm_users.find_record(
+            {'screen_name': interaction_with})
+        interacted_user_bot_detector_pbb = (
+            interacted_user_record['bot_detector_pbb'])
+        # Compute what fraction of the total no. interactions
+        # represents the no. of interactions
+        # with the current interacted user.  
+        # Only used for informative purposes in this heuristic.
+        interactions_all_prcntg = (
+            interaction_count / total_interactions)
+        # Compute what fraction of the no. interactions
+        # with the most NUM_INTERACTED_USERS interacted users
+        # represents the no. of interactions
+        # with the current interacted user.  
+        # Only used for informative purposes in this heuristic.
+        interactions_top_prcntg = (
+            interaction_count / total_top_interactions)
+        print("{}, {}: {} % from total"
+            ", {} % from top {} interacted users"
+            ". bot_detector_pbb: {}.\n".format(
+                interaction_with, interaction_count
+                , interactions_all_prcntg*100
+                , interactions_top_prcntg*100, interacted_users_count
+                , interacted_user_bot_detector_pbb))
+        
+        if FAKE_PROMOTER_HEUR == 0:
             # Accumulate only interactions with users
-            # with a bot_detector_pbb of at least BOT_DET_PBB_THRS.
-            if interacted_user_bot_detector_pbb >= BOT_DET_PBB_THRS:
+            # with a bot_detector_pbb greater than BOT_DET_PBB_THRS.
+            if interacted_user_bot_detector_pbb > BOT_DET_PBB_THRS:
                 # Accumulate the no. interactions
                 # with the current interacted user
                 sum_of_intrctns += (
                     interaction_count)
-            interacted_users_count_2 += 1  # Increment temporary counter
-
-        sums_dict["sum_of_intrctns"] = sum_of_intrctns
-
-    elif FAKE_PROMOTER_HEUR == 1:
-        # Iterator that counts the no. interacted users so far
-        interacted_users_count_2 = 0
-        # Accumulator of the bot_detector_pbbs of each of the
-        # NUM_INTERACTED_USERS most interacted users
-        sum_of_pbbs = 0
-        print("Top-{} Interacted-users of user {}:\n"
-            .format(interacted_users_count, user_screen_name))
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NUM_INTERACTED_USERS accounts
-            if interacted_users_count_2 >= NUM_INTERACTED_USERS: break
-            # We only care about accounts different from the analyzed user
-            if interaction_with == user_screen_name:
-                continue
-            # Fetch the interacted user's bot_detector_pbb from the db
-            interacted_user_record = dbm_users.find_record(
-                {'screen_name': interaction_with})
-            interacted_user_bot_detector_pbb = (
-                interacted_user_record['bot_detector_pbb'])
-            # Compute what fraction of the total no. interactions
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_all_prcntg = (
-                interaction_count / total_interactions)
-            # Compute what fraction of the no. interactions
-            # with the most NUM_INTERACTED_USERS interacted users
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_top_prcntg = (
-                interaction_count / total_top_interactions)
-            print("{}, {}: {} % from total, {} % from top {} interacted users"
-                ". bot_detector_pbb: {}.\n"
-                .format(interaction_with, interaction_count
-                    , interactions_all_prcntg*100, interactions_top_prcntg*100
-                    , interacted_users_count
-                    , interacted_user_bot_detector_pbb))
+        elif FAKE_PROMOTER_HEUR == 1:
             # Accumulate the bot_detector_pbb
             # of the current interacted user
             # into the total sum of pbbs
             # for the corresponding score
             sum_of_pbbs += interacted_user_bot_detector_pbb
-            interacted_users_count_2 += 1  # Increment temporary counter
-        
-        sums_dict["sum_of_pbbs"] = sum_of_pbbs
-
-    elif FAKE_PROMOTER_HEUR == 2:
-        # Iterator that counts the no. interacted users so far
-        interacted_users_count_2 = 0
-        # Accumulator of the products
-        # interactions_count*bot_detector_pbb
-        # of each of the interacted users
-        sum_of_all_intrctns_wghtd_pbbs = 0
-        print("Top-{} Interacted-users of user {}:\n"
-            .format(interacted_users_count, user_screen_name))
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NUM_INTERACTED_USERS accounts
-            if interacted_users_count_2 >= NUM_INTERACTED_USERS: break
-            # We only care about accounts different from the analyzed user
-            if interaction_with == user_screen_name:
-                continue
-            # Fetch the interacted user's bot_detector_pbb from the db
-            interacted_user_record = dbm_users.find_record(
-                {'screen_name': interaction_with})
-            interacted_user_bot_detector_pbb = (
-                interacted_user_record['bot_detector_pbb'])
-            # Compute what fraction of the total no. interactions
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_all_prcntg = (
-                interaction_count / total_interactions)
-            # Compute what fraction of the no. interactions
-            # with the most NUM_INTERACTED_USERS interacted users
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_top_prcntg = (
-                interaction_count / total_top_interactions)
+        else:
             # "Weight" the bot_detector_pbb of the current interacted user
             # using the interactions percentage (over the total)
             # as the weight
@@ -406,85 +353,33 @@ def compute_sums_totals(dbm_users
             # as the weight
             interactions_top_pbb_product = (
                 interactions_top_prcntg * interacted_user_bot_detector_pbb)
-            print("{}, {}: {} % from total, {} % from top {} interacted users"
-                ". bot_detector_pbb: {}. Product (top): {}."
+            print("Product (top): {}."
                 " Product (all): {}.\n"
-                .format(interaction_with, interaction_count
-                    , interactions_all_prcntg*100, interactions_top_prcntg*100
-                    , interacted_users_count, interacted_user_bot_detector_pbb
-                    , interactions_top_pbb_product
+                .format(interactions_top_pbb_product
                     , interactions_all_pbb_product))
-            # Accumulate the interactions-weighted bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding score
-            sum_of_all_intrctns_wghtd_pbbs += interactions_all_pbb_product
-            # Accumulate the top-interactions-weighted bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding score
-            interacted_users_count_2 += 1  # Increment temporary counter
-        
+            if FAKE_PROMOTER_HEUR == 2:
+                # Accumulate the interactions-weighted bot_detector_pbb
+                # of the current interacted user
+                # into the total sum of weights
+                # for the corresponding score
+                sum_of_all_intrctns_wghtd_pbbs += interactions_all_pbb_product
+            elif FAKE_PROMOTER_HEUR == 3:
+                # Accumulate the top-interactions-weighted bot_detector_pbb
+                # of the current interacted user
+                # into the total sum of weights
+                # for the corresponding score
+                sum_of_top_intrctns_wghtd_pbbs += interactions_top_pbb_product
+
+        interacted_users_count_2 += 1  # Increment temporary counter
+    
+    if FAKE_PROMOTER_HEUR == 0:
+        sums_dict["sum_of_intrctns"] = sum_of_intrctns
+    elif FAKE_PROMOTER_HEUR == 1:
+        sums_dict["sum_of_pbbs"] = sum_of_pbbs
+    elif FAKE_PROMOTER_HEUR == 2:        
         sums_dict["sum_of_all_intrctns_wghtd_pbbs"] \
                  = sum_of_all_intrctns_wghtd_pbbs
-
     elif FAKE_PROMOTER_HEUR == 3:
-        # Iterator that counts the no. interacted users so far
-        interacted_users_count_2 = 0
-        # Accumulator of the products
-        # interactions_count*bot_detector_pbb
-        # of each of the NUM_INTERACTED_USERS most interacted users
-        sum_of_top_intrctns_wghtd_pbbs = 0
-        print("Top-{} Interacted-users of user {}:\n"
-            .format(interacted_users_count, user_screen_name))
-        for interaction_with, interaction_count in interactions:
-            # We only care about top NUM_INTERACTED_USERS accounts
-            if interacted_users_count_2 >= NUM_INTERACTED_USERS: break
-            # We only care about accounts different from the analyzed user
-            if interaction_with == user_screen_name:
-                continue
-            # Fetch the interacted user's bot_detector_pbb from the db
-            interacted_user_record = dbm_users.find_record(
-                {'screen_name': interaction_with})
-            interacted_user_bot_detector_pbb = (
-                interacted_user_record['bot_detector_pbb'])
-            # Compute what fraction of the total no. interactions
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_all_prcntg = (
-                interaction_count / total_interactions)
-            # Compute what fraction of the no. interactions
-            # with the most NUM_INTERACTED_USERS interacted users
-            # represents the no. of interactions
-            # with the current interacted user
-            interactions_top_prcntg = (
-                interaction_count / total_top_interactions)
-            # "Weight" the bot_detector_pbb of the current interacted user
-            # using the interactions percentage (over the total)
-            # as the weight
-            interactions_all_pbb_product = (
-                interactions_all_prcntg * interacted_user_bot_detector_pbb)
-            # "Weight" the bot_detector_pbb of the current interacted user
-            # using the interactions percentage
-            # (over the most NUM_INTERACTED_USERS interacted users)
-            # as the weight
-            interactions_top_pbb_product = (
-                interactions_top_prcntg * interacted_user_bot_detector_pbb)
-            print("{}, {}: {} % from total, {} % from top {} interacted users"
-                ". bot_detector_pbb: {}. Product (top): {}."
-                " Product (all): {}.\n"
-                .format(interaction_with, interaction_count
-                    , interactions_all_prcntg*100, interactions_top_prcntg*100
-                    , interacted_users_count, interacted_user_bot_detector_pbb
-                    , interactions_top_pbb_product
-                    , interactions_all_pbb_product))
-            # Accumulate the top-interactions-weighted bot_detector_pbb
-            # of the current interacted user
-            # into the total sum of weights
-            # for the corresponding score
-            sum_of_top_intrctns_wghtd_pbbs += interactions_top_pbb_product
-            interacted_users_count_2 += 1  # Increment temporary counter
-        
         sums_dict["sum_of_top_intrctns_wghtd_pbbs"] \
              = sum_of_top_intrctns_wghtd_pbbs
 
@@ -505,7 +400,7 @@ def compute_scores(sums_dict, totals_dict
     
     BOT_DET_PBB_THRS : Threshold used for the 
     interactions-count heuristic. Only users with a bot_detector_pbb 
-    of at least this number are considered for those scores.
+    greater than this number are considered for those scores.
     
     FAKE_PROMOTER_HEUR : Determines which heuristic to use, and
     consequently the computations to be performed.
@@ -517,43 +412,47 @@ def compute_scores(sums_dict, totals_dict
     """
     scores_dict = {}
     interacted_users_count = totals_dict["interacted_users_count"]
+    selected_msg = ""
     if FAKE_PROMOTER_HEUR == 0:
-        scores_dict["score_top_intrctns"] = \
-            sums_dict["sum_of_intrctns"]
+        scores_dict["score_top_intrctns"] \
+            = sums_dict["sum_of_intrctns"]
         scores_dict["score_top_intrctns_prcntg"] = (
             scores_dict["score_top_intrctns"]
              / totals_dict["total_interactions"])
-        print("Top {} interacted users' count "
-         "with users of pbb above {} %: {}.\n".format(interacted_users_count
+        selected_msg += ("Top {} interacted users' count "
+            "with users of pbb above {} %: {}.\n".format(interacted_users_count
             , BOT_DET_PBB_THRS*100, scores_dict["score_top_intrctns"]))
-        print("Top {} interacted users' percentage "
+        selected_msg += ("Top {} interacted users' percentage "
          "with users of pbb above {} %: {} %.\n".format(interacted_users_count
                 , BOT_DET_PBB_THRS*100
                 , scores_dict["score_top_intrctns_prcntg"]*100))
-    elif FAKE_PROMOTER_HEUR == 1:
-        scores_dict["avg_bot_det_pbb"] \
-             = (sums_dict["sum_of_pbbs"]
-                 / interacted_users_count)
-        print("Average top {} interacted users' bot_detector_pbb: {} %.\n"
-            .format(interacted_users_count, scores_dict["avg_bot_det_pbb"]*100))
-        scores_dict["selected_avg"] = scores_dict["avg_bot_det_pbb"]
-    elif FAKE_PROMOTER_HEUR == 2:
-        scores_dict["avg_all_intrctns_wghtd_pbbs"] = (
-            sums_dict["sum_of_all_intrctns_wghtd_pbbs"]
-             / interacted_users_count)
-        print("Average top {} interacted users' bot_detector_pbb "
-         "(total-relative-weighted): {} %.\n".format(interacted_users_count
-            , scores_dict["avg_all_intrctns_wghtd_pbbs"]*100))
-        scores_dict["selected_avg"] = scores_dict["avg_all_intrctns_wghtd_pbbs"]
-    elif FAKE_PROMOTER_HEUR == 3:
-        scores_dict["avg_top_intrctns_wghtd_pbbs"] = (
-            sums_dict["sum_of_top_intrctns_wghtd_pbbs"]
-             / interacted_users_count)
-        print("Average top {0} interacted users' bot_detector_pbb "
-         "(top-{0}-relative-weighted) : {1} %.\n".format(
-            interacted_users_count
-            , scores_dict["avg_top_intrctns_wghtd_pbbs"]*100))
-        scores_dict["selected_avg"] = scores_dict["avg_top_intrctns_wghtd_pbbs"]
+    else:
+        if FAKE_PROMOTER_HEUR == 1:
+            scores_dict["avg_bot_det_pbb"] \
+                 = (sums_dict["sum_of_pbbs"]
+                     / interacted_users_count)
+            selected_msg += ("Average top {} interacted users' bot_detector_pbb: {} %.\n"
+                .format(interacted_users_count, scores_dict["avg_bot_det_pbb"]*100))
+            selected_avg = "avg_bot_det_pbb"
+        else:
+            if FAKE_PROMOTER_HEUR == 2:
+                selected_sum = "sum_of_all_intrctns_wghtd_pbbs"
+                selected_avg = "avg_all_intrctns_wghtd_pbbs"
+            elif FAKE_PROMOTER_HEUR == 3:
+                selected_sum = "sum_of_top_intrctns_wghtd_pbbs"
+                selected_avg = "avg_top_intrctns_wghtd_pbbs"
+            scores_dict[selected_avg] = sums_dict[selected_sum]
+            if FAKE_PROMOTER_HEUR == 2:
+                selected_msg += ("Average top {} interacted users' bot_detector_pbb "
+                 "(total-relative-weighted): {} %.\n".format(interacted_users_count
+                    , scores_dict["avg_all_intrctns_wghtd_pbbs"]*100))
+            elif FAKE_PROMOTER_HEUR == 3:
+                selected_msg += ("Average top {0} interacted users' bot_detector_pbb "
+                 "(top-{0}-relative-weighted) : {1} %.\n".format(
+                    interacted_users_count
+                    , scores_dict["avg_top_intrctns_wghtd_pbbs"]*100))
+        scores_dict["selected_avg"] = scores_dict[selected_avg]
+    print(selected_msg)
 
     return scores_dict
 
@@ -576,7 +475,7 @@ def promoter_user_thresholds(FAKE_PROMOTER_HEUR):
     if FAKE_PROMOTER_HEUR == 0:
         # Threshold of interactions
         # with users with a bot_det_pbb
-        # of at least BOT_DET_PBB_THRS.
+        # greater than BOT_DET_PBB_THRS.
         #
         # Absolute no. interactions
         thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"] = 50

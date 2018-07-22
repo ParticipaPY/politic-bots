@@ -313,9 +313,8 @@ class BotDetector:
         if not (FAKE_PROMOTER_HEUR == 0 or FAKE_PROMOTER_HEUR == 1
                  or FAKE_PROMOTER_HEUR == 2 or FAKE_PROMOTER_HEUR == 3
                  or FAKE_PROMOTER_HEUR == 4):
-            print("Error. FAKE_PROMOTER_HEUR cannot be {}.\n"
+            raise Exception("Error. FAKE_PROMOTER_HEUR cannot be {}.\n"
                     .format(FAKE_PROMOTER_HEUR))
-            return 0
 
         # Verify db structure, and modify it if necessary
         fake_promoter.modify_db(self)
@@ -325,7 +324,7 @@ class BotDetector:
         # Not sure if the following is good practice.  
         # Did it only to avoid importing DBManager again.
         dbm_users = self.__dbm_users
-        # Pbb from which we count a user
+        # Pbb above of which we count a user
         # into the computation of the interactions total
         BOT_DET_PBB_THRS = 0.75
 
@@ -344,9 +343,8 @@ class BotDetector:
                 user_screen_name)["out_interactions"]["total"]["details"]]
         totals_dict = {}
         # Compute different values for later use
-        totals_dict = fake_promoter.computations_num_intrctns(
-                        user_screen_name, NUM_INTERACTED_USERS, interactions
-                        , FAKE_PROMOTER_HEUR)
+        totals_dict = fake_promoter.computations_num_interactions(
+                        user_screen_name, NUM_INTERACTED_USERS, interactions)
         # If the user didn't start any interactions
         # with a different user, then it cannot be
         # promotioning anyone
