@@ -5,7 +5,6 @@ import tweepy
 
 from db_manager import DBManager
 import datetime
-import network_analysis as NA
 from heuristics import fake_promoter
 
 class BotDetector:
@@ -32,6 +31,23 @@ class BotDetector:
         with open(config_file) as f:
             config = json.loads(f.read())
         return config
+
+    def __get_heuristics_config(self, heur_config_file):
+        """
+        Get configurations of heuristics.
+
+        Parameters
+        ----------
+        self : BotDetector instance.  
+        heur_config_file : File name 
+        for the heuristics configuration file
+
+        Returns
+        -------
+        A dictionary containing the configurations necessary 
+        for the heuristics used.
+        """
+        return self.__get_config(heur_config_file)
 
     def __parse_date(self, date):
         split_date = date.split(' ')
@@ -268,159 +284,13 @@ class BotDetector:
         if ratio < 0.4:
             return 1
         else:
-            return 0
-
-    def __promoter_user_heuristic(self, user_screen_name
-        , NUM_INTERACTED_USERS, FAKE_PROMOTER_HEUR):
-        """
-        Compute heuristic for determining bot-like-promoters accounts.
-
-        Given a BotDetector object, compute the value
-         of the heuristic that estimates the pbb of user
-        'user_screen_name' being promotioning other bot-like accounts.
-
-        Parameters
-        ----------
-        self : BotDetector instance.
-
-        user_screen_name : Screen name of the user 
-        evaluated in the heuristic.
-
-        NUM_INTERACTED_USERS : Number of interacted-users to consider 
-        for the heuristic's computations.
-
-        FAKE_PROMOTER_HEUR : Determines which heuristic to use.
-            0: Top-NUM_INTERACTED_USERS-interacted users'
-             interactions count with users of pbb above
-            BOT_DET_PBB_THRS,
-            in addition with
-            Top NUM_INTERACTED_USERS interacted users' percentage 
-            with users of pbb above
-            BOT_DET_PBB_THRS.
-            1: Average top NUM_INTERACTED_USERS interacted users'
-            bot_detector_pbb.
-            2: Average top NUM_INTERACTED_USERS interacted users'
-            bot_detector_pbb (total-relative-weighted).
-            3: Average top NUM_INTERACTED_USERS interacted users'
-            bot_detector_pbb (top-5-relative-weighted).            
-        By default is 0.
-
-        Returns
-        -------
-        0 if the heuristic was negative, 1 if positive.
-        """
-        # Ensure that FAKE_PROMOTER_HEUR is valid
-        if not (FAKE_PROMOTER_HEUR == 0 or FAKE_PROMOTER_HEUR == 1
-                 or FAKE_PROMOTER_HEUR == 2 or FAKE_PROMOTER_HEUR == 3
-                 or FAKE_PROMOTER_HEUR == 4):
-            raise Exception("Error. FAKE_PROMOTER_HEUR cannot be {}.\n"
-                    .format(FAKE_PROMOTER_HEUR))
-
-        # Verify db structure, and modify it if necessary
-        fake_promoter.modify_db(self)
-
-        network_analysis = NA.NetworkAnalyzer()
-        # Instantiate DBManager objects.  
-        # Not sure if the following is good practice.  
-        # Did it only to avoid importing DBManager again.
-        dbm_users = self.__dbm_users
-        # Pbb above of which we count a user
-        # into the computation of the interactions total
-        BOT_DET_PBB_THRS = 0.75
-
-        # Create a list of interacted users and no. interactions.
-        # 
-        # Use NetworkAnalyzer class from Network Analysis module
-        # to get the interactions started by user 'user_screen_name'
-        # and their details.
-        # 
-        # Each of the elements of the list is a tuple.  
-        # The first element is the screen name of an interacted user
-        # and the second is the number of interactions with her/him.  
-        interactions = [(interaction_with, interaction_count)
-          for interaction_with, interaction_count
-            in network_analysis.get_interactions(
-                user_screen_name)["out_interactions"]["total"]["details"]]
-        totals_dict = {}
-        # Compute different values for later use
-        totals_dict = fake_promoter.computations_num_interactions(
-                        user_screen_name, NUM_INTERACTED_USERS, interactions)
-        # If the user didn't start any interactions
-        # with a different user, then it cannot be
-        # promotioning anyone
-        if totals_dict["total_top_interactions"] == 0:
-            print("The user {} has no interactions. "
-                "It can't be a promoter-bot.\n".format(user_screen_name))
-            return 0
-        # Compute values used in the scores' calculations
-        sums_dict = fake_promoter.compute_sums_totals(
-                dbm_users, user_screen_name, interactions
-                , totals_dict, NUM_INTERACTED_USERS
-                , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR)
-        print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
-        # Compute the different scores
-        scores_dict = fake_promoter.compute_scores(
-                sums_dict, totals_dict
-                , BOT_DET_PBB_THRS, FAKE_PROMOTER_HEUR)
-        # Get Thresholds values
-        thresholds_dict = fake_promoter.promoter_user_thresholds(
-                FAKE_PROMOTER_HEUR)
-        if FAKE_PROMOTER_HEUR == 0:
-            # For this heuristic, two evaluations are performed
-            # instead of just one.
-            # 
-            # Return 1 if either the absolute or relative
-            # no. interactions
-            # was greater than to the corresponding threshold
-            if (
-                (scores_dict["score_top_intrctns"]
-                > thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"])
-              or
-                (scores_dict["score_top_intrctns_prcntg"]
-                > thresholds_dict[
-                    "SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"])
-            ):
-                return 1
-            else:
-                return 0
-        elif (FAKE_PROMOTER_HEUR == 1 or FAKE_PROMOTER_HEUR == 2
-                 or FAKE_PROMOTER_HEUR == 3):
-            # Since all these heuristics evaluate
-            # if an avg is grtr than a Threshold,
-            # encapsulate the behavior into one single evaluation
-            if (scores_dict["selected_avg"] > thresholds_dict["SELECTED_AVG"]):
-                return 1
-            else:
-                return 0
+            return 0    
 
     def compute_bot_probability(self, users, promotion_heur_flag):
         # self.__db_trustworthy_users()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
         users_pbb = {}
         for user in users:
             bot_score = 0
-            # Number of most-interacted users
-            # to have into consideration
-            # for the promoter-user heuristic
-            NUM_INTERACTED_USERS = 5
-            # Number that indicates which heuristic is to be used
-            # in the Fake-Promoter Heuristic.
-            # 
-            # 0: Top NUM_INTERACTED_USERS interacted users' interactions count
-            # with users of pbb above
-            # BOT_DET_PBB_THRS,
-            # in addition with
-            # Top NUM_INTERACTED_USERS interacted users' percentage 
-            # with users of pbb above
-            # BOT_DET_PBB_THRS.
-            # 1: Average top NUM_INTERACTED_USERS interacted users'
-            # bot_detector_pbb.
-            # 2: Average top NUM_INTERACTED_USERS interacted users'
-            # bot_detector_pbb (total-relative-weighted).
-            # 3: Average top NUM_INTERACTED_USERS interacted users'
-            # bot_detector_pbb (top-5-relative-weighted).
-            # 
-            # By default is 0
-            FAKE_PROMOTER_HEUR = 0
 
             print('\nComputing the probability of the user {0}'.format(user))
             # Get information about the user, check
@@ -446,8 +316,10 @@ class BotDetector:
             # that the promoter-user heuristic should be considered
             # is set
             if promotion_heur_flag:
-                bot_score += self.__promoter_user_heuristic(user, NUM_INTERACTED_USERS, FAKE_PROMOTER_HEUR)
-            users_pbb[user] = bot_score/self.__analyzed_features 
+                bot_score += fake_promoter.fake_promoter_heuristic(self, user)
+                users_pbb[user] = bot_score/self.__analyzed_features
+            else:
+                users_pbb[user] = bot_score/(self.__analyzed_features-1)
             print('There are a {0}% of probability that the user {1}'
                 ' would be bot'.format(round((users_pbb[user])*100, 2), user))
         return users_pbb
