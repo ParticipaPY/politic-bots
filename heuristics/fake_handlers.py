@@ -42,7 +42,7 @@ def __string_similarity(str1, str2):
     return (2.0 * hit_count) / union
 
 
-def similar_account_name(data, db_users):
+def __similar_account_name(data, db_users):
     mini_sn = 0.0
     mini_n = 0.0
     # create a database of verified accounts
@@ -105,7 +105,7 @@ def __analyze_name(name):
     return bot_prob
 
 
-def random_account_letter(data):
+def __random_account_letter(data):
     result = __analyze_name(data['screen_name'])
     result += __analyze_name(data['name'])
     if result >= 1:
@@ -114,7 +114,7 @@ def random_account_letter(data):
         return 0
 
 
-def random_account_number(data):
+def __random_account_number(data):
     bot_prob = 0
     # random numbers
     # verify if the screen_name is composed of only of numbers
@@ -160,3 +160,10 @@ def random_account_number(data):
         return 1
     else:
         return 0
+
+
+def fake_handlers(data, db_users):
+    ret = __random_account_letter(data)
+    ret += __random_account_number(data)
+    ret += __similar_account_name(data, db_users)
+    return ret

@@ -2,6 +2,7 @@ import time
 
 import network_analysis as NA
 
+
 def get_fake_promoter_config(bot_detector, heur_config_file):
     """
     Get configurations of fake-promoter heuristic.
@@ -19,9 +20,9 @@ def get_fake_promoter_config(bot_detector, heur_config_file):
     conf = bot_detector._BotDetector__get_heuristics_config(heur_config_file)
     return conf["fake-promoter_heuristic"]
 
-def append_bot_detector_pbbs(
-        bot_detector, dbm_users, dbm_tweets
-        , users, NUM_USERS_UPDATE, ignore_list, NUM_INTERACTED_USERS_UPDATE):
+
+def append_bot_detector_pbbs(bot_detector, dbm_users, dbm_tweets, users, NUM_USERS_UPDATE, ignore_list,
+                             NUM_INTERACTED_USERS_UPDATE):
     """
     Store bot_detector_pbbs of users and their interacted users.
 
@@ -148,6 +149,7 @@ def append_bot_detector_pbbs(
             print("Sleeping for 5 seconds...\n")
             time.sleep(5)
 
+
 def modify_db(bot_detector, conf):
     """
     If necessary, modify the db structure for the heuristic.
@@ -203,6 +205,7 @@ def modify_db(bot_detector, conf):
             "Fetched a user that already has the attribute 'bot_detector_pbb'"
             ".\n")
 
+
 def computations_num_interactions(user_screen_name
     , NUM_INTERACTED_USERS_HEUR, interactions):
     """
@@ -251,6 +254,7 @@ def computations_num_interactions(user_screen_name
     totals_dict["total_interactions"] = total_interactions
     totals_dict["total_top_interactions"] = total_top_interactions
     return totals_dict
+
 
 def compute_sums_totals(dbm_users
     , user_screen_name, interactions, totals_dict
@@ -413,6 +417,7 @@ def compute_sums_totals(dbm_users
 
     return sums_dict
 
+
 def compute_scores(sums_dict, totals_dict
     , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD):
     """Compute the corresponding scores.
@@ -488,6 +493,7 @@ def compute_scores(sums_dict, totals_dict
 
     return scores_dict
 
+
 def promoter_user_thresholds(FAKE_PROMOTER_METHOD, thresholds):
     """Return the thresholds needed for evaluating the heuristic.
 
@@ -538,7 +544,8 @@ def promoter_user_thresholds(FAKE_PROMOTER_METHOD, thresholds):
 
     return thresholds_dict
 
-def fake_promoter_heuristic(bot_detector, user_screen_name):
+
+def fake_promoter(bot_detector, user_screen_name):
     """
     Compute heuristic for determining bot-like-promoters accounts.
 
