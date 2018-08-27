@@ -78,3 +78,19 @@ def clean_emojis(doc):
         "\U0001F1E0-\U0001F1FF"  # flags (iOS)
                            "]+", flags=re.UNICODE)
     return emoji_pattern.sub(r'', doc)
+
+
+def parse_date(date):
+    split_date = date.split(' ')
+    date = {'date': ' '.join(split_date[0:3]), 'time': split_date[3],
+            'year': split_date[5]}
+    return date
+
+
+def get_user(db, screen_name):
+    user = db.search({'tweet_obj.user.screen_name': screen_name})
+    user_count = user.count()
+    if user_count > 0:
+        user = user[0]
+        return user['tweet_obj']['user']
+    return None
