@@ -1,8 +1,11 @@
+import string
+
 import json
 import tweepy
+
 from db_manager import DBManager
-import string
 import datetime
+from heuristics import fake_promoter
 
 class BotDetector:
 
@@ -11,7 +14,7 @@ class BotDetector:
     __dbm_trustworthy_users = DBManager('trustworthy_users')
     __api = None
     __conf = None
-    __analyzed_features = 7
+    __analyzed_features = 12
 
     def __init__(self, name_config_file='config.json'):
         self.__conf = self.__get_config(name_config_file)
@@ -29,6 +32,23 @@ class BotDetector:
             config = json.loads(f.read())
         return config
 
+    def __get_heuristics_config(self, heur_config_file):
+        """
+        Get configurations of heuristics.
+
+        Parameters
+        ----------
+        self : BotDetector instance.  
+        heur_config_file : File name 
+        for the heuristics configuration file
+
+        Returns
+        -------
+        A dictionary containing the configurations necessary 
+        for the heuristics used.
+        """
+        return self.__get_config(heur_config_file)
+
     def __parse_date(self, date):
         split_date = date.split(' ')
         date = {'date': ' '.join(split_date[0:3]), 'time': split_date[3],
@@ -36,8 +56,12 @@ class BotDetector:
         return date
 
     def __get_user(self, screen_name):
-        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})[0]
-        return user['tweet_obj']['user']
+        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})
+        user_count = user.count()
+        if user_count > 0:
+            user = user[0]
+            return user['tweet_obj']['user']
+        return None
 
     # Get tweets in the timeline of a given user
     def __get_timeline(self, user):
@@ -50,7 +74,7 @@ class BotDetector:
 
     # Check when the account was created
     def __creation_date(self, creation, current_year):
-        if int(creation['year']) < current_year or int(creation['year']) < current_year - 1:
+        if int(creation['year']) < current_year:
             return 0
         else:
             return 1
@@ -98,7 +122,7 @@ class BotDetector:
             num_tweets += 1
             if 'RT' in tweet['text']:
                 num_rts += 1
-        per_rts = (100*num_rts)/num_tweets
+        per_rts = (100*num_rts)/num_tweets if num_tweets != 0 else -1  # If it doesn't have any tweets, can't be a RT-bot
         if per_rts >= threshold:
             return True
         else:
@@ -260,13 +284,15 @@ class BotDetector:
         if ratio < 0.4:
             return 1
         else:
-            return 0
+            return 0    
 
-    def compute_bot_probability(self, users):
+    def compute_bot_probability(self, users, promotion_heur_flag):
         # self.__db_trustworthy_users()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
+        users_pbb = {}
         for user in users:
             bot_score = 0
-            print('Computing the probability of the user {0}'.format(user))
+
+            print('\nComputing the probability of the user {0}'.format(user))
             # Get information about the user, check
             # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
             # to understand the data of users available in the tweet
@@ -275,17 +301,28 @@ class BotDetector:
             # Using the Twitter API get tweets of the user's timeline
             timeline = self.__get_timeline(user)
             # Check heuristics
-            bot_score += self.__is_retweet_bot(timeline)
-            bot_score = bot_score + self.__creation_date(self.__parse_date(data['created_at']),
-                                                         datetime.datetime.now().year)
-            bot_score = bot_score + self.__random_account_letter(data)
-            bot_score = bot_score + self.__random_account_number(data)
-            bot_score = bot_score + self.__similar_account_name(data)
-            bot_score = bot_score + self.__default_twitter_account(data)
-            bot_score = bot_score + self.__location(data)
-            bot_score = bot_score + self.__followers_ratio(data)
-            print('There are a {0}% of probability that the user {1} would be bot'.format(
-                  round((bot_score/self.__analyzed_features)*100, 2), user))
+            # The method '__is_retweet_bot' is returning a Boolean value
+            bot_score += 1 if self.__is_retweet_bot(timeline) else 0
+            bot_score += self.__creation_date(
+                self.__parse_date(data['created_at'])
+                , datetime.datetime.now().year)
+            bot_score += self.__random_account_letter(data)
+            bot_score += self.__random_account_number(data)
+            bot_score += self.__similar_account_name(data)
+            bot_score += self.__default_twitter_account(data)
+            bot_score += self.__location(data)
+            bot_score += self.__followers_ratio(data)
+            # Check if the flag that indicates
+            # that the promoter-user heuristic should be considered
+            # is set
+            if promotion_heur_flag:
+                bot_score += fake_promoter.fake_promoter_heuristic(self, user)
+                users_pbb[user] = bot_score/self.__analyzed_features
+            else:
+                users_pbb[user] = bot_score/(self.__analyzed_features-1)
+            print('There are a {0}% of probability that the user {1}'
+                ' would be bot'.format(round((users_pbb[user])*100, 2), user))
+        return users_pbb
 
 if __name__ == "__main__":
     myconf = 'config.json'
@@ -298,10 +335,11 @@ if __name__ == "__main__":
     # print(l_usr)
 
     # sample of users
-
     users = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
              'federicotorale2', 'VyfQXRgEXdFmF1X']
     users = users + ['AM_1080', 'CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar',
                      'Mercede80963021', 'MaritoAbdo', 'SantiPenap']
+    usrs_prom_bots_tst = ['CESARSANCHEZ553', 'Paraguaynosune']
+
     bot_detector = BotDetector(myconf)
-    bot_detector.compute_bot_probability(users)
+    bot_detector.compute_bot_probability(usrs_prom_bots_tst, True)
