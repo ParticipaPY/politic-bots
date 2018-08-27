@@ -90,16 +90,16 @@ This approach differ from Approach Number 1 in that it aims at computing the ave
 3. If the weighted average computed in the previous step is greater than AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD, return 1 otherwise 0.
 
 #### Footnotes:
-(1) The result of executing the 'compute_bot_probability' method over the desired user, but without considering the present heuristic. This is controled with the 'promotion_heur_flag' flag.
-(2) Provisorily. Perhaps a larger sample could be fetched.
-(3) It and all the constants used in the heuristics can be set in the 'heuristics_config.json' file.
-(4) Hence, the interactions types considered in the heuristic (RTs, Quotes, Mentions, etc.) are the same that those considered in the 'network_analysis' module.
-(5) The determination of this value (and the other thresholds) was done somewhat arbitrarily. What it indicates is how many interactions started with users with a bot_detector_pbb greater than BOT_DET_PBB_THRS is considered normal.
-(6) The total-relative number of interactions started by user A with user B is computed as follows:
+1. The result of executing the 'compute_bot_probability' method over the desired user, but without considering the present heuristic. This is controled with the 'promotion_heur_flag' flag.
+2. Provisorily. Perhaps a larger sample could be fetched.
+3. It and all the constants used in the heuristics can be set in the 'heuristics_config.json' file.
+4. Hence, the interactions types considered in the heuristic (RTs, Quotes, Mentions, etc.) are the same that those considered in the 'network_analysis' module.
+5. The determination of this value (and the other thresholds) was done somewhat arbitrarily. What it indicates is how many interactions started with users with a bot_detector_pbb greater than BOT_DET_PBB_THRS is considered normal.
+6. The total-relative number of interactions started by user A with user B is computed as follows:
     1. Compute the number of interactions started by user A with user B.
     2. Compute the total number of interactions started by user A with any user.
     3. Compute what fraction of the total computed in 2. represents the number of interactions computed in 1.
-(7) The top-relative number of interactions started by user A with user B is computed as follows:
+7. The top-relative number of interactions started by user A with user B is computed as follows:
     1. Compute the number of interactions started by user A with user B.
     2. Make a list that has all the users that have been interacted by A, as well as the number of interactions that A started with them. Order that list decreasingly by that number of interactions.
     3. Compute the number of interactions started by user A with the first NUM_INTERACTED_USERS users of the list made in the previous step.
