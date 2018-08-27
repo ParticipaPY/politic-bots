@@ -1,17 +1,17 @@
-import string
-
+import datetime
 import json
+import heuristics.fake_handlers as fk
 import tweepy
 
 from db_manager import DBManager
-import datetime
 from heuristics import fake_promoter
+from utils import parse_date, get_user
+
 
 class BotDetector:
 
     __dbm_tweets = DBManager('tweets')
     __dbm_users = DBManager('users')
-    __dbm_trustworthy_users = DBManager('trustworthy_users')
     __api = None
     __conf = None
     __analyzed_features = 12
@@ -49,19 +49,22 @@ class BotDetector:
         """
         return self.__get_config(heur_config_file)
 
-    def __parse_date(self, date):
-        split_date = date.split(' ')
-        date = {'date': ' '.join(split_date[0:3]), 'time': split_date[3],
-                'year': split_date[5]}
-        return date
-
-    def __get_user(self, screen_name):
-        user = self.__dbm_tweets.search({'tweet_obj.user.screen_name': screen_name})
-        user_count = user.count()
-        if user_count > 0:
-            user = user[0]
-            return user['tweet_obj']['user']
-        return None
+    # Check the number of retweets in a given timeline
+    # return True if the number of retweets is greater or equal
+    # than a defined threshold (e.g., 90%), False otherwise
+    def __is_retweet_bot(self, timeline):
+        num_tweets = num_rts = 0
+        threshold = 90
+        for tweet in timeline:
+            num_tweets += 1
+            if 'RT' in tweet['text']:
+                num_rts += 1
+        per_rts = (
+                              100 * num_rts) / num_tweets if num_tweets != 0 else -1  # If it doesn't have any tweets, can't be a RT-bot
+        if per_rts >= threshold:
+            return True
+        else:
+            return False
 
     # Get tweets in the timeline of a given user
     def __get_timeline(self, user):
@@ -78,181 +81,6 @@ class BotDetector:
             return 0
         else:
             return 1
-
-    def __db_trustworthy_users(self):
-        print("Please wait, the trustworthy_users collection is being updated")
-        for doc in self.__dbm_users.find_all():
-            data = self.__get_user(doc['screen_name'])
-            if data['verified'] or int(data['followers_count']) > 5000:
-                if not self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}):
-                    self.__dbm_trustworthy_users.save_record({'screen_name': doc['screen_name'], 'name': data['name'],
-                                                     'created_at': data['created_at'],
-                                                     'followers_count': data['followers_count'],
-                                                     'verified': data['verified']})
-        print("Done")
-        return 0
-
-    # Take a string and return a list of bigrams.
-    def __get_bigrams(self, s):
-
-        s = s.lower()
-        return [s[i:i + 2] for i in list(range(len(s) - 1))]
-
-    # Perform bigram comparison between two strings and return a percentage match in decimal form.
-    def __string_similarity(self, str1, str2):
-
-        pairs1 = self.__get_bigrams(str1)
-        pairs2 = self.__get_bigrams(str2)
-        union = len(pairs1) + len(pairs2)
-        hit_count = 0
-        for x in pairs1:
-            for y in pairs2:
-                if x == y:
-                    hit_count += 1
-                    break
-        return (2.0 * hit_count) / union
-
-    # Check the number of retweets in a given timeline
-    # return True if the number of retweets is greater or equal
-    # than a defined threshold (e.g., 90%), False otherwise
-    def __is_retweet_bot(self, timeline):
-        num_tweets = num_rts = 0
-        threshold = 90
-        for tweet in timeline:
-            num_tweets += 1
-            if 'RT' in tweet['text']:
-                num_rts += 1
-        per_rts = (100*num_rts)/num_tweets if num_tweets != 0 else -1  # If it doesn't have any tweets, can't be a RT-bot
-        if per_rts >= threshold:
-            return True
-        else:
-            return False
-
-    def __similar_account_name(self, data):
-        mini_sn = 0.0
-        mini_n = 0.0
-        if self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}) and \
-                self.__dbm_trustworthy_users.find_record({'name': data['name']}):
-            return 0
-        elif "jr" in data['screen_name'] and \
-                self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name'].replace("jr", "")}):
-            return 1
-        elif "junior" in data['screen_name'] and \
-                self.__dbm_trustworthy_users.find_record({'screen_name': data['screen_name'].replace("junior", "")}):
-            return 1
-        else:
-            for doc in self.__dbm_trustworthy_users.find_all():
-                dist_sn = self.__string_similarity(doc['screen_name'], data['screen_name'])
-                dist_n = self.__string_similarity(doc['name'], data['name'])
-                if doc['name'] in data['screen_name'] or doc['screen_name'] in data['screen_name']:
-                    return 1
-                if doc['name'] in data['name'] or doc['screen_name'] in data['name']:
-                    return 1
-                if mini_sn < dist_sn:
-                    mini_sn = dist_sn
-                if mini_n < dist_n:
-                    mini_n = dist_n
-            if mini_n > 0.75 or mini_sn > 0.75:
-                return 1
-            else:
-                return 0
-
-    def __random_account_letter(self,data):
-        result = 0
-        # random letters
-        vocal="aeiouAEIOU"
-        consonant = "bcdfghjklmnñpqrstvwxyzBCDFGHJKLMNÑPQRSTVWXYZ"
-        count_vocal = 0
-        count_consonant = 0
-        #analyze the screen_name
-        for letter in data['screen_name']:
-            if letter in vocal:
-                count_vocal += 1
-            elif letter in consonant:
-                count_consonant += 1
-        if 3*count_vocal < count_consonant:
-            result += 1
-        letter = ""
-        for k in data['screen_name']:  # separate numbers of the name to analyze
-            if k in vocal or k in consonant:
-                letter = letter + k
-            else:
-                letter = letter + " "
-        letters = letter.split(" ")
-        while '' in letters:
-            letters.remove('')  # delete blank spaces
-        if len(letters) > 2:  # add the remaining number of numbers and increases the probability that it is a bot
-            result += 1
-        #analyze the name
-        count_vocal = 0
-        count_consonant = 0
-        for letter in data['name']:
-            if letter in vocal:
-                count_vocal += 1
-            elif letter in consonant:
-                count_consonant += 1
-        if 3*count_vocal < count_consonant:
-            result += 1
-        letter = ""
-        for k in data['name']:  # separate numbers of the name to analyze
-            if k in vocal or k in consonant:
-                letter = letter + k
-            else:
-                letter = letter + " "
-        letters = letter.split(" ")
-        while '' in letters:
-            letters.remove('')  # delete blank spaces
-        if len(letters) > 2:  # add the remaining number of numbers and increases the probability that it is a bot
-            result += 1
-        if result > 1 or result:
-            return 1
-        return 0
-
-    def __random_account_number(self, data):
-        result = 0  # the number that return
-        # random numbers
-        # verify if the screen_name is compoust only of numbers
-        if data['screen_name'].isdigit() or data['name'].isdigit():
-            return 1
-        number = ""
-        for k in data['screen_name']:  # separate numbers of the name to analyze
-            if k in string.digits:
-                number = number + k
-            else:
-                number = number + " "
-        numbers = number.split(" ")
-        while '' in numbers:
-            numbers.remove('')  # delete blank spaces
-        if len(numbers) > 1:  # add the remaining number of numbers and increases the probability that it is a bot
-            result = 1
-        partial_result = 1
-        for n in numbers:
-            num = int(n)
-            if num > 31129999:
-                partial_result = 1
-            else:
-                if num in range(10000000, 99999999, 1):  # num > 10000000 and num < 99999999
-                    if num in range(110000, 31129999, 1):  # num > 110000 and num < 31129999
-                        # yyyy mm dd
-                        year = int(int(n) / 10000)
-                        month = int(int(n) % 100)
-                        day = int(int(n) % 100)
-                        if year < 1000 or month > 12 or day > 31:
-                            partial_result = 1
-                        # dd mm yyyy
-                        day = int(int(n) / 10000)
-                        month = int(int(n) % 100)
-                        year = int(int(n) % 100)
-                        if year < 1000 or month > 12 or day > 31:
-                            partial_result = 1
-                if num in range(999, 10000, 1) or num < 100 or (data['created_at'].split()[5] in n) or str(
-                        int(data['created_at'].split()[5]) - 2000) in n:
-                    partial_result = 0
-
-            result += partial_result
-        if result > 1 or result:
-            return 1
-        return 0
 
     # Check the presence/absent of default elements in the profile of a given user
     def __default_twitter_account(self, user):
@@ -287,7 +115,6 @@ class BotDetector:
             return 0    
 
     def compute_bot_probability(self, users, promotion_heur_flag):
-        # self.__db_trustworthy_users()  # crea la BD auxiliar para poder comparar con los personajes publicos con cuentas verificadas
         users_pbb = {}
         for user in users:
             bot_score = 0
@@ -297,18 +124,16 @@ class BotDetector:
             # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
             # to understand the data of users available in the tweet
             # objects
-            data = self.__get_user(user)
+            data = get_user(self.__dbm_tweets, user)
             # Using the Twitter API get tweets of the user's timeline
             timeline = self.__get_timeline(user)
             # Check heuristics
             # The method '__is_retweet_bot' is returning a Boolean value
             bot_score += 1 if self.__is_retweet_bot(timeline) else 0
-            bot_score += self.__creation_date(
-                self.__parse_date(data['created_at'])
-                , datetime.datetime.now().year)
-            bot_score += self.__random_account_letter(data)
-            bot_score += self.__random_account_number(data)
-            bot_score += self.__similar_account_name(data)
+            bot_score += self.__creation_date(parse_date(data['created_at']), datetime.datetime.now().year)
+            bot_score += fk.random_account_letter(data)
+            bot_score += fk.random_account_number(data)
+            bot_score += fk.similar_account_name(data, self.__dbm_tweets)
             bot_score += self.__default_twitter_account(data)
             bot_score += self.__location(data)
             bot_score += self.__followers_ratio(data)
