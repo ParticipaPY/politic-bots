@@ -1,6 +1,8 @@
 from collections import defaultdict
+from datetime import datetime
 from pymongo import MongoClient
-from utils import *
+from src.utils.utils import get_config, get_user_handlers_and_hashtags, get_py_date
+
 import logging
 
 
@@ -12,7 +14,7 @@ class DBManager:
     __host = None
     __collection = ''
 
-    def __init__(self, collection, config_fn='config.json'):
+    def __init__(self, collection, config_fn='../config.json'):
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']

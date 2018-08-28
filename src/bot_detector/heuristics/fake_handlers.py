@@ -1,7 +1,7 @@
 import string
 
-from db_manager import DBManager
-from utils import get_user
+from src.utils.db_manager import DBManager
+from src.utils import get_user
 
 VOCAL = "aeiouAEIOU"
 CONSONANT = "bcdfghjklmnñpqrstvwxyzBCDFGHJKLMNÑPQRSTVWXYZ"

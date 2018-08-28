@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
-from db_manager import DBManager
-from utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+from src.utils.db_manager import DBManager
+from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
 import csv
 import logging
 import re
@@ -136,7 +136,7 @@ class TweetEvaluator:
     # fix value of candidatura if hashtags related to a candidacy
     # are present in the text of the tweet
     def fix_value_of_candidatura(self):
-        myconf = 'config.json'
+        myconf = '../config.json'
         configuration = get_config(myconf)
         keyword, k_metadata = parse_metadata(configuration['metadata'])
         interested_data = []

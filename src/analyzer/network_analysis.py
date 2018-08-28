@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from db_manager import DBManager
+from src.utils.db_manager import DBManager
 import logging
 import networkx as net
 

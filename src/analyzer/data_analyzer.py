@@ -1,18 +1,15 @@
 import json
 import logging
 import requests
-import string
 import time
-from utils import get_config, update_config
-from db_manager import DBManager
+from src.utils.utils import get_config, update_config
+from src.utils.db_manager import DBManager
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
-_BOUNDARY_CHARS = string.digits + string.ascii_letters
-
 class SentimentAnalysis:
-    config_file_name = 'config.json'
+    config_file_name = '../config.json'
     config = None
     language = ''
     method = ''

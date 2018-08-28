@@ -9,6 +9,5 @@
     "host": "localhost",
     "port": "27017",
     "db_name": "generales2018"
-  },
-  "Fake-Promoter_config_file": "heuristics_config.json"
+  }
 }

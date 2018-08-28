@@ -2,11 +2,11 @@ import datetime
 import json
 import tweepy
 
-from db_manager import DBManager
-from heuristics.fake_handlers import fake_handlers
-from heuristics.fake_promoter import fake_promoter
-from heuristics.simple import *
-from utils import parse_date, get_user
+from src.utils.db_manager import DBManager
+from src.bot_detector.heuristics.fake_handlers import fake_handlers
+from src.bot_detector.heuristics.fake_promoter import fake_promoter
+from src.bot_detector.heuristics.simple import *
+from src.utils.utils import parse_date, get_user
 
 
 class BotDetector:
@@ -16,7 +16,7 @@ class BotDetector:
     __conf = None
     __num_heuristics = 10  # number of implemented heuristics (the function default_twitter_account checks 4 heuristics)
 
-    def __init__(self, name_config_file='config.json'):
+    def __init__(self, name_config_file='../config.json'):
         self.__conf = self.__get_config(name_config_file)
         auth = tweepy.AppAuthHandler(
             self.__conf['twitter']['consumer_key'],
@@ -89,22 +89,3 @@ class BotDetector:
         return users_pbb
 
 
-if __name__ == "__main__":
-    myconf = 'config.json'
-    # To extract and analyzed all users from DB
-    # l_usr=[]
-    # dbm= DBManager('users')
-    # users = dbm.get_unique_users() #get users from DB
-    # for u in users:
-       # l_usr.append(u['screen_name'])
-    # print(l_usr)
-
-    # sample of users
-    users = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
-             'federicotorale2', 'VyfQXRgEXdFmF1X']
-    users = users + ['AM_1080', 'CESARSANCHEZ553', 'Paraguaynosune', 'Solmelga', 'SemideiOmar',
-                     'Mercede80963021', 'MaritoAbdo', 'SantiPenap']
-    usrs_prom_bots_tst = ['CESARSANCHEZ553', 'Paraguaynosune']
-
-    bot_detector = BotDetector(myconf)
-    bot_detector.compute_bot_probability(usrs_prom_bots_tst, True)

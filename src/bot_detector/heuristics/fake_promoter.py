@@ -1,6 +1,6 @@
 import time
 
-import network_analysis as NA
+from src.analyzer import network_analysis as NA
 
 
 def get_fake_promoter_config(bot_detector, heur_config_file):
