@@ -1,6 +1,0 @@
-{"metadata": "kwd_metadata.csv",
-  "tweets_qry": 100,
-  "mongo": {"host": "localhost", "db_name": "internas17", "port": "27017"},
-  "twitter": {"consumer_key": "qL2ne3j89Y6wbFbGq1FaA", "consumer_secret": "7ERg6sHqf7AaWAv4te8ZsDcQusx7Q27Nw93ZyU6k"},
-  "inhouse": {"username": "admin", "password": "238k74i1Ct", "api_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE1MjAzNDgwNjcsInVzZXJuYW1lIjoiYWRtaW4iLCJlbWFpbCI6IiJ9.xv83za4ynwSHZmfCmt-wvxLJ_fy9AFl4w08cfLLBxtA"},
-}
