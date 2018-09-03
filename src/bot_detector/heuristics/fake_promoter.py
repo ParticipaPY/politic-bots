@@ -160,8 +160,8 @@ def modify_db(bot_detector, conf):
     If it's not present, then compute and store the bot_detector_pbb 
     of 'NUM_USERS_UPDATE' users.  
     Also store the bot_detector_pbb of 'NUM_INTERACTED_USERS_UPDATE' 
-    of the users she/he started an interaction with
-    , in descending number-of-interactions order.
+    of the users she/he started an interaction with, in descending
+    number-of-interactions order.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def modify_db(bot_detector, conf):
     # Get a sample user record,
     # analyze if it has the "bot_detector_pbb" field for itself,
     # and/or for its interactions, and if it not, append it/them
-    user_record = dbm_users.find_record({})
+    user_record = dbm_users.find_record({})          # is this only one user??? --- !!!!
     if 'bot_detector_pbb' not in user_record.keys():
         append_bot_detector_pbbs(
             bot_detector, dbm_users, dbm_tweets
@@ -206,8 +206,7 @@ def modify_db(bot_detector, conf):
             ".\n")
 
 
-def computations_num_interactions(user_screen_name
-    , NUM_INTERACTED_USERS_HEUR, interactions):
+def computations_num_interactions(user_screen_name, NUM_INTERACTED_USERS_HEUR, interactions):
     """
     Compute values related to the no. interactions of a user.
 
@@ -237,6 +236,7 @@ def computations_num_interactions(user_screen_name
     totals_dict : The totals needed by the heuristic
     , encapsulated in a dictionary.
     """
+
     interacted_users_count = 0
     total_interactions = 0
     total_top_interactions = 0
@@ -247,7 +247,7 @@ def computations_num_interactions(user_screen_name
         if (interacted_users_count < NUM_INTERACTED_USERS_HEUR
                 and interaction_with != user_screen_name):
             interacted_users_count += 1
-            total_top_interactions += interaction_count
+            total_top_interactions += interaction_count       # are we assuming that interactions are ordered from higher to lower?? ---- !!!!
         # Accumulate no. interactions with all users
         total_interactions += interaction_count
     totals_dict["interacted_users_count"] = interacted_users_count
@@ -256,9 +256,8 @@ def computations_num_interactions(user_screen_name
     return totals_dict
 
 
-def compute_sums_totals(dbm_users
-    , user_screen_name, interactions, totals_dict
-    , NUM_INTERACTED_USERS_HEUR, BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD):
+def compute_sums_totals(dbm_users, user_screen_name, interactions, totals_dict,
+                        NUM_INTERACTED_USERS_HEUR, BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD):
     """Compute the sums for the different scores.
 
     Parameters
@@ -319,42 +318,35 @@ def compute_sums_totals(dbm_users
         # interactions_count*bot_detector_pbb
         # of each of the NUM_INTERACTED_USERS_HEUR 
         # most interacted users
-        sum_of_top_intrctns_wghtd_pbbs = 0
+        sum_of_top_intrctns_wghtd_pbbs = 0   ## Based on the comments there isn't differences between 2 and 3 ---- !!!!!
 
-    print("Top-{} Interacted-users of user {}:\n"
-        .format(interacted_users_count, user_screen_name))
+    print("Top-{} Interacted-users of user {}:\n".format(interacted_users_count, user_screen_name))
+
     for interaction_with, interaction_count in interactions:
         # We only care about top NUM_INTERACTED_USERS_HEUR accounts
-        if interacted_users_count_2 >= NUM_INTERACTED_USERS_HEUR: break
-        # We only care about accounts
-        # different from the analyzed user
+        if interacted_users_count_2 >= NUM_INTERACTED_USERS_HEUR:
+            break
+        # We only care about accounts different from the analyzed user
         if interaction_with == user_screen_name:
             continue
         # Fetch the interacted user's bot_detector_pbb from the db
-        interacted_user_record = dbm_users.find_record(
-            {'screen_name': interaction_with})
-        interacted_user_bot_detector_pbb = (
-            interacted_user_record['bot_detector_pbb'])
+        interacted_user_bot_detector_pbb = dbm_users.find_record(
+            {'screen_name': interaction_with})['bot_detector_pbb']
         # Compute what fraction of the total no. interactions
         # represents the no. of interactions
         # with the current interacted user.  
         # Only used for informative purposes in this heuristic.
-        interactions_all_prcntg = (
-            interaction_count / total_interactions)
+        interactions_all_prcntg = interaction_count / total_interactions
         # Compute what fraction of the no. interactions
         # with the most NUM_INTERACTED_USERS_HEUR interacted users
         # represents the no. of interactions
         # with the current interacted user.  
         # Only used for informative purposes in this heuristic.
-        interactions_top_prcntg = (
-            interaction_count / total_top_interactions)
-        print("{}, {}: {} % from total"
-            ", {} % from top {} interacted users"
-            ". bot_detector_pbb: {}.\n".format(
-                interaction_with, interaction_count
-                , interactions_all_prcntg*100
-                , interactions_top_prcntg*100, interacted_users_count
-                , interacted_user_bot_detector_pbb))
+        interactions_top_prcntg = interaction_count / total_top_interactions
+        # TODO: Logging instead of printing
+        print("{}, {}: {} % from total, {} % from top {} interacted users. bot_detector_pbb: {}.\n".format(
+              interaction_with, interaction_count, interactions_all_prcntg*100, interactions_top_prcntg*100,
+              interacted_users_count, interacted_user_bot_detector_pbb))
         
         if FAKE_PROMOTER_METHOD == 0:
             # Accumulate only interactions with users
@@ -362,8 +354,7 @@ def compute_sums_totals(dbm_users
             if interacted_user_bot_detector_pbb > BOT_DET_PBB_THRS:
                 # Accumulate the no. interactions
                 # with the current interacted user
-                sum_of_intrctns += (
-                    interaction_count)
+                sum_of_intrctns += interaction_count
         elif FAKE_PROMOTER_METHOD == 1:
             # Accumulate the bot_detector_pbb
             # of the current interacted user
@@ -375,19 +366,15 @@ def compute_sums_totals(dbm_users
             # of the current interacted user
             # using the interactions percentage (over the total)
             # as the weight
-            interactions_all_pbb_product = (
-                interactions_all_prcntg * interacted_user_bot_detector_pbb)
+            interactions_all_pbb_product = interactions_all_prcntg * interacted_user_bot_detector_pbb
             # "Weight" the bot_detector_pbb 
             # of the current interacted user
             # using the interactions percentage
             # (over the most NUM_INTERACTED_USERS_HEUR 
             # interacted users) as the weight
-            interactions_top_pbb_product = (
-                interactions_top_prcntg * interacted_user_bot_detector_pbb)
-            print("Product (top): {}."
-                " Product (all): {}.\n"
-                .format(interactions_top_pbb_product
-                    , interactions_all_pbb_product))
+            interactions_top_pbb_product = interactions_top_prcntg * interacted_user_bot_detector_pbb
+            print("Product (top): {}. Product (all): {}.\n".format(interactions_top_pbb_product,
+                                                                   interactions_all_pbb_product))
             if FAKE_PROMOTER_METHOD == 2:
                 # Accumulate the interactions-weighted bot_detector_pbb
                 # of the current interacted user
@@ -409,17 +396,14 @@ def compute_sums_totals(dbm_users
     elif FAKE_PROMOTER_METHOD == 1:
         sums_dict["sum_of_pbbs"] = sum_of_pbbs
     elif FAKE_PROMOTER_METHOD == 2:        
-        sums_dict["sum_of_all_intrctns_wghtd_pbbs"] \
-                 = sum_of_all_intrctns_wghtd_pbbs
+        sums_dict["sum_of_all_intrctns_wghtd_pbbs"] = sum_of_all_intrctns_wghtd_pbbs
     elif FAKE_PROMOTER_METHOD == 3:
-        sums_dict["sum_of_top_intrctns_wghtd_pbbs"] \
-             = sum_of_top_intrctns_wghtd_pbbs
+        sums_dict["sum_of_top_intrctns_wghtd_pbbs"] = sum_of_top_intrctns_wghtd_pbbs
 
     return sums_dict
 
 
-def compute_scores(sums_dict, totals_dict
-    , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD):
+def compute_scores(sums_dict, totals_dict, BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD):
     """Compute the corresponding scores.
 
     Compute the scores for the specified heuristic 
@@ -447,27 +431,17 @@ def compute_scores(sums_dict, totals_dict
     interacted_users_count = totals_dict["interacted_users_count"]
     selected_msg = ""
     if FAKE_PROMOTER_METHOD == 0:
-        scores_dict["score_top_intrctns"] \
-            = sums_dict["sum_of_intrctns"]
-        scores_dict["score_top_intrctns_prcntg"] = (
-            scores_dict["score_top_intrctns"]
-             / totals_dict["total_interactions"])
-        selected_msg += ("Top {} interacted users' count "
-            "with users of pbb above {} %: {}.\n".format(
-                interacted_users_count, BOT_DET_PBB_THRS*100
-                , scores_dict["score_top_intrctns"]))
-        selected_msg += ("Top {} interacted users' percentage "
-         "with users of pbb above {} %: {} %.\n".format(interacted_users_count
-                , BOT_DET_PBB_THRS*100
-                , scores_dict["score_top_intrctns_prcntg"]*100))
+        scores_dict["score_top_intrctns"] = sums_dict["sum_of_intrctns"]
+        scores_dict["score_top_intrctns_prcntg"] = scores_dict["score_top_intrctns"]/ totals_dict["total_interactions"]
+        selected_msg += "Top {} interacted users' count with users of pbb above {} %: {}.\n".format(
+            interacted_users_count, BOT_DET_PBB_THRS*100, scores_dict["score_top_intrctns"])
+        selected_msg += "Top {} interacted users' percentage with users of pbb above {} %: {} %.\n".format(
+            interacted_users_count, BOT_DET_PBB_THRS*100, scores_dict["score_top_intrctns_prcntg"]*100)
     else:
         if FAKE_PROMOTER_METHOD == 1:
-            scores_dict["avg_bot_det_pbb"] \
-                 = (sums_dict["sum_of_pbbs"]
-                     / interacted_users_count)
-            selected_msg += ("Average top {} interacted users' "
-                "bot_detector_pbb: {} %.\n".format(interacted_users_count
-                    , scores_dict["avg_bot_det_pbb"]*100))
+            scores_dict["avg_bot_det_pbb"] = sums_dict["sum_of_pbbs"]/ interacted_users_count
+            selected_msg += "Average top {} interacted users' bot_detector_pbb: {} %.\n".format(
+                interacted_users_count, scores_dict["avg_bot_det_pbb"]*100)
             selected_avg = "avg_bot_det_pbb"
         else:
             if FAKE_PROMOTER_METHOD == 2:
@@ -478,19 +452,14 @@ def compute_scores(sums_dict, totals_dict
                 selected_avg = "avg_top_intrctns_wghtd_pbbs"
             scores_dict[selected_avg] = sums_dict[selected_sum]
             if FAKE_PROMOTER_METHOD == 2:
-                selected_msg += ("Average top {} interacted users' "
-                    "bot_detector_pbb (total-relative-weighted): {} %.\n"
-                    .format(interacted_users_count
-                        , scores_dict["avg_all_intrctns_wghtd_pbbs"]*100))
+                selected_msg += "Average top {} interacted users' bot_detector_pbb (total-relative-weighted): {} %.\n" \
+                    .format(interacted_users_count, scores_dict["avg_all_intrctns_wghtd_pbbs"]*100)
             elif FAKE_PROMOTER_METHOD == 3:
-                selected_msg += ("Average top {0} interacted users' "
-                    "bot_detector_pbb (top-{0}-relative-weighted) : {1} %.\n"
-                    .format(
-                        interacted_users_count
-                        , scores_dict["avg_top_intrctns_wghtd_pbbs"]*100))
+                selected_msg += "Average top {0} interacted users' bot_detector_pbb (top-{0}-relative-weighted) : {1} " \
+                                "%.\n".format(interacted_users_count, scores_dict["avg_top_intrctns_wghtd_pbbs"]*100)
         scores_dict["selected_avg"] = scores_dict[selected_avg]
+    # TODO: logging instead of printing
     print(selected_msg)
-
     return scores_dict
 
 
@@ -516,31 +485,24 @@ def promoter_user_thresholds(FAKE_PROMOTER_METHOD, thresholds):
         # greater than BOT_DET_PBB_THRS.
         #
         # Absolute no. interactions
-        thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"] \
-             = thresholds["SCORE_TOP_INTRCTNS_THRESHOLD"]
+        thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"] = thresholds["SCORE_TOP_INTRCTNS_THRESHOLD"]
         # Relative no. interactions 
-        thresholds_dict["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"] \
-            = thresholds["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"]
+        thresholds_dict["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"] = thresholds["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"]
     elif FAKE_PROMOTER_METHOD == 1:
         # Threshold of avg bot_detector_pbb
         # (without considering the present heuristic)
-        thresholds_dict["AVG_PBB_THRESHOLD"] \
-            = thresholds["AVG_PBB_THRESHOLD"]
+        thresholds_dict["AVG_PBB_THRESHOLD"] = thresholds["AVG_PBB_THRESHOLD"]
         thresholds_dict["SELECTED_AVG"] = thresholds_dict["AVG_PBB_THRESHOLD"]
     elif FAKE_PROMOTER_METHOD == 2:
         # Threshold of avg prod, with the interactions %
         # over all interacted users
-        thresholds_dict["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"] \
-            = thresholds["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"]
-        thresholds_dict["SELECTED_AVG"] \
-             = thresholds_dict["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"]
+        thresholds_dict["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"] = thresholds["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"]
+        thresholds_dict["SELECTED_AVG"] = thresholds_dict["AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD"]
     elif FAKE_PROMOTER_METHOD == 3:
         # Threshold of avg prod, with the interactions %
         # over top NUM_INTERACTED_USERS_HEUR interacted users
-        thresholds_dict["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"] \
-            = thresholds["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"]
-        thresholds_dict["SELECTED_AVG"] \
-             = thresholds_dict["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"]
+        thresholds_dict["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"] = thresholds["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"]
+        thresholds_dict["SELECTED_AVG"] = thresholds_dict["AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD"]
 
     return thresholds_dict
 
@@ -561,7 +523,7 @@ def fake_promoter(bot_detector, user_screen_name):
     evaluated in the heuristic.
 
     NUM_INTERACTED_USERS_HEUR : Number of interacted-users to consider 
-    for the heuristic's computations.
+    for the heuristic's computation.
 
     FAKE_PROMOTER_METHOD : Determines which heuristic to use.
         0: Top-NUM_INTERACTED_USERS_HEUR-interacted users'
@@ -586,6 +548,7 @@ def fake_promoter(bot_detector, user_screen_name):
     heur_config_file = (
         bot_detector._BotDetector__conf["Fake-Promoter_config_file"])
     fake_prom_conf = get_fake_promoter_config(bot_detector, heur_config_file)
+
     # Number that indicates which heuristic is to be used
     # in the Fake-Promoter Heuristic.
     # 
@@ -611,7 +574,7 @@ def fake_promoter(bot_detector, user_screen_name):
     NUM_INTERACTED_USERS_HEUR = fake_prom_conf["NUM_INTERACTED_USERS_HEUR"]
     # Pbb above of which we count a user
     # into the computation of the interactions total
-    BOT_DET_PBB_THRS = fake_prom_conf["thresholds"]["BOT_DET_PBB_THRS"]
+    BOT_DET_PBB_THRS = fake_prom_conf["thresholds"]["BOT_DET_PBB_THRS"]   ## It is not clear what does it mean
 
     # Ensure that FAKE_PROMOTER_METHOD is valid
     if not (FAKE_PROMOTER_METHOD == 0 or FAKE_PROMOTER_METHOD == 1
@@ -621,7 +584,7 @@ def fake_promoter(bot_detector, user_screen_name):
                 .format(FAKE_PROMOTER_METHOD))
 
     # Verify db structure, and modify it if necessary
-    modify_db(bot_detector, fake_prom_conf["db_update"])
+    modify_db(bot_detector, fake_prom_conf["db_update"])    # what kind of modifications?
 
     network_analysis = NA.NetworkAnalyzer()
     # Instantiate DBManager objects.  
@@ -637,15 +600,23 @@ def fake_promoter(bot_detector, user_screen_name):
     # 
     # Each of the elements of the list is a tuple.  
     # The first element is the screen name of an interacted user
-    # and the second is the number of interactions with her/him.  
+    # and the second is the number of interactions with her/him.
+
+    ## Get information about the interactions (whom and how many) started by the user ----!!!!
+
     interactions = [(interaction_with, interaction_count)
       for interaction_with, interaction_count
         in network_analysis.get_interactions(
             user_screen_name)["out_interactions"]["total"]["details"]]
-    totals_dict = {}
+
     # Compute different values for later use
+
+    # Why do we need to compute interaction if we had already this information
+    # from the previous lines? ----- !!!!
+
     totals_dict = computations_num_interactions(
                     user_screen_name, NUM_INTERACTED_USERS_HEUR, interactions)
+
     # If the user didn't start any interactions
     # with a different user, then it cannot be
     # promotioning anyone
@@ -653,16 +624,19 @@ def fake_promoter(bot_detector, user_screen_name):
         print("The user {} has no interactions. "
             "It can't be a promoter-bot.\n".format(user_screen_name))
         return 0
+
     # Compute values used in the scores' calculations
     sums_dict = compute_sums_totals(
             dbm_users, user_screen_name, interactions
             , totals_dict, NUM_INTERACTED_USERS_HEUR
             , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
     print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
+
     # Compute the different scores
     scores_dict = compute_scores(
             sums_dict, totals_dict
             , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
+
     # Get Thresholds values
     thresholds_dict = promoter_user_thresholds(
             FAKE_PROMOTER_METHOD, fake_prom_conf["thresholds"])
