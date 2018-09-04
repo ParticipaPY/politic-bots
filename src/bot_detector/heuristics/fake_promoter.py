@@ -517,8 +517,7 @@ def fake_promoter(bot_detector, user_screen_name):
     -------
     0 if the heuristic was negative, 1 if positive.
     """
-    heur_config_file = (
-        bot_detector._BotDetector__conf["Fake-Promoter_config_file"])
+    heur_config_file = bot_detector._BotDetector__conf["Fake-Promoter_config_file"]
     fake_prom_conf = get_fake_promoter_config(bot_detector, heur_config_file)
 
     # Number that indicates which heuristic is to be used
@@ -549,11 +548,8 @@ def fake_promoter(bot_detector, user_screen_name):
     BOT_DET_PBB_THRS = fake_prom_conf["thresholds"]["BOT_DET_PBB_THRS"]   ## It is not clear what does it mean
 
     # Ensure that FAKE_PROMOTER_METHOD is valid
-    if not (FAKE_PROMOTER_METHOD == 0 or FAKE_PROMOTER_METHOD == 1
-             or FAKE_PROMOTER_METHOD == 2 or FAKE_PROMOTER_METHOD == 3
-             or FAKE_PROMOTER_METHOD == 4):
-        raise Exception("Error. FAKE_PROMOTER_METHOD cannot be {}.\n"
-                .format(FAKE_PROMOTER_METHOD))
+    if FAKE_PROMOTER_METHOD not in [0, 1, 2, 3, 4]:
+        raise Exception("Error. FAKE_PROMOTER_METHOD cannot be {}".format(FAKE_PROMOTER_METHOD))
 
     # Verify db structure, and modify it if necessary
     modify_db(bot_detector, fake_prom_conf["db_update"])    # what kind of modifications?
@@ -577,41 +573,34 @@ def fake_promoter(bot_detector, user_screen_name):
     ## Get information about the interactions (whom and how many) started by the user ----!!!!
 
     interactions = [(interaction_with, interaction_count)
-      for interaction_with, interaction_count
-        in network_analysis.get_interactions(
-            user_screen_name)["out_interactions"]["total"]["details"]]
+      for interaction_with, interaction_count in
+                    network_analysis.get_interactions(user_screen_name)["out_interactions"]["total"]["details"]]
 
     # Compute different values for later use
 
     # Why do we need to compute interaction if we had already this information
     # from the previous lines? ----- !!!!
 
-    totals_dict = computations_num_interactions(
-                    user_screen_name, NUM_INTERACTED_USERS_HEUR, interactions)
+    totals_dict = computations_num_interactions(user_screen_name, NUM_INTERACTED_USERS_HEUR, interactions)
 
     # If the user didn't start any interactions
     # with a different user, then it cannot be
-    # promotioning anyone
+    # promoting anyone
     if totals_dict["total_top_interactions"] == 0:
-        print("The user {} has no interactions. "
-            "It can't be a promoter-bot.\n".format(user_screen_name))
+        print("The user {} has no interactions. It can't be a promoter-bot.\n".format(user_screen_name))
         return 0
 
     # Compute values used in the scores' calculations
-    sums_dict = compute_sums_totals(
-            dbm_users, user_screen_name, interactions
-            , totals_dict, NUM_INTERACTED_USERS_HEUR
-            , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
+    sums_dict = compute_sums_totals(dbm_users, user_screen_name, interactions, totals_dict, NUM_INTERACTED_USERS_HEUR,
+                                    BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
     print("Promotion-User Heuristic ({}):\n".format(user_screen_name))
 
     # Compute the different scores
-    scores_dict = compute_scores(
-            sums_dict, totals_dict
-            , BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
+    scores_dict = compute_scores(sums_dict, totals_dict, BOT_DET_PBB_THRS, FAKE_PROMOTER_METHOD)
 
     # Get Thresholds values
-    thresholds_dict = promoter_user_thresholds(
-            FAKE_PROMOTER_METHOD, fake_prom_conf["thresholds"])
+    thresholds_dict = promoter_user_thresholds(FAKE_PROMOTER_METHOD, fake_prom_conf["thresholds"])
+
     if FAKE_PROMOTER_METHOD == 0:
         # For this heuristic, two evaluations are performed
         # instead of just one.
@@ -619,23 +608,16 @@ def fake_promoter(bot_detector, user_screen_name):
         # Return 1 if either the absolute or relative
         # no. interactions
         # was greater than to the corresponding threshold
-        if (
-            (scores_dict["score_top_intrctns"]
-            > thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"])
-          or
-            (scores_dict["score_top_intrctns_prcntg"]
-            > thresholds_dict[
-                "SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"])
-        ):
+        if scores_dict["score_top_intrctns"] > thresholds_dict["SCORE_TOP_INTRCTNS_THRESHOLD"] or \
+           scores_dict["score_top_intrctns_prcntg"] > thresholds_dict["SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD"]:
             return 1
         else:
             return 0
-    elif (FAKE_PROMOTER_METHOD == 1 or FAKE_PROMOTER_METHOD == 2
-             or FAKE_PROMOTER_METHOD == 3):
+    elif FAKE_PROMOTER_METHOD == 1 or FAKE_PROMOTER_METHOD == 2 or FAKE_PROMOTER_METHOD == 3:
         # Since all these heuristics evaluate
         # if an avg is grtr than a Threshold,
         # encapsulate the behavior into one single evaluation
-        if (scores_dict["selected_avg"] > thresholds_dict["SELECTED_AVG"]):
+        if scores_dict["selected_avg"] > thresholds_dict["SELECTED_AVG"]:
             return 1
         else:
             return 0
