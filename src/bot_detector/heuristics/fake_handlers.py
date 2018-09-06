@@ -1,30 +1,28 @@
 import string
 
 from src.utils.db_manager import DBManager
-from src.utils.utils import get_user
+from src.utils.utils import get_user, get_config
 
-VOCAL = "aeiouAEIOU"
-CONSONANT = "bcdfghjklmnñpqrstvwxyzBCDFGHJKLMNÑPQRSTVWXYZ"
-MIN_NUM_FOLLOWERS = 5000
-SIMILARITY_THRESHOLD = 0.75
-MAX_DATE = 99991231  # 9999/12/31
-MAX_MONTH = 12
-MAX_DAY = 31
-MIN_YEAR = 1000
+VOWELS = 'aeiou'
+CONSONANTS = 'bcdfghjklmnñpqrstvwxyz'
+MIN_YEAR, MAX_MONTH, MAX_DAY = 1000, 12, 31
 
 
-def __db_trustworthy_users(db_users):
+def __db_trustworthy_users(db_users, config):
     """
     Generate a database of trustworthy users. We trust in the user if she
     has a verified account or has more than X number of followers
+    
     :param db_users: database of user
+    :param config: dictionary with the configuration parameters of the heuristic
+
     :return: database of trustworthy users
     """
     print('Please wait, the trustworthy_users collection is being updated')
     dbm_trustworthy_users = DBManager('trustworthy_users')
     for doc in db_users.find_all():
         data = get_user(db_users, doc['screen_name'])
-        if data['verified'] or int(data['followers_count']) > MIN_NUM_FOLLOWERS:
+        if data['verified'] or int(data['followers_count']) > config['min_num_followers']:
             if not dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}):
                 dbm_trustworthy_users.save_record({'screen_name': doc['screen_name'], 'name': data['name'],
                                                    'created_at': data['created_at'],
@@ -35,7 +33,8 @@ def __db_trustworthy_users(db_users):
 
 def __get_bigrams(s):
     """
-    Take a string and return a list of bigrams.
+    Take a string and return a list of bigrams
+
     :param s: string
     :return: list of bigrams
     """
@@ -47,6 +46,7 @@ def __string_similarity(str1, str2):
     """
     Perform bigram comparison between two strings and return the
     matching proportion
+
     :param str1: string
     :param str2: string
     :return: matching percentage
@@ -63,7 +63,7 @@ def __string_similarity(str1, str2):
     return (2.0 * hit_count) / union
 
 
-def __similar_account_name(data, db_users):
+def __similar_account_name(data, db_users, config):
     """
     Check various conditions about the user's name and screen name:
     1. Condition 1: the user and screen name is inside the database of
@@ -74,14 +74,17 @@ def __similar_account_name(data, db_users):
     name or screen name of a trustworthy user
     4. Condition 4: the user's name or screen_name has at least 75% similarity
     with the name or screen_name of a user in the trustworthy database
+
     :param data: dictionary with information about a Twitter user
     :param db_users: database of the Twitter users
+    :param config: dictionary with the configuration parameters of the heuristic
+
     :return: 1 if condition 2, 3, or 4 is met 0 otherwise
     """
     mini_sn = 0.0
     mini_n = 0.0
     # create a database of verified accounts
-    dbm_trustworthy_users = __db_trustworthy_users(db_users)
+    dbm_trustworthy_users = __db_trustworthy_users(db_users, config)
     if dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}) and \
        dbm_trustworthy_users.find_record({'name': data['name']}):
         return 0
@@ -103,8 +106,8 @@ def __similar_account_name(data, db_users):
                 mini_sn = dist_sn
             if mini_n < dist_n:
                 mini_n = dist_n
-        if mini_n > SIMILARITY_THRESHOLD or \
-           mini_sn > SIMILARITY_THRESHOLD:
+        if mini_n > config['name_similarity_threshold'] or \
+           mini_sn > config['name_similarity_threshold']:
             return 1
         else:
             return 0
@@ -115,34 +118,36 @@ def __analyze_name(name):
     Verify if name has strings of random letters
 
     :param name: the user's name or screen name
-    :return: integer that indicates whether name is
-    composed of suspicious set of letter
+    :param config: dictionary with the configuration parameters of the heuristic
+
+    :return: integer that indicates whether name is composed of suspicious set of letter
     """
 
     bot_prob = 0
-    # count vocals and consonants
-    count_vocal = 0
-    count_consonant = 0
+    # count vowels and consonants
+    vowels_counter = 0
+    consonant_counter = 0
     for letter in name:
-        if letter in VOCAL:
-            count_vocal += 1
-        elif letter in CONSONANT:
-            count_consonant += 1
+        if letter.lower() in VOWELS:
+            vowels_counter += 1
+        else:
+            consonant_counter += 1
     # if the number of consonants is three times larger than
-    # the number of vocals then is likely that name the user
+    # the number of vowels then is likely that name the user
     # has a suspicious name.
     # in the English language words have (in most cases) the same or
-    # more number of consonants than vowels. In the Spanish language
-    # we have the same thing, the words are formed by the union of consonant + vowel,
-    # consonant + 2 * vowel, 2 * consonant + vowel, 2 * consonant + 2 * vocal.
+    # more number of consonants than vowels.
+    # in the Spanish language we have the same thing, the words are formed by the
+    # union of consonant + vowel, consonant + 2 * vowel, 2 * consonant + vowel,
+    # 2 * consonant + 2 * vocal.
     # cases in which the word is composed by 2 * consonant + 3 * vowel or by three or
     # more consonants followed by vowels are very rare.
-    if 3 * count_vocal < count_consonant:
+    if 3 * vowels_counter < consonant_counter:
         bot_prob += 1
     letter = ''
     # separate letter from numbers to analyze
     for k in name:
-        if k in VOCAL or k in CONSONANT:
+        if k.lower() in VOWELS or k.lower() in CONSONANTS:
             letter += k  # save only letters
         else:
             letter += ' '
@@ -159,6 +164,7 @@ def __random_account_letter(data):
     Verify if user's name and screen name has strings of
     random letters
     :param data: user's data
+
     :return: 1 if the name or screen has random letter, 0 otherwise
     """
     result = __analyze_name(data['screen_name'])
@@ -201,11 +207,14 @@ def __parse_number_date_ddmmyyyy(number, len_number):
     return day, month, year
 
 
-def __random_account_number(data):
+def __random_account_number(data, config):
     """
         Verify if user's name and screen name has strings of
         random numbers
+
         :param data: user's data
+        :param config: dictionary with the configuration parameters of the heuristic
+
         :return: 1 if the name or screen has random numbers, 0 otherwise
         """
     bot_prob = 0
@@ -228,7 +237,7 @@ def __random_account_number(data):
     # iterate over the list of numbers
     for n in numbers:
         num = int(n)
-        if num > MAX_DATE:
+        if num > config['max_date']:
             partial_result = 1
         else:
             # check if the number correspond to a date between
@@ -269,11 +278,17 @@ def fake_handlers(data, db_users):
     """
     Check if the user'name and screen name is similar to the name or screen
     name of trustworthy users or if they have strings of random letters or numbers
+
     :param data: user' data
     :param db_users: database of users
-    :return:
+
+    :return: integer that represents the number of conditions met by the user
     """
+
+    # Get heuristic parameters
+    config = get_config('heuristic_config.json')['fake_handler']
+
     ret = __random_account_letter(data)
-    ret += __random_account_number(data)
-    ret += __similar_account_name(data, db_users)
+    ret += __random_account_number(data, config)
+    ret += __similar_account_name(data, db_users, config)
     return ret

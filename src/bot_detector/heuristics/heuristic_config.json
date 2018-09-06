@@ -1,0 +1,13 @@
+{
+  "fake_promoter": {
+    "max_num_freq_contacts_to_consider": 20,
+    "threshold_prob_bot": 0.85,
+    "max_prop_interactions_bots": 0.8,
+    "max_avg_pbb_freq_contacts": 0.75
+  },
+  "fake_handlers": {
+    "min_num_followers": 5000,
+    "name_similarity_threshold": 0.75,
+    "max_date": 99991231
+  }
+}
