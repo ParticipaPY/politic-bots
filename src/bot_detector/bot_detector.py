@@ -1,12 +1,15 @@
 import datetime
-import json
+import logging
 import tweepy
 
 from src.utils.db_manager import DBManager
 from src.bot_detector.heuristics.fake_handlers import fake_handlers
 from src.bot_detector.heuristics.fake_promoter import fake_promoter
 from src.bot_detector.heuristics.simple import *
-from src.utils.utils import parse_date, get_user
+from src.utils.utils import parse_date, get_user, get_config
+
+
+logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 class BotDetector:
@@ -17,7 +20,7 @@ class BotDetector:
     __num_heuristics = 10  # number of implemented heuristics (the function default_twitter_account checks 4 heuristics)
 
     def __init__(self, name_config_file='../config.json'):
-        self.__conf = self.__get_config(name_config_file)
+        self.__conf = get_config(name_config_file)
         auth = tweepy.AppAuthHandler(
             self.__conf['twitter']['consumer_key'],
             self.__conf['twitter']['consumer_secret']
@@ -27,30 +30,12 @@ class BotDetector:
             wait_on_rate_limit=True,
             wait_on_rate_limit_notify=True)
 
-    def __get_config(self, config_file):
-        with open(config_file) as f:
-            config = json.loads(f.read())
-        return config
-
-    def __get_heuristics_config(self, heur_config_file):
-        """
-        Get configurations of heuristics.
-
-        Parameters
-        ----------
-        self : BotDetector instance.  
-        heur_config_file : File name 
-        for the heuristics configuration file
-
-        Returns
-        -------
-        A dictionary containing the configurations necessary 
-        for the heuristics used.
-        """
-        return self.__get_config(heur_config_file)
-
-    # Get tweets in the timeline of a given user
     def __get_timeline(self, user):
+        """
+        Get tweets in the timeline of a given user
+        :param user: user from whom her timeline should be obtained from
+        :return: user's timeline
+        """
         timeline = []
         for status in tweepy.Cursor(self.__api.user_timeline, screen_name=user).items():
             timeline_data = {'tweet_creation': status._json['created_at'],
@@ -60,7 +45,7 @@ class BotDetector:
 
     def __check_heuristics(self, user):
         bot_score = 0
-        print('Computing the probability of the user: {0}'.format(user))
+        logging.info('Computing the probability of the user: {0}'.format(user))
         # Get information about the user, check
         # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
         # to understand the data of users available in the tweet objects
@@ -84,7 +69,7 @@ class BotDetector:
         for user in users:
             bot_score = self.__check_heuristics(user)
             users_pbb[user] = bot_score/self.__num_heuristics
-            print('There are a {0}% of probability that the user {1}'
+            logging.info('There are a {0}% of probability that the user {1}'
                   'would be bot'.format(round((users_pbb[user])*100, 2), user))
         return users_pbb
 
