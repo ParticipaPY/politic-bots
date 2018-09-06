@@ -1,24 +1,21 @@
 import logging
-import time
 
 from src.analyzer.network_analysis import NetworkAnalyzer
+from src.utils.utils import get_config
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
-# Define constants used as parameters of the
-# heuristic
-MOST_FREQUENT_CONTACTS = 20
-PROB_BOT_THERSHOLD = 0.8
 
-
-def compute_user_interactions(user_screen_name, interactions):
+def compute_user_interactions(user_screen_name, interactions, config):
     """
     Compute the total number of interactions started by the user and
     the number of interactions with the user's most frequent contacts
 
-    :param user_screen_name: Screen name of the user under evaluation
-    :param interactions: List of tuples that contain the user's interaction
+    :param user_screen_name: screen name of the user under evaluation
+    :param interactions: list of tuples that contain the user's interaction
     activities
+    :param config: config: dictionary with the configuration parameters of the heuristic
+
     :return dictionary with the computed values
     """
 
@@ -27,7 +24,7 @@ def compute_user_interactions(user_screen_name, interactions):
     for interaction_with, interaction_count in interactions:
         # we assuming that interactions are ordered from the most frequent to
         # the least frequent contacts
-        if interacted_users_counter <= MOST_FREQUENT_CONTACTS and \
+        if interacted_users_counter <= config['max_num_freq_contacts_to_consider'] and \
            interaction_with != user_screen_name:
             interactions_with_freq_contacts += interactions_with_freq_contacts
             interacted_users_counter += 1
@@ -39,14 +36,16 @@ def compute_user_interactions(user_screen_name, interactions):
     return agg_interactions
 
 
-def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions, db_users):
+def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions, db_users, config):
 
     """Compute the sums for the different scores.
 
     :param db_users : database of users
-    :param user_screen_name : Screen name of the user under evaluation
-    :param user_interactions : List of the user's interactions
-    :param agg_interactions : Aggregated information of the user's interactions
+    :param user_screen_name : screen name of the user under evaluation
+    :param user_interactions : list of the user's interactions
+    :param agg_interactions : aggregated information of the user's interactions
+    :param config: config: dictionary with the configuration parameters of the heuristic
+
     :return: dictionary that contains sums about the user's interaction
     activities
     """
@@ -59,7 +58,7 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
 
     interacted_users_counter = 0
     for interacted_user, num_interactions in user_interactions:
-        if interacted_users_counter > MOST_FREQUENT_CONTACTS:
+        if interacted_users_counter > config['max_num_freq_contacts_to_consider']:
             break
         if interacted_user == user_screen_name:
             continue
@@ -78,7 +77,8 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
 
         logging.info('{}, {}: {}% from total, {}% from {} of the most frequent interacted users. '
                      'bot_detector_pbb: {}'.format(interacted_user, num_interactions, prop_interactions*100,
-                                                   prop_interactions_freq*100, MOST_FREQUENT_CONTACTS,
+                                                   prop_interactions_freq*100,
+                                                   config['max_num_freq_contacts_to_consider'],
                                                    interacted_user_pbb))
 
         # Weight the probability of being bot of the current interacted user
@@ -93,7 +93,7 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
 
         # Accumulate the number of interactions of users whose probability of being
         # bot is larger than the defined threshold
-        if interacted_user_pbb > PROB_BOT_THERSHOLD:
+        if interacted_user_pbb > config['threshold_prob_bot']:
             sum_of_interactions += num_interactions
         sum_of_pbbs += interacted_user_pbb
         sum_interactions_weighted_pbbs += w_interactions_pbb
@@ -109,14 +109,15 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
     return sums_dict
 
 
-def is_fake_promoter(user_screen_name, db_users):
+def is_fake_promoter(user_screen_name, db_users, config):
     """
     Compute proportion of the user's interactions with her most frequent contacts
     who are likely to be bots and the average of the probability of being bot of the
     user's most frequent contacts
 
-    :param user_screen_name : Screen name of the user under evaluation.
-    :param db_user : Database of users
+    :param user_screen_name : screen name of the user under evaluation.
+    :param db_users : database of users
+    :param config: dictionary with the configuration parameters of the heuristic
 
     :return tuple that contains the calculations
     """
@@ -128,16 +129,16 @@ def is_fake_promoter(user_screen_name, db_users):
       for interaction_with, interaction_count in
                     network_analyzer.get_interactions(user_screen_name)["out_interactions"]["total"]["details"]]
 
-    agg_interactions = compute_user_interactions(user_screen_name, user_interactions)
+    agg_interactions = compute_user_interactions(user_screen_name, user_interactions, config)
 
     if agg_interactions['total_interactions'] == 0:
         logging.info('The user {} has no interactions. It can\'t be a promoter-bot.'.format(user_screen_name))
         return 0
 
-    sums_inter = __compute_sums_totals(user_screen_name, user_interactions, agg_interactions, db_users)
+    sums_inter = __compute_sums_totals(user_screen_name, user_interactions, agg_interactions, db_users, config)
 
     prop_interaction_with_bots = sums_inter['interactions_with_bots']/agg_interactions['total']
-    avg_pbb_most_freq_contacts = sums_inter['pbbs']/MOST_FREQUENT_CONTACTS
+    avg_pbb_most_freq_contacts = sums_inter['pbbs']/config['max_num_freq_contacts_to_consider']
 
     return prop_interaction_with_bots, avg_pbb_most_freq_contacts
 
@@ -152,6 +153,7 @@ def fake_promoter(user_screen_name, db_users, method=0):
             most frequent contacts is equal or larger than a  defined threshold
     :param user_screen_name: screen name of the user under evaluation
     :param db_users: database of users
+
     :return: 1 if the user meets the condition defined in the method of the heuristic,
              0 otherwise
     """
@@ -159,19 +161,18 @@ def fake_promoter(user_screen_name, db_users, method=0):
     if method not in [0, 1, 2, 3]:
         raise Exception('Error. Unknown heuristic method {}'.format(method))
 
-    THRESHOLD_PROP_INTERACTION_WITH_BOTS = 0.85
-    THRESHOLD_AVG_PBB_MOST_FREQ_CONTACTS = 0.85
+    # Get heuristic parameters
+    config = get_config('heuristic_config.json')['fake_promoter']
 
-    prop_interaction_with_bots, avg_pbb_most_freq_contacts, avg_weighted_interactions, \
-           avg_weighted_interactions_most_freq_contacts = is_fake_promoter(user_screen_name, db_users)
+    prop_interaction_with_bots, avg_pbb_most_freq_contacts = is_fake_promoter(user_screen_name, db_users, config)
 
     if method == 0:
-        if prop_interaction_with_bots >= THRESHOLD_PROP_INTERACTION_WITH_BOTS:
+        if prop_interaction_with_bots >= config['max_prop_interactions_bots']:
             return 1
         else:
             return 0
     else:
-        if avg_pbb_most_freq_contacts >= THRESHOLD_AVG_PBB_MOST_FREQ_CONTACTS:
+        if avg_pbb_most_freq_contacts >= config['max_avg_pbb_freq_contacts']:
             return 1
         else:
             return 0
