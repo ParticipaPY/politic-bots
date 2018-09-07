@@ -16,25 +16,28 @@ To understand how the public and the political candidates use Twitter, we collec
 the **`accounts`** of the candidates or containing **`hashtags`** used in the campaigns. The accounts
 and hashtags employed to collect tweets during the primary elections were augmented with information about the
 parties and internal movements of the candidates. All of these information were recorded in a CSV file that was 
-provided to the tweet collector. The source code of the collector is available at **`src/tweet_collector/twitter_api_manager.py`** 
-and the CSV file used to pull data from Twitter during the primaries can be found at 
-**`src/tweet_collector/kwd_metadata.csv`**.
+provided to the tweet collector. The source code of the collector is available at [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/twitter_api_manager.py) 
+and the CSV file used to pull data from Twitter during the primaries can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas_2017.csv).
 
 A similar approach was followed to collect tweets for the general election, although the hashtags and accounts were
-supplemented with information not only of the parties but also 
+supplemented with information not only of the candidate parties but also about the region of the candidates, the name
+of their coalitions (if any), and the political positions that they stand for. The CSV file used to collected tweets
+during the general elections can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/generales.csv). 
+
 
 ## Collecting Political Tweets
 
 The data sets of tweets collected during the presidential primary and general elections that took place
-in Paraguay in December 2017 and April 2018, respectively, can be found in **`\data`**. They are a dump of the MongoDB
-databases used in project. For reproducibility reasons, bellow are listed the steps followed in the collection of the
-tweets.
+in Paraguay in December 2017 and April 2018, respectively, are available in **`\data`**. They are dumps of the MongoDB
+databases used in the project and can be used for free for research purposes. 
 
-1. Follow the instructions presented [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps) 
-to create a Twitter APP that will be used to collect tweets;  
+In case, a new set of tweets needs to be downloaded below we list the steps that are required to follow.
+
+1. Go through the instructions presented [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps) 
+and create a Twitter APP to collect tweets;  
 2. Define the accounts and hashtags of interest and save them in a CSV file in a column called **keyword**. 
 Additional columns can be added to the CSV to complement the information about accounts and hashtags. 
-An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/kwd_metadata.csv);
+An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas2017.csv);
 3. Rename `src/config.json.example` to `src/config.json`;
 4. Set to **metadata** in `src/config.json` the path to the CSV file; 
 5. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
