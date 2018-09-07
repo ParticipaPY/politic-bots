@@ -18,8 +18,6 @@ parties and internal movements of the candidates. All of these information were 
 provided to the tweet collector. The source code of the collector is available at `src/tweet_collector/twitter_api_manager.py` and
 the CSV file used to pull data from Twitter during the primaries can be found at `src/tweet_collector/kwd_metadata.csv`.
 
-
-
 ## Collecting Political Tweets
 
 1. Follow the instructions presented [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps) 
@@ -34,13 +32,9 @@ of the Twitter App created in the step 1;
 6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets
 7. Execute `python src/tweet_collector/run.py`
 
-
-Tools and algorithms to analyze Paraguayan Tweets in times of elections. 
+## Bot Detector
 
 As part of the toolbox it is included an algorithm that identify Twitter bot accounts based on a series of heuristics.
-
-
-## Bot Detector
 
 Algorithm to detect Twitter bots. Given a user handle, it returns the probability of the user of being a bot. The algorithm is based on 18 heuristics, which are described below.
 
