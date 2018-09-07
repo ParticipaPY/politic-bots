@@ -29,8 +29,10 @@ An example of CSV file can be found [here](https://github.com/ParticipaPY/politi
 4. Set to **metadata** in `src/config.json` the path to the CSV file; 
 5. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
 of the Twitter App created in the step 1;
-6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets
+6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets;
 7. Execute `python src/tweet_collector/run.py`
+
+Depending on the number of hashtags and accounts the collection can take several hours.
 
 ## Bot Detector
 
