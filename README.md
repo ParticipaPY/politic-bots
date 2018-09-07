@@ -1,106 +1,46 @@
 # Politic Bots
 
-Tools and algorithms to analyze Paraguayan Tweets in times of elections. As part of the toolbox it is included an algorithm that identify Twitter bot accounts based on a series of heuristics.
+Politic Bots is a side-project that started within the research project [ParticipaPY](http://participa.org.py/), which 
+aims at designing and implementing solutions to generate spaces of civic participation through technology. 
+
+Motivated by the series of journalist investigations (e.g., 
+[How a Russian 'troll soldier' stirred anger after the Westminster attack](https://www.theguardian.com/uk-news/2017/nov/14/how-a-russian-troll-soldier-stirred-anger-after-the-westminster-attack), 
+[Anti-Vaxxers Are Using Twitter to Manipulate a Vaccine Bill](https://www.wired.com/2015/06/antivaxxers-influencing-legislation/),
+[A Russian Facebook page organized a protest in Texas. A different Russian page launched the counterprotest](https://www.texastribune.org/2017/11/01/russian-facebook-page-organized-protest-texas-different-russian-page-l/),
+[La oscura utilización de Facebook y Twitter como armas de manipulación política](https://elpais.com/tecnologia/2017/10/19/actualidad/1508426945_013246.html)) 
+regarding the use of social media to manipulate the public opinion, specially in times of elections, we decided to 
+study the use of Twitter during the electoral period of the Paraguayan 2017 primary elections.  
+
+To understand how the public and the political candidates use Twitter, we collected tweets published through 
+the **accounts** of the candidates or containing **hashtags** used in the campaigns. The accounts
+and hashtags employed to collect tweets during the primary elections were augmented with information about the
+parties and internal movements of the candidates. All of these information were recorded in a CSV file that was 
+provided to the tweet collector. The source code of the collector is available at `src/tweet_collector/twitter_api_manager.py` and
+the CSV file used to pull data from Twitter during the primaries can be found at `src/tweet_collector/kwd_metadata.csv`.
+
+
+
+## Collecting Political Tweets
+
+1. Follow the instructions presented [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps) 
+to create a Twitter APP that will be used to collect tweets;  
+2. Define the accounts and hashtags of interest and save them in a CSV file in a column called **keyword**. 
+Additional columns can be added to the CSV to complement the information about accounts and hashtags. 
+An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/kwd_metadata.csv);
+3. Rename `src/config.json.example` to `src/config.json`;
+4. Set to **metadata** in `src/config.json` the path to the CSV file; 
+5. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
+of the Twitter App created in the step 1;
+6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets
+7. Execute `python src/tweet_collector/run.py`
+
+
+Tools and algorithms to analyze Paraguayan Tweets in times of elections. 
+
+As part of the toolbox it is included an algorithm that identify Twitter bot accounts based on a series of heuristics.
 
 
 ## Bot Detector
 
 Algorithm to detect Twitter bots. Given a user handle, it returns the probability of the user of being a bot. The algorithm is based on 18 heuristics, which are described below.
 
-### Heuristic: Fake Handlers
-
-Heuristic that allows identifying user names that contain a random string of numbers and letters or that are similar to user names used by public figures, for example @maritoabdo (true) --- current president of Paraguay---, @marioabdojunior (fake).
-
-#### Implementation
-
-##### Verification of similarity of one account with others
-
-A set consisting of trustworthy accounts was created based on the number of followers of the account or if this account is verified.
-With this set defined and saved in the BD, the algorithm proceeds to evaluate the similarity of the account that we wish to analyze with all the trustworthy accounts.
-If the account belongs to the set of trustworthy accounts, the degree of similarity with any other will no longer be analyzed. If it is not, it will proceed to verify if the analyzed account is a derivative of a reliable account but with the suffix "junior" or "jr", in that case the probability that it is a false account will increase.
-If the above cases are not applied, we proceed to compare the analyzed account ---screen_name and name--- with the trustworthy accounts using the bigram algorithm.
-
-
-##### Verification of the user's name looking for random strings of numbers or letters
-
-###### Verification of random numerical strings in an account
-
-The numbers that have the screen_name of the account that is analyzed are extracted. If the account has many strings of numbers in the name, it is considered that the account may be false. Then look for possible "meanings" of such numbers as for example: year of creation of the account or possible date of birth --- in different formats ---.
-
-###### Verification of the consonant-vowel relationship 
-
-The number of vowels and consonants of screen_name and name is counted, and it is estimated that if the number of consonants is more than three times the vowels, the word probably does not make sense and maybe are random letters.
-
-###### Verification of quantity of strings of letters
-
-The screen_name and name are separated into strings only consisting of letters, if you have more than one string there are numbers or symbols in between could be a random name.
-
-### Heuristic: Fake Promoter
-
-Heuristic that identifies accounts that are promotioning other accounts exhibiting bot-like behaviour.
-
-#### Preparation
-
-This heuristic uses a db structure that has stored, for each user, its bot_detector_pbb(1) and, for each user interacted by the former, its screen name and bot_detector_pbb.
-Before doing any computations, it fetches a sample of one(2) user document from the database, and if it already has the attribute 'bot_detector_pbb', it is assumed that it and all the user documents have the described structure. If it doesn't, its and its interacted users' bot_detector_pbbs are calculated and stored.
-Since performing the preparations for this computations for every user may imply doing an extra computation for every user that she started an interaction with, an upper limit is set on the number of the interacted users that are going to be taken into account for the update process (NUM_INTERACTED_USERS_UPDATE(3)).
-The number of documents to be updated can also be set (NUM_USERS_UPDATE). This in case it is desired to update the db in multiple passes.
-
-#### Implementation
-
-The heuristic consists of evaluating the interactions (RTs, Quotes, Mentions, etc.) generated by the user being analyzed and doing some mathematical computations about them.
-For the same reason that in the preparation, and since not all interacted users may be stored in the document for each user, an upper limit is set on the number of the interacted users that are going to be taken into account for the computations (NUM_INTERACTED_USERS_HEUR). Note that it's not the same constant than NUM_INTERACTED_USERS_UPDATE, and it cannot be greater than the maximum number of interacted users stored in the db for each user. When describing the heuristic, this detail is ignored for simplicity purposes, but this must be taken into account when executing the script.
-
-For illustrating how the heuristic works, let's take for example the user FAKE.PROMOTER.
-
-Assume that she's the user being analyzed.
-First, a synthesis of her interactions (the interactions and users interacted by her) are fetched, using the 'NetworkAnalyzer' class from the 'network_analysis' module(4). The results are better if the synthesis of the interactions of a user is ordered decreasingly by the number of interactions started with them, so its iterated in this order.
-Also the synthesis of the interacted users with the bot_detector_pbb of each one of them is fetched.
-The exact next steps depends on the specific method of the heuristic, and are described below. For now suffice it say that the heuristic calculates a score that if it turns out to be greater than a defined threshold(5), it returns 1 otherwise 0.
-
-There are two approaches and four different methods for computing the value of the heuristic -the score-. All of them implemented, and one can switch between one and another by setting the constant FAKE_PROMOTER_HEUR to the number corresponding to the desired heuristic.
-
-##### Approach Number 1
-
-This approach aims at computing the number of interactions of an account with users who have a bot_detector_pbb greater than some minimum value (BOT_DET_PBB_THRS), and what fraction of the total number of interactions this number represents
-
-###### Method 0
-
-1. Select the interacted users that have a bot_detector_pbb greater than BOT_DET_PBB_THRS
-2. Compute the total number of interactions started by the analyzed user (in the example, FAKE.PROMOTER) with the selected users.
-3. Check if the number of interactions computed in the previous step is greater than SCORE_TOP_INTRCTNS_THRESHOLD. Return 1 if the condition applies, 0 otherwise.
-4. Divide the number of interactions computed in 2. by the total number of interactions started by the user. This corresponds to the fraction of the total that the former interactions represents.
-5. Check if the relative fraction of interactions computed in the previous step is greater than SCORE_TOP_INTRCTNS_PRCNTG_THRESHOLD. Return 1 if the condition applies, 0 otherwise.
-
-##### Approach Number 2
-This approach differ from Approach Number 1 in that it aims at computing the average bot_detector_pbbs of the users interacted (or interacted users) by the user being analyzed, rather than the absolute number of interactions. The methods in this approach differ between themselves in what is the weight that they use for computing the averages.
-
-###### Method 1
-1. Compute the average bot_detector_pbb of the interacted users.
-2. If the average is greater than AVG_PBB_THRESHOLD, return 1 otherwise 0
-
-###### Method 2
-1. Compute the average bot_detector_pbb of the interacted users, but using their total-relative number of interactions(6) as a weight. This aims at giving a more representative average bot_detector_pbb, because the greater the numer of interactions with a user, the greater its bot_detector_pbb representativity.
-2. Compute the product between the weight and the bot_detector_pbb, and accumulate it into the weighted average.
-3. If the weighted average computed in the previous step is greater than AVG_ALL_INTRCTNS_WGHTD_PBB_THRESHOLD, return 1 otherwise 0.
-
-###### Method 3
-1. Compute the average bot_detector_pbb of the interacted users, but using their top-relative number of interactions(7) as a weight. Like Method 2, this method also aims at giving a more representative bot_detector_pbb by weighting them. The difference is the denominator used in the computation of the weight.
-2. Compute the product between the weight and the bot_detector_pbb, and accumulate it into the weighted average.
-3. If the weighted average computed in the previous step is greater than AVG_TOP_INTRCTNS_WGHTD_PBB_THRESHOLD, return 1 otherwise 0.
-
-#### Footnotes:
-1. The result of executing the 'compute_bot_probability' method over the desired user, but without considering the present heuristic. This is controled with the 'promotion_heur_flag' flag.
-2. Provisorily. Perhaps a larger sample could be fetched.
-3. It and all the constants used in the heuristics can be set in the 'heuristics_config.json' file.
-4. Hence, the interactions types considered in the heuristic (RTs, Quotes, Mentions, etc.) are the same that those considered in the 'network_analysis' module.
-5. The determination of this value (and the other thresholds) was done somewhat arbitrarily. What it indicates is how many interactions started with users with a bot_detector_pbb greater than BOT_DET_PBB_THRS is considered normal.
-6. The total-relative number of interactions started by user A with user B is computed as follows:
-    1. Compute the number of interactions started by user A with user B.
-    2. Compute the total number of interactions started by user A with any user.
-    3. Compute what fraction of the total computed in 2. represents the number of interactions computed in 1.
-7. The top-relative number of interactions started by user A with user B is computed as follows:
-    1. Compute the number of interactions started by user A with user B.
-    2. Make a list that has all the users that have been interacted by A, as well as the number of interactions that A started with them. Order that list decreasingly by that number of interactions.
-    3. Compute the number of interactions started by user A with the first NUM_INTERACTED_USERS users of the list made in the previous step.
-    4. Compute what fraction of the total computed in 3. represents the number of interactions computed in 1.
