@@ -34,7 +34,7 @@ def __db_trustworthy_users(db_users, config):
 def __get_bigrams(s):
     """
     Take a string and return a list of bigrams
-
+    
     :param s: string
     :return: list of bigrams
     """
@@ -46,7 +46,7 @@ def __string_similarity(str1, str2):
     """
     Perform bigram comparison between two strings and return the
     matching proportion
-
+    
     :param str1: string
     :param str2: string
     :return: matching percentage
@@ -74,7 +74,7 @@ def __similar_account_name(data, db_users, config):
     name or screen name of a trustworthy user
     4. Condition 4: the user's name or screen_name has at least 75% similarity
     with the name or screen_name of a user in the trustworthy database
-
+    
     :param data: dictionary with information about a Twitter user
     :param db_users: database of the Twitter users
     :param config: dictionary with the configuration parameters of the heuristic
@@ -211,7 +211,7 @@ def __random_account_number(data, config):
     """
         Verify if user's name and screen name has strings of
         random numbers
-
+        
         :param data: user's data
         :param config: dictionary with the configuration parameters of the heuristic
 
@@ -278,7 +278,7 @@ def fake_handlers(data, db_users):
     """
     Check if the user'name and screen name is similar to the name or screen
     name of trustworthy users or if they have strings of random letters or numbers
-
+    
     :param data: user' data
     :param db_users: database of users
 
