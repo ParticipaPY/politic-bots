@@ -46,7 +46,6 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 ├── requirements.txt                    <- The requirements file for reproducing the project environment, e.g.
 │                                          generated with `pip freeze > requirements.txt`
 ├── data
-│   └── raw                             <- The original, immutable data dump
 ├── src                                 <- Source code of the project
 │   ├── __init__.py                     <- Makes src a Python module
 │   ├── config.json.example             <- Example of a configuration file
