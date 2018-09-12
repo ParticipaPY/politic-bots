@@ -13,17 +13,67 @@ study the use of Twitter during the presidential elections that took place in Pa
 December 2017 (primary) and April 2018 (general).  
 
 To understand how the public and the political candidates use Twitter, we collected tweets published through 
-the **`accounts`** of the candidates or containing **`hashtags`** used in the campaigns. The accounts
-and hashtags employed to collect tweets during the primary elections were augmented with information about the
-parties and internal movements of the candidates. All of these information were recorded in a CSV file that was 
-provided to the tweet collector. The source code of the collector is available at [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/twitter_api_manager.py) 
-and the CSV file used to pull data from Twitter during the primaries can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas_2017.csv).
+the **`accounts`** of the candidates or containing **`hashtags`** used in the campaigns. These information were 
+recorded in a CSV file that was provided to the tweet collector. The source code of the collector is available at 
+[here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/twitter_api_manager.py) and the CSV 
+file used to pull data from Twitter during the primaries can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas_2017.csv).
 
-A similar approach was followed to collect tweets for the general election, although the hashtags and accounts were
-supplemented with information not only of the candidate parties but also about the region of the candidates, the name
-of their coalitions (if any), and the political positions that they stand for. The CSV file used to collected tweets
-during the general elections can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/generales.csv). 
+### Data Augmentation
 
+The accounts and hashtags employed to collect tweets during the primary elections were augmented with information about 
+the parties and internal movements of the candidates. A similar approach was followed to collect tweets for the general election. However, in this case, the hashtags and 
+accounts were supplemented with information not only of the candidate parties but also about the region of the 
+candidates, the name of their coalitions (if any), and the political positions that they stand for. The CSV file used 
+to collected tweets during the general elections can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/generales.csv). 
+
+
+The functions `create_flags` and `add_values_to_flags` that annotate the tweets with information of the 
+candidate's party and movement are implemented in the module `add_flags.py` in `src/tweet_collector`.
+
+### Data Cleaning
+
+Some of the hashtags used by the candidates were generic spanish words employed in other contexts and spanish-speaking
+countries (e.g., a marketing campaign in Argentina) so, before starting any analysis, we had to ensure that the collected
+tweets were actually related to the elections in Paraguay. We labeled the collected tweets as relevant if they mention 
+candidate accounts or if they had at least more than one of the hashtags of interest. The class `TweetEvaluator` in
+`src/utils/data_wrangler.py` contains the code that labels the collected tweets as relevant or not for this project.
+
+## Structure of the repository
+
+```
+├── LICENSE
+├── README.md                           <- The top-level README for this project.
+├── requirements.txt                    <- The requirements file for reproducing the project environment, e.g.
+│                                          generated with `pip freeze > requirements.txt`
+├── data
+│   └── raw                             <- The original, immutable data dump
+├── src                                 <- Source code of the project
+│   ├── __init__.py                     <- Makes src a Python module
+│   ├── config.json.example             <- Example of a configuration file
+│   ├── analyzer                        
+│   │   └── data_analyzer.py            <- Functions to conduct analyses on tweets
+│   │   └── network_analysis.py         <- Class used to conduct Social Network Analysis
+│   ├── bot_detector                    
+│   │   └── bot_detector.py             <- Main class to conduct the detection of bots
+│   │   └── run.py                      <- Main function to execute the detection of bots
+│   │   └── heuristics                  
+│   │   │   └── fake_handlers.py        <- Functions to execute the heuristic fake handlers
+│   │   │   └── fake_promoter.py        <- Functions to execute the heuristic fake promoter
+│   │   │   └── heuristic_config.json   <- Configuration file with the parameters of the heuristics
+│   │   │   └── simple.py               <- Functions to execute a set of straighforward heuristics
+│   ├── tweet_collector                 
+│   │   └── add_flags.py                <- Functions used to augment tweets with information about the candidates
+│   │   └── generales.csv               <- CSV file with the hashtags and accounts used to collect tweets related to 
+│   │   │                                  the general elections
+│   │   └── internas_2017.csv           <- CSV file with the hashtags and accounts used to collect tweets related to
+│   │   │                                  the primary elections
+│   │   └── run.py                      <- Main function to run the tweet collector
+│   │   └── tweet_collector.py          <- Class implemented to collect tweets by hitting the API of Twitter
+│   ├── utils
+│   │   └── data_wrangler.py            <- Functions and classes to clean and pre-process the data  
+│   │   └── db_manager.py               <- Main class to operate the MongoDB used to store the tweets
+│   │   └── utils.py                    <- General utilitarian functions                 
+```
 
 ## Collecting Political Tweets
 
