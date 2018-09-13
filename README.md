@@ -46,6 +46,12 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 ├── requirements.txt                    <- The requirements file for reproducing the project environment, e.g.
 │                                          generated with `pip freeze > requirements.txt`
 ├── data
+├── sna                                 <- Social Network Analysis
+│   ├── gefx                            <- Files that record the interaction network among users
+│   ├── img                             <- Images that illustrate the interaction network among users
+├── reports                             <- Reports about the usage of Twitter during elections in Paraguay
+│   ├── notebooks                       <- Jupyter notebooks used to conduct the analyses
+│   ├── html                            <- HTML files with the results of the analyses
 ├── src                                 <- Source code of the project
 │   ├── __init__.py                     <- Makes src a Python module
 │   ├── config.json.example             <- Example of a configuration file
@@ -74,31 +80,85 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 │   │   └── utils.py                    <- General utilitarian functions                 
 ```
 
-## Collecting Political Tweets
+## Analyses
 
-The data sets of tweets collected during the presidential primary and general elections that took place
-in Paraguay in December 2017 and April 2018, respectively, are available in **`\data`**. They are dumps of the MongoDB
-databases used in the project and can be used for free for research purposes. 
-
-In case, a new set of tweets needs to be downloaded below we list the steps that are required to follow.
-
-1. Go through the instructions presented [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps) 
-and create a Twitter APP to collect tweets;  
-2. Define the accounts and hashtags of interest and save them in a CSV file in a column called **keyword**. 
-Additional columns can be added to the CSV to complement the information about accounts and hashtags. 
-An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas2017.csv);
-3. Rename `src/config.json.example` to `src/config.json`;
-4. Set to **metadata** in `src/config.json` the path to the CSV file; 
-5. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
-of the Twitter App created in the step 1;
-6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets;
-7. Execute `python src/tweet_collector/run.py`
-
-Depending on the number of hashtags and accounts the collection can take several hours.
+The directory `reports` contains the analyses conducted to studied the use of Twitter during the primary and general
+elections. [Jupyter notebook](http://jupyter.org/) was employed to document the analyses and report the results. HTML
+files were generated to facilitate the access to the analyses and results.
 
 ## Bot Detector
 
 As part of the toolbox it is included an algorithm that identify Twitter bot accounts based on a series of heuristics.
 
-Algorithm to detect Twitter bots. Given a user handle, it returns the probability of the user of being a bot. The algorithm is based on 18 heuristics, which are described below.
+Algorithm to detect Twitter bots. Given a user handle, it returns the probability of the user of being a bot. 
+The algorithm is based on 18 heuristics, which are described below.
 
+## Getting Started
+
+### Installation guide
+
+Links to packages are provided below.
+
+1. Download and install Python >= 3.4.4;
+2. Download and install MongoDB community version;
+3. Create a Twitter APP by following the instructions [here](https://developer.twitter.com/en/docs/basics/developer-portal/guides/apps);
+4. Clone the repository `git clone https://github.com/ParticipaPY/politic-bots.git`;
+5. Get into the directory of the repository `cd politic-bots`;
+6. Create a virtual environment by running `virtualenv env`;
+7. Activate the virtual environment by executing `source env/bin/activate`;
+8. Inside the directory of the repository install the project dependencies by running `pip install -r requirements.txt`;
+
+*Optional* for social network analysis: Download and install Gephi  
+
+### Collect Political Tweets
+
+The data sets of tweets collected during the presidential primary and general elections that took place
+in Paraguay in December 2017 and April 2018, respectively, are available to be download. The directory **`data`** contains
+the file `links_to_datasets.txt` with the links to dumps of the MongoDB databases used in the project. 
+
+In case, a new set of tweets needs to be downloaded below we list the steps that are required to follow.
+
+ 
+1. Create a CSV file to contain the name of the Twitter accounts and hashtags of interest. The CSV file should have
+a column called **keyword** with list of accounts and hashtags. Additional columns can be added to the CSV to 
+complement the information about accounts and hashtags. An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas2017.csv);
+2. Rename `src/config.json.example` to `src/config.json`;
+3. Set to **metadata** in `src/config.json` the path to the CSV file; 
+4. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
+of the Twitter App created during the installation process;
+6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets;
+7. Execute `python src/tweet_collector/run.py`
+
+Depending on the number of hashtags and accounts the collection can take several hours.
+
+### Prepare for analysis
+
+Before conducting analyses on the tweets, a database of the authors of tweets should be created. Also, tweets
+should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
+the problems with the hashtags used to collect tweets. From the root directory of the repository, run 
+`python src/analyzer/pre_analysis.py` to perform both tasks.
+
+### Generate network of interactions
+
+Once the database of users was generated (see **Prepare for analysis** section to learn how to generate the database 
+of users) a network that illustrates the interactions among them can be created for a posterior social network analysis.
+From the root directory of the repository, run `python src/analyzer/generate_inter_network.py` to generate the network
+of interactions among the tweet authors. Examples of interaction networks can be found in the directory `sna` of the 
+repo.
+
+## Technologies
+
+1. [Python 3.4](https://www.python.org/downloads/)
+2. [MongoDB](https://www.mongodb.com/download-center#community)
+3. [Tweepy](https://github.com/tweepy/tweepy)
+4. [Gephi](https://gephi.org/)
+
+## Issues
+
+Please use [Github's issue tracker](https://github.com/ParticipaPY/politic-bots/issues/new) to report issues and suggestions.
+
+## Contributors
+
+[Jammily Ortigoza](https://github.com/jammily), [Jorge Saldivar](https://github.com/joausaga), 
+[Josué Ibarra](https://github.com/josueibarra95), [Laura Achón](https://github.com/lauraachon)
+[Cristhian Parra](https://github.com/cdparra)
