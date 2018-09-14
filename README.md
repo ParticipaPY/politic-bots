@@ -129,7 +129,8 @@ Depending on the number of hashtags and accounts the collection can take several
 Before conducting analyses on the tweets, a database of the authors of tweets should be created. Also, tweets
 should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
 the problems with the hashtags used to collect tweets. From the root directory of the repository, run 
-`python src/analyzer/pre_analysis.py` to perform both tasks.
+`python src/analyzer/pre_analysis.py` to perform both tasks. Examples of analyses can be found in the `reports` 
+directory.
 
 ### Generate network of interactions
 
@@ -153,5 +154,5 @@ Please use [Github's issue tracker](https://github.com/ParticipaPY/politic-bots/
 ## Contributors
 
 [Jammily Ortigoza](https://github.com/jammily), [Jorge Saldivar](https://github.com/joausaga), 
-[Josué Ibarra](https://github.com/josueibarra95), [Laura Achón](https://github.com/lauraachon)
+[Josué Ibarra](https://github.com/josueibarra95), [Laura Achón](https://github.com/lauraachon),
 [Cristhian Parra](https://github.com/cdparra)
