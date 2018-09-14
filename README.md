@@ -129,8 +129,8 @@ Depending on the number of hashtags and accounts the collection can take several
 Before conducting analyses on the tweets, a database of the authors of tweets should be created. Also, tweets
 should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
 the problems with the hashtags used to collect tweets. From the root directory of the repository, run 
-`python src/analyzer/pre_analysis.py` to perform both tasks. Examples of analyses can be found in the `reports` 
-directory.
+`python src/analyzer/pre_analysis.py` to perform both tasks. As mentioned in the **Analyses** section, examples of 
+preliminary analyses can be found in the `reports` directory.
 
 ### Generate network of interactions
 
