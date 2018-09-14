@@ -45,7 +45,12 @@ Kris Shaffer. **Spot a Bot: Identifying Automation and Disinformation on Social 
 
 [[3](http://journals.uic.edu/ojs/index.php/fm/article/view/7090/5653)] 
 Alessandro Bessi, Emilio Ferrara. **Social bots distort the 2016 U.S. Presidential election online discussion**, 
-November 2016, First Monday.  
+November 2016, First Monday.
+
+#### Other references
+
+* [Computational Propaganda Project (Oxford)](http://comprop.oii.ox.ac.uk/)
+* [Resource for understanding Political Bots](http://comprop.oii.ox.ac.uk/publishing/public-scholarship/resource-for-understanding-political-bots/)
 
 ### Run
 
