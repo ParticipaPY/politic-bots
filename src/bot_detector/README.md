@@ -25,7 +25,18 @@ elections in Paraguay.
 
 #### ToDo Features
 
-...
+| #  | Feature                                       | Description                                                                                                                                                                  |
+|----|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | Tweet frequency [1]                           | Check the frequency in which the user tweets and the number of tweets per second                                                                                             |
+| 2  | Sleepless account [2]                         | The user's timeline is extracted for several days and it is verified if there is no "rest" point (i.e., times in which a person should be sleeping/working and not tweeting) |
+| 3  | Reply bot [2]                                 | Check if the vast majority of the user's activity is about replying tweets                                                                                                   |
+| 4  | Followers of political parody account [1]     | Check if the user follows political parody accounts                                                                                                                          |
+| 5  | Activity gaps or filler content [2]           | Check if there are significant gaps in the account activity between campaigns                                                                                                |
+| 6  | Metadata similarities [2]                     | Check if there are accounts that share similar creation time, profile pics, or hashtags                                                                                      |
+| 7  | Tweeting out fake news or missinformation [1] | Check if the account publishes mainly fake news or missinformation                                                                                                           |
+| 8  | Stolen content [2]                            | Check if the account publishes stolen content                                                                                                                                |
+| 9  | Stolen profile images [2]                     | Check if the account has as profile picture a stolen image                                                                                                                   |
+| 10 | Semantic similarity [2]                       | Check if the account publishes tweets that are semantically similar to the tweets of other accounts                                                                          |
 
 #### References
 
@@ -41,4 +52,4 @@ November 2016, First Monday.
 
 ### Run
 
- 
+From the directory `bot_detector`, execute `python run.py`
