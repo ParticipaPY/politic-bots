@@ -1,18 +1,19 @@
+from src.utils.utils import get_config
 
 
 # Check the number of retweets in a given timeline
 # return True if the number of retweets is greater or equal
 # than a defined threshold (e.g., 90%), False otherwise
 def is_retweet_bot(timeline):
+    config = get_config('heuristic_config.json')
     num_tweets = num_rts = 0
-    threshold = 90
     for tweet in timeline:
         num_tweets += 1
         if 'RT' in tweet['text']:
             num_rts += 1
     # If it doesn't have any tweets, can't be a RT-bot
-    per_rts = (100 * num_rts) / num_tweets if num_tweets != 0 else -1
-    if per_rts >= threshold:
+    per_rts = num_rts / num_tweets if num_tweets > 0 else -1
+    if per_rts >= config['rt_threshold']:
         return 1
     else:
         return 0

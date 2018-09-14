@@ -9,5 +9,8 @@
     "min_num_followers": 5000,
     "name_similarity_threshold": 0.75,
     "max_date": 99991231
+  },
+  "retweet_bot": {
+    "rt_threshold": 0.9
   }
 }
