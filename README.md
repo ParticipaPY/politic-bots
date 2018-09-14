@@ -1,7 +1,8 @@
 # Politic Bots
 
-Politic Bots is a side-project that started within the research project [ParticipaPY](http://participa.org.py/), which 
-aims at designing and implementing solutions to generate spaces of civic participation through technology. 
+Politic Bots is a side-project that started within the research project [ParticipaPY](http://participa.org.py/) of the
+Catholic University "Nuestra Señora de la Asunción", which aims at designing and implementing solutions to generate 
+spaces of civic participation through technology. 
 
 Motivated by the series of journalist investigations (e.g., 
 [How a Russian 'troll soldier' stirred anger after the Westminster attack](https://www.theguardian.com/uk-news/2017/nov/14/how-a-russian-troll-soldier-stirred-anger-after-the-westminster-attack), 
