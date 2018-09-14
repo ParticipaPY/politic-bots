@@ -13,7 +13,7 @@ study the use of Twitter during the presidential elections that took place in Pa
 December 2017 (primary) and April 2018 (general).  
 
 To understand how the public and the political candidates use Twitter, we collected tweets published through 
-the **`accounts`** of the candidates or containing **`hashtags`** used in the campaigns. These information were 
+the **`accounts`** of the candidates or containing **`hashtags`** used in the campaigns. This information was 
 recorded in a CSV file that was provided to the tweet collector. The source code of the collector is available at 
 [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/twitter_api_manager.py) and the CSV 
 file used to pull data from Twitter during the primaries can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas_2017.csv).
@@ -24,7 +24,7 @@ The accounts and hashtags employed to collect tweets during the primary election
 the parties and internal movements of the candidates. A similar approach was followed to collect tweets for the general election. However, in this case, the hashtags and 
 accounts were supplemented with information not only of the candidate parties but also about the region of the 
 candidates, the name of their coalitions (if any), and the political positions that they stand for. The CSV file used 
-to collected tweets during the general elections can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/generales.csv). 
+to collect tweets during the general elections can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/generales.csv). 
 
 
 The functions `create_flags` and `add_values_to_flags` that annotate the tweets with information of the 
@@ -32,7 +32,7 @@ candidate's party and movement are implemented in the module `add_flags.py` in `
 
 ### Data Cleaning
 
-Some of the hashtags used by the candidates were generic spanish words employed in other contexts and spanish-speaking
+Some of the hashtags used by the candidates were generic Spanish words employed in other contexts and Spanish-speaking
 countries (e.g., a marketing campaign in Argentina) so, before starting any analysis, we had to ensure that the collected
 tweets were actually related to the elections in Paraguay. We labeled the collected tweets as relevant if they mention 
 candidate accounts or if they had at least more than one of the hashtags of interest. The class `TweetEvaluator` in
@@ -82,16 +82,9 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 
 ## Analyses
 
-The directory `reports` contains the analyses conducted to studied the use of Twitter during the primary and general
+The directory `reports` contains the analyses conducted to study the use of Twitter during the primary and general
 elections. [Jupyter notebook](http://jupyter.org/) was employed to document the analyses and report the results. HTML
 files were generated to facilitate the access to the analyses and results.
-
-## Bot Detector
-
-As part of the toolbox it is included an algorithm that identify Twitter bot accounts based on a series of heuristics.
-
-Algorithm to detect Twitter bots. Given a user handle, it returns the probability of the user of being a bot. 
-The algorithm is based on 18 heuristics, which are described below.
 
 ## Getting Started
 
@@ -120,13 +113,13 @@ In case, a new set of tweets needs to be downloaded below we list the steps that
 
  
 1. Create a CSV file to contain the name of the Twitter accounts and hashtags of interest. The CSV file should have
-a column called **keyword** with list of accounts and hashtags. Additional columns can be added to the CSV to 
+a column called **keyword** with the list of accounts and hashtags. Additional columns can be added to the CSV to 
 complement the information about accounts and hashtags. An example of CSV file can be found [here](https://github.com/ParticipaPY/politic-bots/blob/master/src/tweet_collector/internas2017.csv);
 2. Rename `src/config.json.example` to `src/config.json`;
 3. Set to **metadata** in `src/config.json` the path to the CSV file; 
 4. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
 of the Twitter App created during the installation process;
-6. Set in `src/config.json` the information of the MongoDB database that will be used to store the tweets;
+6. Set in `src/config.json` the information of the MongoDB database that is used to store the tweets;
 7. Execute `python src/tweet_collector/run.py`
 
 Depending on the number of hashtags and accounts the collection can take several hours.
@@ -141,7 +134,7 @@ the problems with the hashtags used to collect tweets. From the root directory o
 ### Generate network of interactions
 
 Once the database of users was generated (see **Prepare for analysis** section to learn how to generate the database 
-of users) a network that illustrates the interactions among them can be created for a posterior social network analysis.
+of users) a network that illustrates the interactions among them can be created for a follow-up social network analysis.
 From the root directory of the repository, run `python src/analyzer/generate_inter_network.py` to generate the network
 of interactions among the tweet authors. Examples of interaction networks can be found in the directory `sna` of the 
 repo.
