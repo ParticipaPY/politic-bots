@@ -47,7 +47,7 @@ def default_twitter_account(user):
 
 # Check the absence of geographical metadata in the profile of a given user
 def location(user):
-    if user['location'] == '':
+    if user['location'] == '' and user['geo_enabled'] is False:
         return 1
     else:
         return 0
@@ -55,8 +55,9 @@ def location(user):
 
 # Compute the ratio between followers/friends of a given user
 def followers_ratio(user):
-    ratio = int(user['followers_count'])/int(user['friends_count'])
-    if ratio < 0.4:
+    config = get_config('heuristic_config.json')
+    ratio = float(int(user['followers_count'])/int(user['friends_count']))
+    if ratio < config['rff_threshold']:
         return 1
     else:
         return 0

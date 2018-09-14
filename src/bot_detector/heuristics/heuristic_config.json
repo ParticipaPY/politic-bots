@@ -12,5 +12,8 @@
   },
   "retweet_bot": {
     "rt_threshold": 0.9
+  },
+  "ratio_followers_followees": {
+    "rff_threshold": 0.4
   }
 }
