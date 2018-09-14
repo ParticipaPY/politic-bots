@@ -4,10 +4,7 @@ As part of the toolbox developed in Politic-bots, we have implemented a tool tha
 on a series of rules or heuristics. Given a user handle, the tool returns the probability of the user of being a bot. A 
 set of rules represents the core of the solution. The rules were derived from various articles that describe the
 features of Twitter accounts that are used to share political propaganda or to influence in the public opinion
-during electoral periods.
-
-The solution checks the probability of being bot of the authors of the tweets collected during the primary and general
-elections in Paraguay.  
+during electoral periods. 
 
 ### Features of Political Bots
 
@@ -33,7 +30,7 @@ elections in Paraguay.
 | 4  | Followers of political parody account [1]     | Check if the user follows political parody accounts                                                                                                                          |
 | 5  | Activity gaps or filler content [2]           | Check if there are significant gaps in the account activity between campaigns                                                                                                |
 | 6  | Metadata similarities [2]                     | Check if there are accounts that share similar creation time, profile pics, or hashtags                                                                                      |
-| 7  | Tweeting out fake news or missinformation [1] | Check if the account publishes mainly fake news or missinformation                                                                                                           |
+| 7  | Tweeting out fake news or misinformation [1]  | Check if the account publishes mainly fake news or misinformation                                                                                                           |
 | 8  | Stolen content [2]                            | Check if the account publishes stolen content                                                                                                                                |
 | 9  | Stolen profile images [2]                     | Check if the account has as profile picture a stolen image                                                                                                                   |
 | 10 | Semantic similarity [2]                       | Check if the account publishes tweets that are semantically similar to the tweets of other accounts                                                                          |
@@ -52,4 +49,5 @@ November 2016, First Monday.
 
 ### Run
 
-From the directory `bot_detector`, execute `python run.py`
+Currently, the solution takes all of the authors of the tweets collected during the primary and general elections in 
+Paraguay and checks their probability of being a bot. To run execute `python run.py` from the directory `bot_detector` 
