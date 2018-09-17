@@ -17,7 +17,6 @@ class BotDetector:
     __dbm_users = DBManager('users')
     __api = None
     __conf = None
-    __num_heuristics = 10  # number of implemented heuristics (the function default_twitter_account checks 4 heuristics)
 
     def __init__(self, name_config_file='../config.json'):
         self.__conf = get_config(name_config_file)
@@ -43,34 +42,46 @@ class BotDetector:
             timeline.append(timeline_data)
         return timeline
 
-    def __check_heuristics(self, user):
+    def __save_user_pbb(self, user_screen_name, pbb):
+        user = self.__dbm_users.search({'screen_name': user_screen_name})
+        user['pbb'] = pbb
+        self.__dbm_users.update_record({'screen_name': user_screen_name}, user)
+
+    def __check_heuristics(self, user_screen_name):
         bot_score = 0
-        logging.info('Computing the probability of the user: {0}'.format(user))
+        heuristic_counter = 0
+        logging.info('Computing the probability of the user: {0}'.format(user_screen_name))
         # Get information about the user, check
         # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
         # to understand the data of users available in the tweet objects
-        data = get_user(self.__dbm_tweets, user)
-        # Using the Twitter API to get the user's timeline
-        timeline = self.__get_timeline(user)
-        # Check Simple heuristics
-        bot_score += is_retweet_bot(timeline)
-        bot_score += creation_date(parse_date(data['created_at']), datetime.datetime.now().year)
-        bot_score += default_twitter_account(data)
-        bot_score += location(data)
-        bot_score += followers_ratio(data)
-        # Check Fake Handlers heuristics
-        bot_score += fake_handlers(data, self.__dbm_tweets)
-        # Check Fake Promoter heuristic
-        bot_score += fake_promoter(self, user)
-        return bot_score
+        user_obj = get_user(self.__dbm_tweets, user_screen_name)
+        user_timeline = self.__get_timeline(user_screen_name)
+        bot_score += is_retweet_bot(user_timeline)
+        heuristic_counter += 1
+        bot_score += creation_date(parse_date(user_obj['created_at']), datetime.datetime.now().year)
+        heuristic_counter += 1
+        bot_score += default_twitter_account(user_obj)
+        heuristic_counter += 1
+        bot_score += location(user_obj)
+        heuristic_counter += 1
+        bot_score += followers_ratio(user_obj)
+        heuristic_counter += 1
+        bot_score += fake_handlers(user_obj, self.__dbm_tweets)
+        heuristic_counter += 1
+        current_pbb = bot_score/heuristic_counter
+        self.__save_user_pbb(user_screen_name, current_pbb)
+        bot_score += fake_promoter(self, user_screen_name, self.__dbm_users)
+        heuristic_counter += 1
+        current_pbb = bot_score/heuristic_counter
+        self.__save_user_pbb(user_screen_name, current_pbb)
+        logging.info('There are a {0}% of probability that the user {1}'
+                     'would be a bot'.format(round(current_pbb * 100, 2), user_screen_name))
+        return
 
     def compute_bot_probability(self, users):
-        users_pbb = {}
+        if not users:
+            users = self.__dbm_users.search({})
         for user in users:
-            bot_score = self.__check_heuristics(user)
-            users_pbb[user] = bot_score/self.__num_heuristics
-            logging.info('There are a {0}% of probability that the user {1}'
-                  'would be bot'.format(round((users_pbb[user])*100, 2), user))
-        return users_pbb
+            self.__check_heuristics(user)
 
 

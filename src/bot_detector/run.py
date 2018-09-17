@@ -1,11 +1,33 @@
 from src.bot_detector.bot_detector import BotDetector
+from src.utils.db_manager import DBManager
+from src.analyzer.network_analysis import NetworkAnalyzer
+
+import ast
+import click
+
+
+# Taken from
+# https://stackoverflow.com/questions/47631914/how-to-pass-several-list-of-arguments-to-click-option
+class PythonLiteralOption(click.Option):
+    def type_cast_value(self, ctx, value):
+        try:
+            return ast.literal_eval(value)
+        except:
+            raise click.BadParameter(value)
+
+
+@click.command()
+@click.option('--users', cls=PythonLiteralOption, help='List of user names to examine', default=[])
+def run_bot_detector(users):
+    conf = '../config.json'
+    # create database of user if it doesn't exist
+    users_db = DBManager('users')
+    if users_db.num_records_collection() == 0:
+        na = NetworkAnalyzer()
+        na.create_users_db()
+    bot_detector = BotDetector(conf)
+    bot_detector.compute_bot_probability(users)
+
 
 if __name__ == "__main__":
-    myconf = '../config.json'
-    # sample of users
-    users_sample = ['Jo_s_e_', '2586c735ce7a431', 'kXXR9JzzPBrmSPj', '180386_sm',
-                    'federicotorale2', 'VyfQXRgEXdFmF1X', 'AM_1080', 'CESARSANCHEZ553',
-                    'Paraguaynosune', 'Solmelga', 'SemideiOmar', 'Mercede80963021', 'MaritoAbdo',
-                    'SantiPenap', 'CESARSANCHEZ553', 'Paraguaynosune']
-    bot_detector = BotDetector(myconf)
-    bot_detector.compute_bot_probability(users_sample)
+    run_bot_detector()

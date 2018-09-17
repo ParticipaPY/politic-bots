@@ -54,5 +54,10 @@ November 2016, First Monday.
 
 ### Run
 
-Currently, the solution takes all of the authors of the tweets collected during the primary and general elections in 
-Paraguay and checks their probability of being a bot. To run execute `python run.py` from the directory `bot_detector` 
+By default, the solution takes the list of all of the authors of the tweets collected during the primary and general 
+elections in Paraguay and checks their probability of being a bot. To execute run `python run.py` from the directory 
+`bot_detector`.
+
+#### List of users to examine
+A list of Twitter handlers (without @) can be passed as part of the command line if the analysis wants to be conducted
+on a subset list of tweet authors `python run.py --users=["MaritoAbdo", "EfrainAlegre"]`
