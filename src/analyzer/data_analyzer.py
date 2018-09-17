@@ -4,6 +4,8 @@ import requests
 import time
 from src.utils.utils import get_config, update_config
 from src.utils.db_manager import DBManager
+from cca_core.sentiment_analysis import SentimentAnalyzer
+
 
 logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
@@ -15,10 +17,9 @@ class SentimentAnalysis:
     method = ''
     __db = None
 
-    def __init__(self, collection='tweets', method='in_house', language='spanish'):
+    def __init__(self, collection='tweets', language='spanish'):
         self.config = get_config(self.config_file_name)
         self.language = language
-        self.method = method
         self.__dbm = DBManager(collection)
 
     def __get_analyzed_tweet(self, analyzed_tweets, id_tweet_to_search):
@@ -78,7 +79,7 @@ class SentimentAnalysis:
                 tweets_to_analyze.append({'id': tweet_id, 'text': tweet_text})
                 if len(tweets_to_analyze) < batch_size and current_tw < (tot_tws-1):
                     continue
-            sentiment_results = self.in_house_sentiment_analysis(tweets_to_analyze)
+            sentiment_results = self.do_sentiment_analysis(tweets_to_analyze)
             tweets_to_analyze = []
             for sentiment_result in sentiment_results:
                 sentiment_info = sentiment_result['sentimiento']
@@ -117,7 +118,7 @@ class SentimentAnalysis:
                     tweets_to_analyze.append({'id': tweet['id_str'], 'text': tweet_text})
                     if len(tweets_to_analyze) < batch_size:
                         continue
-                sentiment_results = self.in_house_sentiment_analysis(tweets_to_analyze)
+                sentiment_results = self.do_sentiment_analysis(tweets_to_analyze)
                 tweets_to_analyze = []
                 for sentiment_result in sentiment_results:
                     sentiment_info = sentiment_result['sentimiento']
@@ -139,7 +140,18 @@ class SentimentAnalysis:
 
         return analyzed_tweets
 
-    def in_house_sentiment_analysis(self, tweets):
+    def do_sentiment_analysis(self, tweets):
+        sa = SentimentAnalyzer(language='spanish')
+        tweet_texts = []
+        for tweet in tweets:
+            tweet_texts.append(tweet['text'] + ' -$%#$&- {0}'.format(tweet['id']))
+        results = sa.analyze_docs(tweet_texts)
+        logging.info('Obtained the results of sentiment analysis, now the results are going to be processed...')
+        ret = self.__process_results(results)
+        logging.info('Computed correctly the sentiment of {0} tweets'.format(len(tweet_texts)))
+        return ret
+
+    def remote_sentiment_analysis(self, tweets):
         accepted_codes = [200, 201, 202]
         error_codes = [400, 401]
         url_base = 'http://159.203.77.35:8080/api'
@@ -188,25 +200,30 @@ class SentimentAnalysis:
                 else:
                     raise Exception('Got an unexpected response, code: {0}'.format(resp.status_code))
             logging.info('Obtained the results of sentiment analysis, now the results are going to be processed...')
-            for result in results:
-                if result['sentiment'] == 'neg':
-                    sentiment = 'negative'
-                elif result['sentiment'] == 'pos':
-                    sentiment = 'positive'
-                else:
-                    sentiment = 'neutral'
-                for text in result['ideas']:
-                    tw_text_id = text['idea'].split('-$%#$&-')
-                    id_tweet = tw_text_id[1].strip()
-                    text_tweet = tw_text_id[0].strip()
-                    dic_ret = {
-                        'id': id_tweet,
-                        'text': text_tweet,
-                        'sentimiento': {'tono': sentiment, 'score': text['score']},
-                        'servicio': 'civic_crowdanalytics'
-                    }
-                    ret.append(dic_ret)
+            ret = self.__process_results(results)
         else:
             logging.error('Error {0} when trying to compute the sentiment of the tweets'.format(resp.status_code))
         logging.info('Computed correctly the sentiment of {0} tweets'.format(len(tweet_texts)))
+        return ret
+
+    def __process_results(self, results):
+        ret = []
+        for result in results:
+            if result['sentiment'] == 'neg':
+                sentiment = 'negative'
+            elif result['sentiment'] == 'pos':
+                sentiment = 'positive'
+            else:
+                sentiment = 'neutral'
+            for text in result['ideas']:
+                tw_text_id = text['idea'].split('-$%#$&-')
+                id_tweet = tw_text_id[1].strip()
+                text_tweet = tw_text_id[0].strip()
+                dic_ret = {
+                    'id': id_tweet,
+                    'text': text_tweet,
+                    'sentimiento': {'tono': sentiment, 'score': text['score']},
+                    'servicio': 'civic_crowdanalytics'
+                }
+                ret.append(dic_ret)
         return ret
