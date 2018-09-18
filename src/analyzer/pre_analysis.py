@@ -21,7 +21,7 @@ def pre_analysis(users_db, eval_tweets, sentiment_analysis):
         te = TweetEvaluator()
         te.identify_relevant_tweets()
     if sentiment_analysis == 'y':
-        # Run sentiment analysis
+    # Run sentiment analysis
         sa = SentimentAnalysis()
         sa.analyze_sentiments(update_sentiment=True)
 

@@ -1,10 +1,12 @@
+import pathlib
 import tweepy
 import time
 import logging
 
 from src.tweet_collector.add_flags import get_entities_tweet, create_flag, add_values_to_flags
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 class TwitterAPIManager:

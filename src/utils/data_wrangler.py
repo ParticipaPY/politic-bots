@@ -2,11 +2,13 @@ from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
 from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+
 import csv
 import logging
+import pathlib
 import re
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 class TweetEvaluator:
@@ -136,7 +138,7 @@ class TweetEvaluator:
     # fix value of candidatura if hashtags related to a candidacy
     # are present in the text of the tweet
     def fix_value_of_candidatura(self):
-        myconf = '../config.json'
+        myconf = pathlib.Path.cwd().joinpath('config.json')
         configuration = get_config(myconf)
         keyword, k_metadata = parse_metadata(configuration['metadata'])
         interested_data = []
@@ -236,7 +238,6 @@ class HashtagDiscoverer:
 
     def discover_new_hashtags(self, query={}, sorted_results=True):
         tweet_regs = self.__dbm.search(query)
-        hashtags, user_handlers = get_user_handlers_and_hashtags()
         new_hashtags = defaultdict(int)
         for tweet_reg in tweet_regs:
             tweet = tweet_reg['tweet_obj']

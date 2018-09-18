@@ -1,3 +1,4 @@
+import pathlib
 import logging
 
 from src.utils.utils import get_config, parse_metadata
@@ -5,10 +6,11 @@ from src.utils.db_manager import DBManager
 from src.tweet_collector.twitter_api_manager import TwitterAPIManager
 from src.utils.data_wrangler import TweetEvaluator
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+
 
 if __name__ == '__main__':
-    conf_file = 'src/config.json'
+    conf_file = pathlib.Path.cwd().joinpath('config.json')
     configuration = get_config(conf_file)
     credentials = {'key': configuration['twitter']['consumer_key'],
                    'secret': configuration['twitter']['consumer_secret']}

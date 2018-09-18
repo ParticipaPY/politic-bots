@@ -1,3 +1,4 @@
+import pathlib
 import string
 
 from src.utils.db_manager import DBManager
@@ -286,7 +287,8 @@ def fake_handlers(data, db_users):
     """
 
     # Get heuristic parameters
-    config = get_config('heuristic_config.json')['fake_handler']
+    file_path = pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json')
+    config = get_config(file_path)['fake_handler']
 
     ret = __random_account_letter(data)
     ret += __random_account_number(data, config)

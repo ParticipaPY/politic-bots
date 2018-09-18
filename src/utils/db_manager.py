@@ -3,10 +3,11 @@ from datetime import datetime
 from pymongo import MongoClient
 from src.utils.utils import get_config, get_user_handlers_and_hashtags, get_py_date
 
+import pathlib
 import logging
 
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 class DBManager:
@@ -14,7 +15,8 @@ class DBManager:
     __host = None
     __collection = ''
 
-    def __init__(self, collection, config_fn='config.json'):
+    def __init__(self, collection):
+        config_fn = pathlib.Path.cwd().joinpath('config.json')
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']

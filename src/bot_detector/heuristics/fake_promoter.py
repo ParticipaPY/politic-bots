@@ -1,9 +1,10 @@
 import logging
+import pathlib
 
 from src.analyzer.network_analysis import NetworkAnalyzer
 from src.utils.utils import get_config
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 def compute_user_interactions(user_screen_name, interactions, config):
@@ -162,7 +163,8 @@ def fake_promoter(user_screen_name, db_users, method=0):
         raise Exception('Error. Unknown heuristic method {}'.format(method))
 
     # Get heuristic parameters
-    config = get_config('heuristic_config.json')['fake_promoter']
+    file_path = pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json')
+    config = get_config(file_path)['fake_promoter']
 
     prop_interaction_with_bots, avg_pbb_most_freq_contacts = is_fake_promoter(user_screen_name, db_users, config)
 

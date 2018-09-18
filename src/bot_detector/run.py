@@ -19,13 +19,12 @@ class PythonLiteralOption(click.Option):
 @click.command()
 @click.option('--users', cls=PythonLiteralOption, help='List of user names to examine', default=[])
 def run_bot_detector(users):
-    conf = '../config.json'
     # create database of user if it doesn't exist
     users_db = DBManager('users')
     if users_db.num_records_collection() == 0:
         na = NetworkAnalyzer()
         na.create_users_db()
-    bot_detector = BotDetector(conf)
+    bot_detector = BotDetector()
     bot_detector.compute_bot_probability(users)
 
 

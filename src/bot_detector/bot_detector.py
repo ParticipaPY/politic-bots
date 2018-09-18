@@ -1,5 +1,6 @@
 import datetime
 import logging
+import pathlib
 import tweepy
 
 from src.utils.db_manager import DBManager
@@ -9,7 +10,7 @@ from src.bot_detector.heuristics.simple import *
 from src.utils.utils import parse_date, get_user, get_config
 
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 class BotDetector:
@@ -18,7 +19,8 @@ class BotDetector:
     __api = None
     __conf = None
 
-    def __init__(self, name_config_file='../config.json'):
+    def __init__(self):
+        name_config_file = pathlib.Path.cwd().joinpath('config.json')
         self.__conf = get_config(name_config_file)
         auth = tweepy.AppAuthHandler(
             self.__conf['twitter']['consumer_key'],
@@ -79,7 +81,7 @@ class BotDetector:
         return
 
     def compute_bot_probability(self, users):
-        if not users:
+        if users == 'all':
             users = self.__dbm_users.search({})
         for user in users:
             self.__check_heuristics(user)

@@ -1,5 +1,6 @@
 import csv
 import json
+import pathlib
 import re
 
 from datetime import datetime, timedelta, tzinfo
@@ -31,7 +32,7 @@ def parse_metadata(kfile):
 
 
 def get_user_handlers_and_hashtags():
-    configuration = get_config('config.json')
+    configuration = get_config(pathlib.Path.cwd().joinpath('config.json'))
     keywords, _ = parse_metadata(configuration['metadata'])
     user_handlers, hashtags = [], []
     for keyword in keywords:

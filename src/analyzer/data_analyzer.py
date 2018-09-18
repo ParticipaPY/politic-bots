@@ -1,17 +1,19 @@
 import json
 import logging
 import requests
+import pathlib
 import time
+
 from src.utils.utils import get_config, update_config
 from src.utils.db_manager import DBManager
 from cca_core.sentiment_analysis import SentimentAnalyzer
 
 
-logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
+logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
 
 
 class SentimentAnalysis:
-    config_file_name = 'config.json'
+    config_file_name = pathlib.Path.cwd().joinpath('config.json')
     config = None
     language = ''
     method = ''
@@ -156,6 +158,7 @@ class SentimentAnalysis:
         tweet_texts = []
         for tweet in tweets:
             tweet_texts.append(tweet['text'] + ' -$%#$&- {0}'.format(tweet['id']))
+        logging.info('Computing the sentiment analysis of {0} tweets, please wait...'.format(len(tweets)))
         results = sa.analyze_docs(tweet_texts)
         logging.info('Obtained the results of sentiment analysis, now the results are going to be processed...')
         ret = self.__process_results(results)
