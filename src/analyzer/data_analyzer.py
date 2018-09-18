@@ -11,7 +11,7 @@ logging.basicConfig(filename='politic_bots.log', level=logging.DEBUG)
 
 
 class SentimentAnalysis:
-    config_file_name = '../config.json'
+    config_file_name = 'config.json'
     config = None
     language = ''
     method = ''
@@ -28,11 +28,16 @@ class SentimentAnalysis:
                 return analyzed_tweet
         return None
 
-    def update_sentiment_of_non_original_tweets(self, query={}):
-        query.update({
-            'relevante': 1,
-            'sentimiento': {'$exists': 0},
-        })
+    def update_sentiment_of_non_original_tweets(self, query={}, update_sentiment=False):
+        if update_sentiment:
+            query.update({
+                'relevante': 1,
+            })
+        else:
+            query.update({
+                'relevante': 1,
+                'sentimiento': {'$exists': 0}
+            })
         tweet_regs = self.__dbm.search(query)
         rts_wo_tw = []
         for tweet_reg in tweet_regs:
@@ -90,15 +95,21 @@ class SentimentAnalysis:
                                                                                sentiment_info['tono'],
                                                                                sentiment_info['score']))
 
-    def analyze_sentiments(self, query={}):
+    def analyze_sentiments(self, query={}, update_sentiment=False):
         """
         :param query: dictionary of <key, value> terms to be used in querying the db
         """
-        query.update({
-            'relevante': 1,
-            'tweet_obj.retweeted_status': {'$exists': 0},
-            'sentimiento': {'$exists': 0},
-        })
+        if update_sentiment:
+            query.update({
+                'relevante': 1,
+                'tweet_obj.retweeted_status': {'$exists': 0}
+            })
+        else:
+            query.update({
+                'relevante': 1,
+                'tweet_obj.retweeted_status': {'$exists': 0},
+                'sentimiento': {'$exists': 0}
+            })
         tweet_regs = self.__dbm.search(query)
         analyzed_tweets = []
         tot_reg = tweet_regs.count()

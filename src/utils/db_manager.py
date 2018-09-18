@@ -14,7 +14,7 @@ class DBManager:
     __host = None
     __collection = ''
 
-    def __init__(self, collection, config_fn='../config.json'):
+    def __init__(self, collection, config_fn='config.json'):
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']
