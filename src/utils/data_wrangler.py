@@ -8,7 +8,7 @@ import logging
 import pathlib
 import re
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class TweetEvaluator:

@@ -6,7 +6,7 @@ from src.utils.db_manager import DBManager
 from src.tweet_collector.twitter_api_manager import TwitterAPIManager
 from src.utils.data_wrangler import TweetEvaluator
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import pathlib
 from src.analyzer.network_analysis import NetworkAnalyzer
 from src.utils.utils import get_config
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 def compute_user_interactions(user_screen_name, interactions, config):

@@ -10,7 +10,7 @@ from src.bot_detector.heuristics.simple import *
 from src.utils.utils import parse_date, get_user, get_config
 
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class BotDetector:

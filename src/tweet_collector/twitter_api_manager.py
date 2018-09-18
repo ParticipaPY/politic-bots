@@ -6,7 +6,7 @@ import logging
 from src.tweet_collector.add_flags import get_entities_tweet, create_flag, add_values_to_flags
 
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class TwitterAPIManager:

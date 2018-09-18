@@ -9,7 +9,7 @@ from src.utils.db_manager import DBManager
 from cca_core.sentiment_analysis import SentimentAnalyzer
 
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class SentimentAnalysis:

@@ -6,7 +6,7 @@ import logging
 import networkx as net
 import pathlib
 
-logging.basicConfig(filename=pathlib.Path.cwd().joinpath('politic_bots.log'), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 class NetworkAnalyzer:
     __dbm_tweets = None
