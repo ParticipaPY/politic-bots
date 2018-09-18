@@ -13,7 +13,7 @@ logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')
 
 
 class SentimentAnalysis:
-    config_file_name = pathlib.Path.cwd().joinpath('config.json')
+    config_file_name = str(pathlib.Path.cwd().joinpath('config.json'))
     config = None
     language = ''
     method = ''

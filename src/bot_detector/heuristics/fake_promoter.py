@@ -163,7 +163,7 @@ def fake_promoter(user_screen_name, db_users, method=0):
         raise Exception('Error. Unknown heuristic method {}'.format(method))
 
     # Get heuristic parameters
-    file_path = pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json')
+    file_path = str(pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json'))
     config = get_config(file_path)['fake_promoter']
 
     prop_interaction_with_bots, avg_pbb_most_freq_contacts = is_fake_promoter(user_screen_name, db_users, config)

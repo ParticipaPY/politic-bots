@@ -8,13 +8,13 @@ from datetime import datetime, timedelta, tzinfo
 
 # Get configuration from file
 def get_config(config_file):
-    with open(config_file) as f:
+    with open(config_file, 'r') as f:
         config = json.loads(f.read())
     return config
 
 
 def update_config(config_file, new_data):
-    json_file = open(config_file, "w+")
+    json_file = open(config_file, 'w+')
     json_file.write(json.dumps(new_data))
     json_file.close()
 
@@ -32,7 +32,7 @@ def parse_metadata(kfile):
 
 
 def get_user_handlers_and_hashtags():
-    configuration = get_config(pathlib.Path.cwd().joinpath('config.json'))
+    configuration = str(get_config(pathlib.Path.cwd().joinpath('config.json')))
     keywords, _ = parse_metadata(configuration['metadata'])
     user_handlers, hashtags = [], []
     for keyword in keywords:

@@ -20,7 +20,7 @@ class BotDetector:
     __conf = None
 
     def __init__(self):
-        name_config_file = pathlib.Path.cwd().joinpath('config.json')
+        name_config_file = str(pathlib.Path.cwd().joinpath('config.json'))
         self.__conf = get_config(name_config_file)
         auth = tweepy.AppAuthHandler(
             self.__conf['twitter']['consumer_key'],

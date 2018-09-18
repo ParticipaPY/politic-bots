@@ -10,7 +10,7 @@ logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')
 
 
 if __name__ == '__main__':
-    conf_file = pathlib.Path.cwd().joinpath('config.json')
+    conf_file = str(pathlib.Path.cwd().joinpath('config.json'))
     configuration = get_config(conf_file)
     credentials = {'key': configuration['twitter']['consumer_key'],
                    'secret': configuration['twitter']['consumer_secret']}
