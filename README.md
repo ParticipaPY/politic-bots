@@ -8,7 +8,8 @@ Motivated by the series of journalist investigations (e.g.,
 [How a Russian 'troll soldier' stirred anger after the Westminster attack](https://www.theguardian.com/uk-news/2017/nov/14/how-a-russian-troll-soldier-stirred-anger-after-the-westminster-attack), 
 [Anti-Vaxxers Are Using Twitter to Manipulate a Vaccine Bill](https://www.wired.com/2015/06/antivaxxers-influencing-legislation/),
 [A Russian Facebook page organized a protest in Texas. A different Russian page launched the counterprotest](https://www.texastribune.org/2017/11/01/russian-facebook-page-organized-protest-texas-different-russian-page-l/),
-[La oscura utilización de Facebook y Twitter como armas de manipulación política](https://elpais.com/tecnologia/2017/10/19/actualidad/1508426945_013246.html)) 
+[La oscura utilización de Facebook y Twitter como armas de manipulación política](https://elpais.com/tecnologia/2017/10/19/actualidad/1508426945_013246.html),
+[How Bots Ruined Clicktivism](https://www.wired.com/story/how-bots-ruined-clicktivism/)) 
 regarding the use of social media to manipulate the public opinion, specially in times of elections, we decided to 
 study the use of Twitter during the presidential elections that took place in Paraguay in
 December 2017 (primary) and April 2018 (general).  
@@ -121,7 +122,8 @@ complement the information about accounts and hashtags. An example of CSV file c
 4. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
 of the Twitter App created during the installation process;
 6. Set in `src/config.json` the information of the MongoDB database that is used to store the tweets;
-7. Execute `python src/tweet_collector/run.py`
+7. Activate the virtual environment by executing `source env/bin/activate`;
+8. Execute `python src/tweet_collector/run.py`
 
 Depending on the number of hashtags and accounts the collection can take several hours.
 
@@ -129,17 +131,24 @@ Depending on the number of hashtags and accounts the collection can take several
 
 Before conducting analyses on the tweets, a database of the authors of tweets should be created. Also, tweets
 should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
-the problems with the hashtags used to collect tweets. From the root directory of the repository, run 
-`python src/analyzer/pre_analysis.py` to perform both tasks. As mentioned in the **Analyses** section, examples of 
-preliminary analyses can be found in the `reports` directory.
+the problems with the hashtags used to collect tweets. From the `src` directory of the repository and after activating
+your virtual environment `source env/bin/activate`, run `python src/analyzer/pre_analysis.py` to perform both tasks. 
+As mentioned in the **Analyses** section, examples of preliminary analyses can be found in the `reports` directory.
 
 ### Generate network of interactions
 
 Once the database of users was generated (see **Prepare for analysis** section to learn how to generate the database 
 of users) a network that illustrates the interactions among them can be created for a follow-up social network analysis.
-From the root directory of the repository, run `python src/analyzer/generate_inter_network.py` to generate the network
-of interactions among the tweet authors. Examples of interaction networks can be found in the directory `sna` of the 
-repo.
+From the `src` directory and after activating your virtual environment `source env/bin/activate`, run 
+`python src/analyzer/generate_inter_network.py` to generate the network of interactions among the tweet authors. 
+Examples of interaction networks can be found in the directory `sna` of the repo.
+
+### Troubleshooting
+
+If you get the error **`ImportError: No module named`** when trying to execute the scripts, make sure to be at the
+`src` directory. If after being at the `src` directory you still get the same error, it is possible that you need to add
+the `src` directory to the `PYTHONPATH` by adding `PYTHONPATH=../` at the beginning of the execution commands, e.g., 
+`PYTHONPATH=../ python src/analyzer/pre_analysis.py`   
 
 ## Technologies
 
