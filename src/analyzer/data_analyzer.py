@@ -70,7 +70,7 @@ class SentimentAnalysis:
 
     def __analyze_sentiment_of_rt_wo_tws(self, tweets):
         tot_tws = len(tweets)
-        batch_size = 1000
+        batch_size = 5
         tweets_to_analyze = []
         for current_tw in range(tot_tws):
             tweet_id = tweets[current_tw]['id_str']
@@ -115,9 +115,9 @@ class SentimentAnalysis:
         tweet_regs = self.__dbm.search(query)
         analyzed_tweets = []
         tot_reg = tweet_regs.count()
-        logging.info('Analyzing the sentiment of {0} tweets, '
-                     'it can take several minutes, please wait...'.format(tot_reg))
-        batch_size = 1000
+        logging.info('Going to analyze the sentiment of {0} tweets, '
+                     'it can take a lot of time, be patient...'.format(tot_reg))
+        batch_size = 100
         tweets_to_analyze = []
         try:
             for current_reg in range(tot_reg):
@@ -131,6 +131,8 @@ class SentimentAnalysis:
                     tweets_to_analyze.append({'id': tweet['id_str'], 'text': tweet_text})
                     if len(tweets_to_analyze) < batch_size:
                         continue
+                logging.info('Analyzing the sentiment of {0} tweets out of {1}...'.format(len(tweets_to_analyze),
+                                                                                          tot_reg))
                 sentiment_results = self.do_sentiment_analysis(tweets_to_analyze)
                 tweets_to_analyze = []
                 for sentiment_result in sentiment_results:
@@ -158,9 +160,10 @@ class SentimentAnalysis:
         tweet_texts = []
         for tweet in tweets:
             tweet_texts.append(tweet['text'] + ' -$%#$&- {0}'.format(tweet['id']))
-        logging.info('Computing the sentiment analysis of {0} tweets, please wait...'.format(len(tweets)))
-        results = sa.analyze_docs(tweet_texts)
-        logging.info('Obtained the results of sentiment analysis, now the results are going to be processed...')
+        sa.analyze_docs(tweet_texts)
+        results = sa.tagged_docs
+        logging.info('Finished the sentiment analysis, now {0} results are going to '
+                     'be processed...'.format(len(results)))
         ret = self.__process_results(results)
         logging.info('Computed correctly the sentiment of {0} tweets'.format(len(tweet_texts)))
         return ret
@@ -223,21 +226,20 @@ class SentimentAnalysis:
     def __process_results(self, results):
         ret = []
         for result in results:
-            if result['sentiment'] == 'neg':
+            text, tone, score = result
+            if tone == 'neg':
                 sentiment = 'negative'
-            elif result['sentiment'] == 'pos':
+            elif tone == 'pos':
                 sentiment = 'positive'
             else:
                 sentiment = 'neutral'
-            for text in result['ideas']:
-                tw_text_id = text['idea'].split('-$%#$&-')
-                id_tweet = tw_text_id[1].strip()
-                text_tweet = tw_text_id[0].strip()
-                dic_ret = {
-                    'id': id_tweet,
-                    'text': text_tweet,
-                    'sentimiento': {'tono': sentiment, 'score': text['score']},
-                    'servicio': 'civic_crowdanalytics'
-                }
-                ret.append(dic_ret)
+            tw_text_id = text.split('-$%#$&-')
+            id_tweet = tw_text_id[1].strip()
+            text_tweet = tw_text_id[0].strip()
+            dic_ret = {
+                'id': id_tweet,
+                'text': text_tweet,
+                'sentimiento': {'tono': sentiment, 'score': score}
+            }
+            ret.append(dic_ret)
         return ret
