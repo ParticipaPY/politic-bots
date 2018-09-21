@@ -4,6 +4,7 @@ from src.analyzer.network_analysis import NetworkAnalyzer
 
 import ast
 import click
+import os
 
 
 # Taken from
@@ -29,4 +30,7 @@ def run_bot_detector(users):
 
 
 if __name__ == "__main__":
+    cd_name = os.path.basename(os.getcwd())
+    if cd_name != 'src':
+        raise Exception('Error!, this script must run from the src directory')
     run_bot_detector()

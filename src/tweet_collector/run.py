@@ -1,5 +1,6 @@
 import pathlib
 import logging
+import os
 
 from src.utils.utils import get_config, parse_metadata
 from src.utils.db_manager import DBManager
@@ -10,19 +11,23 @@ logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')
 
 
 if __name__ == '__main__':
-    conf_file = str(pathlib.Path.cwd().joinpath('config.json'))
-    configuration = get_config(conf_file)
-    credentials = {'key': configuration['twitter']['consumer_key'],
-                   'secret': configuration['twitter']['consumer_secret']}
-    keyword, k_metadata = parse_metadata(configuration['metadata'])
-    dbm = DBManager('tweets')
-    tm = TwitterAPIManager(credentials, dbm)
-    for current_keyword, keyword_row in zip(keyword, k_metadata):
-        logging.info('Searching tweets for %s' % current_keyword)
-        if '@' in current_keyword:
-            tm.search_tweets(configuration['tweets_qry'], current_keyword, 'user', k_metadata)
-        else:
-            tm.search_tweets(configuration['tweets_qry'], current_keyword, 'hashtag', k_metadata)
-    logging.info('Evaluating the relevance of the new tweets...')
-    te = TweetEvaluator()
-    te.identify_relevant_tweets()
+    cd_name = os.path.basename(os.getcwd())
+    if cd_name != 'src':
+        print('Error!, to work properly this script must run from the src directory')
+    else:
+        conf_file = str(pathlib.Path.cwd().joinpath('config.json'))
+        configuration = get_config(conf_file)
+        credentials = {'key': configuration['twitter']['consumer_key'],
+                       'secret': configuration['twitter']['consumer_secret']}
+        keyword, k_metadata = parse_metadata(configuration['metadata'])
+        dbm = DBManager('tweets')
+        tm = TwitterAPIManager(credentials, dbm)
+        for current_keyword, keyword_row in zip(keyword, k_metadata):
+            logging.info('Searching tweets for %s' % current_keyword)
+            if '@' in current_keyword:
+                tm.search_tweets(configuration['tweets_qry'], current_keyword, 'user', k_metadata)
+            else:
+                tm.search_tweets(configuration['tweets_qry'], current_keyword, 'hashtag', k_metadata)
+        logging.info('Evaluating the relevance of the new tweets...')
+        te = TweetEvaluator()
+        te.identify_relevant_tweets()

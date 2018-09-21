@@ -2,8 +2,8 @@ from src.analyzer.network_analysis import NetworkAnalyzer
 from src.analyzer.data_analyzer import SentimentAnalysis
 from src.utils.data_wrangler import TweetEvaluator
 
-
 import click
+import os
 
 
 @click.command()
@@ -21,10 +21,14 @@ def pre_analysis(users_db, eval_tweets, sentiment_analysis):
         te = TweetEvaluator()
         te.identify_relevant_tweets()
     if sentiment_analysis == 'y':
-    # Run sentiment analysis
+        # Run sentiment analysis
         sa = SentimentAnalysis()
         sa.analyze_sentiments(update_sentiment=True)
 
 
 if __name__ == '__main__':
-    pre_analysis()
+    cd_name = os.path.basename(os.getcwd())
+    if cd_name != 'src':
+        print('Error!, to work properly this script must run from the src directory')
+    else:
+        pre_analysis()
