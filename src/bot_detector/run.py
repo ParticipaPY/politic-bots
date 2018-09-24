@@ -9,7 +9,7 @@ import os
 
 # Taken from
 # https://stackoverflow.com/questions/47631914/how-to-pass-several-list-of-arguments-to-click-option
-class PythonLiteralOption(click.Option):
+class ToList(click.Option):
     def type_cast_value(self, ctx, value):
         try:
             return ast.literal_eval(value)
@@ -18,7 +18,7 @@ class PythonLiteralOption(click.Option):
 
 
 @click.command()
-@click.option('--users', cls=PythonLiteralOption, help='List of user names to examine', default=[])
+@click.option('--users', cls=ToList, help='List of user names to examine', default=[])
 def run_bot_detector(users):
     # create database of user if it doesn't exist
     users_db = DBManager('users')
@@ -31,6 +31,6 @@ def run_bot_detector(users):
 
 if __name__ == "__main__":
     cd_name = os.path.basename(os.getcwd())
-    if cd_name != 'src':
-        raise Exception('Error!, this script must run from the src directory')
+    if cd_name != 'bot_detector':
+        click.UsageError('Illegal use: this script must run from the bot_detector directory')
     run_bot_detector()
