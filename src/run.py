@@ -54,12 +54,19 @@ def build_interaction_net():
     na.generate_network()
 
 
+def create_db_users():
+    # Create database of users
+    na = NetworkAnalyzer()
+    na.create_users_db()
+
+
 @click.command()
 @click.option('--collect_tweets', help='Collect tweets', default=False, is_flag=True)
 @click.option('--sentiment_analysis', help='Analyze the sentiment of tweets', default=False, is_flag=True)
 @click.option('--interaction_net', help='Generate the interaction network', default=False, is_flag=True)
 @click.option('--flag_tweets', help='Identify and flag relevant tweets', default=False, is_flag=True)
-def run_task(collect_tweets, sentiment_analysis, interaction_net, flag_tweets):
+@click.option('--db_users', help='Create a database of users', default=False, is_flag=True)
+def run_task(collect_tweets, sentiment_analysis, interaction_net, flag_tweets, db_users):
     if collect_tweets:
         do_tweet_collection()
     elif sentiment_analysis:
@@ -68,6 +75,8 @@ def run_task(collect_tweets, sentiment_analysis, interaction_net, flag_tweets):
         analyze_tweet_relevance()
     elif interaction_net:
         build_interaction_net()
+    elif db_users:
+        create_db_users()
     else:
         click.UsageError('Illegal user: Please indicate a running option. Type --help for more information of '
                          'the available options')
