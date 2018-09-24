@@ -137,7 +137,7 @@ Depending on the number of hashtags and accounts the collection can take several
 
 Before conducting analyses on the tweets, a database of the authors of tweets should be created. To create the database
 of users active the virtual environment `source env/bin/activate` and execute from the `src` directory 
-`python run.py --db_users`.
+`python run.py --db_users`. A new MongoDB database so called `users` is created as a result of this process.
 
 ### Analyze the sentiment of tweets
 
@@ -159,8 +159,7 @@ relevant or not for the purpose of this project.
 Once the database of users was generated a network that shows the interactions among them can be created for a 
 follow-up social network analysis. From the `src` directory and after activating your virtual environment 
 (`source env/bin/activate`), run `python src/run.py --interaction_net` to generate the network of interactions 
-among the tweet authors. A new MongoDB database so called `users` is created as a result of this process.
-Examples of interaction networks can be found in the directory `sna` of the repo.
+among the tweet authors. Examples of interaction networks can be found in the directory `sna` of the repo.
 
 ### Troubleshooting
 
