@@ -56,6 +56,7 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 │   ├── html                            <- HTML files with the results of the analyses
 ├── src                                 <- Source code of the project
 │   ├── __init__.py                     <- Makes src a Python module
+│   ├── run.py                          <- Main script to run analysis tasks
 │   ├── config.json.example             <- Example of a configuration file
 │   ├── analyzer                        
 │   │   └── data_analyzer.py            <- Functions to conduct analyses on tweets
@@ -74,7 +75,6 @@ candidate accounts or if they had at least more than one of the hashtags of inte
 │   │   │                                  the general elections
 │   │   └── internas_2017.csv           <- CSV file with the hashtags and accounts used to collect tweets related to
 │   │   │                                  the primary elections
-│   │   └── run.py                      <- Main function to run the tweet collector
 │   │   └── tweet_collector.py          <- Class implemented to collect tweets by hitting the API of Twitter
 │   ├── utils
 │   │   └── data_wrangler.py            <- Functions and classes to clean and pre-process the data  
