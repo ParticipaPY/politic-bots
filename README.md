@@ -105,14 +105,22 @@ Links to packages are provided below.
 
 *Optional* for social network analysis: Download and install Gephi  
 
+## Run
+
+There are some tasks that can be run from `src/run.py`. Bellow we explain each of them.
+
+### Pre-requirements
+
+1. Set in `src/config.json` the information of the MongoDB database that is used to store the tweets;
+2. Activate the virtual environment by executing `source env/bin/activate`.
+
 ### Collect Political Tweets
 
 The data sets of tweets collected during the presidential primary and general elections that took place
 in Paraguay in December 2017 and April 2018, respectively, are available to be download. The directory **`data`** contains
 the file `links_to_datasets.txt` with the links to dumps of the MongoDB databases used in the project. 
 
-In case, a new set of tweets needs to be downloaded below we list the steps that are required to follow.
-
+In case a new set of tweets needs to be downloaded, below we list the steps that are required to follow.
  
 1. Create a CSV file to contain the name of the Twitter accounts and hashtags of interest. The CSV file should have
 a column called **keyword** with the list of accounts and hashtags. Additional columns can be added to the CSV to 
@@ -121,26 +129,37 @@ complement the information about accounts and hashtags. An example of CSV file c
 3. Set to **metadata** in `src/config.json` the path to the CSV file; 
 4. Set to **consumer_key** and **consumer_secret** in `src/config.json` the information of the authentication tokens 
 of the Twitter App created during the installation process;
-6. Set in `src/config.json` the information of the MongoDB database that is used to store the tweets;
-7. Activate the virtual environment by executing `source env/bin/activate`;
-8. Execute `python src/tweet_collector/run.py`
+5. Go to the `src` directory and execute `python run.py --collect_tweets`.
 
-Depending on the number of hashtags and accounts the collection can take several hours.
+Depending on the number of hashtags and accounts the collection can take several hours or even days.
 
-### Prepare for analysis
+### Create database of users
 
-Before conducting analyses on the tweets, a database of the authors of tweets should be created. Also, tweets
-should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
+Before conducting analyses on the tweets, a database of the authors of tweets should be created. To create the database
+of users active the virtual environment `source env/bin/activate` and execute from the `src` directory 
+`python run.py --db_users`.
+
+### Analyze the sentiment of tweets
+
+It is possible to analyze the tone of tweets by executing, from the `src` directory, `python run.py --sentiment_analysis`. 
+The sentiment of tweets are stored as part of the dictionary that contains the information of the tweet under the key 
+`sentimiento`. We use the library CCA-Core to analyze the sentiment embed in Tweets. 
+See [here](https://github.com/ParticipaPY/cca-core) for more information about the CCA-Core library.
+
+### Identify relevant tweets
+
+Tweets should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
 the problems with the hashtags used to collect tweets. From the `src` directory of the repository and after activating
-your virtual environment `source env/bin/activate`, run `python src/analyzer/pre_analysis.py` to perform both tasks. 
-As mentioned in the **Analyses** section, examples of preliminary analyses can be found in the `reports` directory.
+your virtual environment `source env/bin/activate`, run `python src/run.py --flag_tweets` to perform both tasks. The 
+flag `relevante`, added to the dictionary that stores the information of the tweets, indicates whether the tweet is
+relevant or not for the purpose of this project.
 
 ### Generate network of interactions
 
-Once the database of users was generated (see **Prepare for analysis** section to learn how to generate the database 
-of users) a network that illustrates the interactions among them can be created for a follow-up social network analysis.
-From the `src` directory and after activating your virtual environment `source env/bin/activate`, run 
-`python src/analyzer/generate_inter_network.py` to generate the network of interactions among the tweet authors. 
+Once the database of users was generated a network that shows the interactions among them can be created for a 
+follow-up social network analysis. From the `src` directory and after activating your virtual environment 
+(`source env/bin/activate`), run `python src/run.py --interaction_net` to generate the network of interactions 
+among the tweet authors. A new MongoDB database so called `users` is created as a result of this process.
 Examples of interaction networks can be found in the directory `sna` of the repo.
 
 ### Troubleshooting
