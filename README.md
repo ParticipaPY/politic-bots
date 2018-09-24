@@ -133,7 +133,7 @@ of the Twitter App created during the installation process;
 
 Depending on the number of hashtags and accounts the collection can take several hours or even days.
 
-### Create database of users
+### Create database of tweet authors
 
 Before conducting analyses on the tweets, a database of the authors of tweets should be created. To create the database
 of users active the virtual environment `source env/bin/activate` and execute from the `src` directory 
