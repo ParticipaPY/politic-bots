@@ -150,7 +150,7 @@ See [here](https://github.com/ParticipaPY/cca-core) for more information about t
 
 Tweets should be evaluated to analyze their relevance for this project. See **Data Cleaning** section to understand
 the problems with the hashtags used to collect tweets. From the `src` directory of the repository and after activating
-your virtual environment `source env/bin/activate`, run `python src/run.py --flag_tweets` to perform both tasks. The 
+your virtual environment `source env/bin/activate`, run `python run.py --flag_tweets` to perform both tasks. The 
 flag `relevante`, added to the dictionary that stores the information of the tweets, indicates whether the tweet is
 relevant or not for the purpose of this project.
 
@@ -158,7 +158,7 @@ relevant or not for the purpose of this project.
 
 Once the database of users was generated a network that shows the interactions among them can be created for a 
 follow-up social network analysis. From the `src` directory and after activating your virtual environment 
-(`source env/bin/activate`), run `python src/run.py --interaction_net` to generate the network of interactions 
+(`source env/bin/activate`), run `python run.py --interaction_net` to generate the network of interactions 
 among the tweet authors. Examples of interaction networks can be found in the directory `sna` of the repo.
 
 ### Troubleshooting
@@ -166,7 +166,7 @@ among the tweet authors. Examples of interaction networks can be found in the di
 If you get the error **`ImportError: No module named`** when trying to execute the scripts, make sure to be at the
 `src` directory. If after being at the `src` directory you still get the same error, it is possible that you need to add
 the `src` directory to the `PYTHONPATH` by adding `PYTHONPATH=../` at the beginning of the execution commands, e.g., 
-`PYTHONPATH=../ python src/analyzer/pre_analysis.py`   
+`PYTHONPATH=../ python analyzer/pre_analysis.py`   
 
 ## Technologies
 
