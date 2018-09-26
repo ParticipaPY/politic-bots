@@ -44,7 +44,9 @@ def do_sentiment_analysis():
 
 def analyze_tweet_relevance():
     # Label relevant tweets
+    logging.info('Instantiating TweetEvaluator...')
     te = TweetEvaluator()
+    logging.info('Evaluating the relevance of the new tweets...')
     te.identify_relevant_tweets()
 
 

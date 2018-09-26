@@ -91,14 +91,16 @@ class TweetEvaluator:
             'relevante': {'$exists': 0},
             'tweet_obj.retweeted_status': {'$exists': 0}
         }
+        logging.info('Relevant Tweets: Running query...')
         search_res = self.__dbm.search(query, only_relevant_tws=False)
-        tweet_regs = [doc for doc in search_res]
-        total_tweets = len(tweet_regs)
-        logging.info('Identifying relevant tweets out of {0} tweets...')
+        logging.info('Relevant Tweets: After running query... search_res = {0}'.format(search_res))
+        total_tweets = search_res.count()
+        logging.info('Identifying relevant tweets out of {0} tweets...'.format(total_tweets))
         tweet_counter = 0
-        for i in range(total_tweets):
+        for doc in search_res: 
+            logging.info('Processing search result {0}/{1}'.format(tweet_counter,total_tweets))
+            tweet_reg = doc
             tweet_counter += 1
-            tweet_reg = tweet_regs[i]
             tweet = tweet_reg['tweet_obj']
             if self.is_tweet_relevant(tweet):
                 tweet_reg['relevante'] = 1
