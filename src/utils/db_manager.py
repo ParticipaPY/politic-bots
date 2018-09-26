@@ -16,7 +16,8 @@ class DBManager:
     __collection = ''
 
     def __init__(self, collection):
-        config_fn = str(pathlib.Path.cwd().joinpath('config.json'))
+        #config_fn = str(pathlib.Path.cwd().joinpath('config.json'))
+        config_fn = '/Users/jorgesaldivar/Dropbox/Development/politic-bots/src/config.json'
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']
@@ -76,7 +77,8 @@ class DBManager:
 
     def get_sentiment_tweets(self, **kwargs):
         match = {
-            'relevante': {'$eq': 1}
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0}  # discard retweets
         }
         group = {
             '_id': '$sentimiento.tono',
@@ -86,21 +88,7 @@ class DBManager:
             'sentiment': '$_id',
             'count': '$num_tweets'
         }
-        if 'partido' in kwargs.keys():
-            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
-            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
-            project.update({'partido_politico': '$partido_politico'})
-        if 'movimiento' in kwargs.keys():
-            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
-            group.update({'movimiento': {'$push': '$flag.movimiento'}})
-            project.update({'movimiento': '$movimiento'})
-        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
-            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
-                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
-            else:
-                logging.error('The parameter candidate_handler cannot be empty')
-        if 'limited_to_time_window' in kwargs.keys():
-            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
         pipeline = [
             {
                 '$match': match
@@ -119,6 +107,111 @@ class DBManager:
         if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
             return self.update_counts(result_docs, **kwargs)
         return result_docs
+
+    def get_plain_tweets(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
+            'tweet_obj.entities.media': {'$exists': 0},  # don't have media
+            'tweet_obj.entities.urls': {'$size': 0}   # don't have urls
+        }
+        group = {}
+        project = {}
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
+        pipeline = [{'$match': match}]
+        if group:
+            pipeline.append({'$group': group})
+        if project:
+            pipeline.append({'$project': project})
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
+    def get_tweets_with_links(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
+            'tweet_obj.entities.media': {'$exists': 0},  # don't have media
+            'tweet_obj.entities.urls': {'$ne': []}  # have urls
+        }
+        group = {}
+        project = {
+            'id': '$tweet_obj.id_str',
+            'tw_obj': '$tweet_obj'
+        }
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
+        pipeline = [{'$match': match}]
+        if group:
+            pipeline.append({'$group': group})
+        pipeline.append({'$project': project})
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
+    def get_tweets_with_photo(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0},      # discard retweets
+            'tweet_obj.entities.media': {'$ne': []},           # choose tweets with media
+            'tweet_obj.entities.media.type': {'$eq': 'photo'}  # choose tweets with photo
+        }
+        group = {}
+        project = {
+            'id': '$tweet_obj.id_str',
+            'tw_obj': '$tweet_obj'
+        }
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
+        pipeline = [{'$match': match}]
+        if group:
+            pipeline.append({'$group': group})
+        pipeline.append({'$project': project})
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
+    def get_tweets_with_video(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
+            'tweet_obj.entities.media': {'$ne': []},  # choose tweets with media
+            'tweet_obj.entities.media.type': {'$eq': 'video'}  # choose tweets with photo
+        }
+        group = {}
+        project = {
+            'id': '$tweet_obj.id_str',
+            'tw_obj': '$tweet_obj'
+        }
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
+        pipeline = [{'$match': match}]
+        if group:
+            pipeline.append({'$group': group})
+        pipeline.append({'$project': project})
+        result_docs = self.aggregate(pipeline)
+        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
+            return self.update_counts(result_docs, **kwargs)
+        return result_docs
+
+    def __update_dicts_with_domain_info(self, match, group, project, **kwargs):
+        if 'partido' in kwargs.keys():
+            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
+            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
+            project.update({'partido_politico': '$partido_politico'})
+        if 'movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+            group.update({'movimiento': {'$push': '$flag.movimiento'}})
+            project.update({'movimiento': '$movimiento'})
+        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+            else:
+                logging.error('The parameter candidate_handler cannot be empty')
+        if 'limited_to_time_window' in kwargs.keys():
+            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+
+        return match, group, project
 
     def get_hashtags_by_movement(self, movement_name, **kwargs):
         match = {
@@ -483,21 +576,7 @@ class DBManager:
             },
             'count': '$num_tweets'
         }
-        if 'partido' in kwargs.keys():
-            match.update({'flag.partido_politico.'+kwargs['partido']: {'$gt': 0}})
-            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
-            project.update({'partido_politico': '$partido_politico'})
-        if 'movimiento' in kwargs.keys():
-            match.update({'flag.movimiento.'+kwargs['movimiento']: {'$gt': 0}})
-            group.update({'movimiento': {'$push': '$flag.movimiento'}})
-            project.update({'movimiento': '$movimiento'})
-        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
-            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
-                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
-            else:
-                logging.error('The parameter candidate_handler cannot be empty')
-        if 'limited_to_time_window' in kwargs.keys():
-            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
         pipeline = [{'$match': match},
                     {'$group': group},
                     {'$project': project},
@@ -521,21 +600,7 @@ class DBManager:
             'hour': '$_id',
             'count': '$num_tweets'
         }
-        if 'partido' in kwargs.keys():
-            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
-            group.update({'partido_politico': {'$push': '$flag.partido_politico'}})
-            project.update({'partido_politico': '$partido_politico'})
-        if 'movimiento' in kwargs.keys():
-            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
-            group.update({'movimiento': {'$push': '$flag.movimiento'}})
-            project.update({'movimiento': '$movimiento'})
-        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
-            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
-                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
-            else:
-                logging.error('The parameter candidate_handler cannot be empty')
-        if 'limited_to_time_window' in kwargs.keys():
-            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
         pipeline = [{'$match': match},
                     {'$group': group},
                     {'$project': project},
@@ -674,3 +739,12 @@ class DBManager:
         else:
             logging.info('Tweet not inserted because num_results = {0}'.format(num_results))
             return False
+
+
+if __name__ == '__main__':
+    db = DBManager('tweets')
+    print('Original tweets {0}'.format(db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}}).count()))
+    print('Plain tweets {0}'.format(len(db.get_plain_tweets())))
+    print('Tweets with links {0}'.format(len(db.get_tweets_with_links())))
+    print('Tweets with photos {0}'.format(len(db.get_tweets_with_photo())))
+    print('Tweets with videos {0}'.format(len(db.get_tweets_with_video())))
