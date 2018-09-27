@@ -2,6 +2,8 @@ from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
 from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+from math import floor
+from math import ceil
 
 import csv
 import logging
@@ -15,6 +17,7 @@ class TweetEvaluator:
     special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
     hashtags, user_handlers = [], []
     __dbm = None
+    BATCH_SIZE = 1000
 
     def __init__(self):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
@@ -74,43 +77,65 @@ class TweetEvaluator:
                     return self.__assess_tweet_by_text(tweet['text'])
 
     def __mark_relevance_rt(self, tweet_reg):
+        logging.info('Marking RTS...')
         query = {
             'tweet_obj.retweeted_status': {'$exists': 1},
-            'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
+            'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']},
+            'relevante': {'$ne': tweet_reg['relevante']}
         }
-        search_res = self.__dbm.search(query, only_relevant_tws=False)
-        rts = [doc for doc in search_res]
-        logging.info('Marking {0} RTS...'.format(len(rts)))
-        for rt in rts:
-            rt['relevante'] = tweet_reg['relevante']
-            self.__dbm.update_record({'_id': rt['_id']},rt)
+        update = {
+            '$set':{
+                'relevante': tweet_reg['relevante']
+            }
+        }
+        update_res = self.__dbm.update_record_many(query,update)
+        logging.info('Marked {0} RTS...'.format(update_res.matched_count))
 
     def identify_relevant_tweets(self):
-        # select only original tweets
+        # select only original tweets that are not marked as relevant
         query = {
             'relevante': {'$exists': 0},
             'tweet_obj.retweeted_status': {'$exists': 0}
         }
-        logging.info('Relevant Tweets: Running query...')
-        search_res = self.__dbm.search(query, only_relevant_tws=False)
-        logging.info('Relevant Tweets: After running query... search_res = {0}'.format(search_res))
-        total_tweets = search_res.count()
-        logging.info('Identifying relevant tweets out of {0} tweets...'.format(total_tweets))
-        tweet_counter = 0
-        for doc in search_res: 
-            logging.info('Processing search result {0}/{1}'.format(tweet_counter,total_tweets))
-            tweet_reg = doc
-            tweet_counter += 1
-            tweet = tweet_reg['tweet_obj']
-            if self.is_tweet_relevant(tweet):
-                tweet_reg['relevante'] = 1
-                logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
-            else:
-                tweet_reg['relevante'] = 0
-                logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
-            self.__dbm.update_record({'tweet_obj.id_str': tweet['id_str']},tweet_reg)
-            # copy the relevance flag to rts
-            self.__mark_relevance_rt(tweet_reg)
+        logging.info('Relevant Tweets: Running query to count...')
+        # processing by batch as workaround cursor not found error
+        total_tweets = self.__dbm.search(query, only_relevant_tws=False).count()
+        total_batches = ceil(total_tweets/self.BATCH_SIZE)
+        batch = 1
+        moreToProcess = batch<=total_batches
+
+        while moreToProcess:
+            logging.info('Querying records in batches of {0} records...'.format(self.BATCH_SIZE))
+            search_res = self.__dbm.search(query, only_relevant_tws=False).limit(self.BATCH_SIZE)
+            logging.info('Loading batch {0}/{1} into memory...'.format(batch, total_batches))
+            tweets = [doc for doc in search_res]
+            total_tweets_batch = self.BATCH_SIZE
+            if batch == total_batches:
+                total_tweets_batch = len(tweets)
+            logging.info('Identifying relevant tweets in batch {0}/{1} out of {2} tweets...'.format(batch, total_batches, total_tweets_batch))
+            tweet_counter = 0
+            try:
+                for tweet_reg in tweets:
+                    tweet_counter += 1
+                    tweet = tweet_reg['tweet_obj']
+                    if self.is_tweet_relevant(tweet):
+                        tweet_reg['relevante'] = 1
+                        logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
+                    else:
+                        tweet_reg['relevante'] = 0
+                        logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
+                    self.__dbm.update_record({'tweet_obj.id_str': tweet['id_str']},tweet_reg)
+                    # copy the relevance flag to rts
+                    self.__mark_relevance_rt(tweet_reg)
+
+                logging.info('Finished identifying relevant tweets in batch {0}/{1} out of {2} tweets...'.format(batch, total_batches, total_tweets_batch))
+                batch+=1
+                moreToProcess = batch<=total_batches
+            except Exception as e:
+                logging.info("Exception occurred...")
+                logging.info("Exception message {0}".format(e))
+
+        logging.info('Finished identifying relevant tweets...')
         return True
 
     # set to 'user' the type of tweets which keyword contains @
