@@ -79,6 +79,9 @@ class TweetEvaluator:
             'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
         }
         search_res = self.__dbm.search(query, only_relevant_tws=False)
+        # If the search result is not too big and can fit in memory, 
+        # it is better to put it all in memory. This approach fails when there 
+        # memory is limited and the search result is large (as when we iterate over all tweets) 
         rts = [doc for doc in search_res]
         logging.info('Marking {0} RTS...'.format(len(rts)))
         for rt in rts:
@@ -92,25 +95,37 @@ class TweetEvaluator:
             'tweet_obj.retweeted_status': {'$exists': 0}
         }
         logging.info('Relevant Tweets: Running query...')
-        search_res = self.__dbm.search(query, only_relevant_tws=False)
-        logging.info('Relevant Tweets: After running query... search_res = {0}'.format(search_res))
-        total_tweets = search_res.count()
-        logging.info('Identifying relevant tweets out of {0} tweets...'.format(total_tweets))
-        tweet_counter = 0
-        for doc in search_res: 
-            logging.info('Processing search result {0}/{1}'.format(tweet_counter,total_tweets))
-            tweet_reg = doc
-            tweet_counter += 1
-            tweet = tweet_reg['tweet_obj']
-            if self.is_tweet_relevant(tweet):
-                tweet_reg['relevante'] = 1
-                logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
-            else:
-                tweet_reg['relevante'] = 0
-                logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
-            self.__dbm.update_record({'tweet_obj.id_str': tweet['id_str']},tweet_reg)
-            # copy the relevance flag to rts
-            self.__mark_relevance_rt(tweet_reg)
+
+        # Processing by batch as workaround cursor not found error        
+        processed = 0
+
+        while True:
+            search_res = self.__dbm.search(query, only_relevant_tws=False).skip(processed)
+            logging.info('Relevant Tweets: After running query... search_res = {0}'.format(search_res))
+            total_tweets = search_res.count()
+            logging.info('Identifying relevant tweets out of {0} tweets...'.format(total_tweets))
+            tweet_counter = 0
+            try:
+                for doc in search_res: 
+                    tweet_reg = doc
+                    tweet_counter += 1
+                    tweet = tweet_reg['tweet_obj']
+                    if self.is_tweet_relevant(tweet):
+                        tweet_reg['relevante'] = 1
+                        logging.info('Identifying {0}/{1} tweets (relevant)'.format(tweet_counter, total_tweets))
+                    else:
+                        tweet_reg['relevante'] = 0
+                        logging.info('Identifying {0}/{1} tweets (irrelevant)'.format(tweet_counter, total_tweets))
+                    self.__dbm.update_record({'tweet_obj.id_str': tweet['id_str']},tweet_reg)
+                    # copy the relevance flag to rts
+                    self.__mark_relevance_rt(tweet_reg)
+                    processed += 1
+                logging.info('Finished iterating on search_results. Processed {0} records. Closing cursor...'.format(processed))
+                search_res.close()
+                break
+            except Exception as e:
+                logging.info("Lost cursor or other exception. Retry with skip")
+                logging.info("Exception message {0}".format(e))
         return True
 
     # set to 'user' the type of tweets which keyword contains @

@@ -48,7 +48,7 @@ class DBManager:
         if self.__collection == 'tweets':
             if only_relevant_tws:
                 query.update({'relevante': 1})
-        return self.__db[self.__collection].find(query)
+        return self.__db[self.__collection].find(query,no_cursor_timeout=True)
 
     def search_one(self, query, i):
         return self.__db[self.__collection].find(query)[i]
