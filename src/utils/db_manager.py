@@ -7,7 +7,7 @@ import pathlib
 import logging
 
 
-logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class DBManager:
@@ -16,8 +16,8 @@ class DBManager:
     __collection = ''
 
     def __init__(self, collection):
-        #config_fn = str(pathlib.Path.cwd().joinpath('config.json'))
-        config_fn = '/Users/jorgesaldivar/Dropbox/Development/politic-bots/src/config.json'
+        script_parent_dir = pathlib.Path(__file__).parents[1]
+        config_fn = script_parent_dir.joinpath('config.json')
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']
@@ -113,7 +113,11 @@ class DBManager:
             'relevante': {'$eq': 1},
             'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
             'tweet_obj.entities.media': {'$exists': 0},  # don't have media
-            'tweet_obj.entities.urls': {'$size': 0}   # don't have urls
+            '$or': [{'tweet_obj.entities.urls': {'$size': 0}},  # don't have urls
+                    {'tweet_obj.truncated': True},  # are truncated tweets
+                    # are quoted tweets with only one url, which is the original tweet
+                    {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$size': 1}}]},
+                    {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$exists': 0}}]}]
         }
         group = {}
         project = {}
@@ -133,7 +137,14 @@ class DBManager:
             'relevante': {'$eq': 1},
             'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
             'tweet_obj.entities.media': {'$exists': 0},  # don't have media
-            'tweet_obj.entities.urls': {'$ne': []}  # have urls
+            '$and': [
+                {'tweet_obj.entities.urls': {'$ne': []}},  # have urls
+                {'tweet_obj.truncated': False},  # are not truncated tweets
+                {'$or': [
+                    {'tweet_obj.is_quote_status': False},
+                    {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$size': 2}}]}
+                ]}
+                ]
         }
         group = {}
         project = {
@@ -743,8 +754,19 @@ class DBManager:
 
 if __name__ == '__main__':
     db = DBManager('tweets')
-    print('Original tweets {0}'.format(db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}}).count()))
-    print('Plain tweets {0}'.format(len(db.get_plain_tweets())))
-    print('Tweets with links {0}'.format(len(db.get_tweets_with_links())))
-    print('Tweets with photos {0}'.format(len(db.get_tweets_with_photo())))
-    print('Tweets with videos {0}'.format(len(db.get_tweets_with_video())))
+#     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
+#     print('Original tweets {0}'.format(original_tweets.count()))
+#     id_original_tweets = [original_tweet['tweet_obj']['id_str'] for original_tweet in original_tweets]
+#     plain_tweets = db.get_plain_tweets()
+#     print('Plain tweets {0}'.format(len(plain_tweets)))
+#     id_multi_tweets = [tweet['tweet_obj']['id_str'] for tweet in plain_tweets]
+#     link_tweets = db.get_tweets_with_links()
+#     print('Tweets with links {0}'.format(len(link_tweets)))
+#     id_multi_tweets.extend([tweet['tw_obj']['id_str'] for tweet in link_tweets])
+#     photo_tweets = db.get_tweets_with_photo()
+#     print('Tweets with photos {0}'.format(len(photo_tweets)))
+#     id_multi_tweets.extend([tweet['tw_obj']['id_str'] for tweet in photo_tweets])
+#     print('Tweets with videos {0}'.format(len(db.get_tweets_with_video())))
+#     print('Total multimedia tweets: {0}'.format(len(id_multi_tweets)))
+#     not_considered_id_tweets = [id_tweet for id_tweet in id_original_tweets if id_tweet not in id_multi_tweets]
+#     print(not_considered_id_tweets)
