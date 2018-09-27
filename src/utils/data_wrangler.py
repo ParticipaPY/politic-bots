@@ -77,19 +77,19 @@ class TweetEvaluator:
                     return self.__assess_tweet_by_text(tweet['text'])
 
     def __mark_relevance_rt(self, tweet_reg):
+        logging.info('Marking RTS...')
         query = {
             'tweet_obj.retweeted_status': {'$exists': 1},
-            'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']}
+            'tweet_obj.retweeted_status.id_str': {'$eq': tweet_reg['tweet_obj']['id_str']},
+            'relevante': {'$ne': tweet_reg['relevante']}
         }
-        search_res = self.__dbm.search(query, only_relevant_tws=False)
-        # If the search result is not too big and can fit in memory, 
-        # it is better to put it all in memory. This approach fails when there 
-        # memory is limited and the search result is large (as when we iterate over all tweets) 
-        rts = [doc for doc in search_res]
-        logging.info('Marking {0} RTS...'.format(len(rts)))
-        for rt in rts:
-            rt['relevante'] = tweet_reg['relevante']
-            self.__dbm.update_record({'_id': rt['_id']},rt)
+        update = {
+            '$set':{
+                'relevante': tweet_reg['relevante']
+            }
+        }
+        update_res = self.__dbm.update_record_many(query,update)
+        logging.info('Marked {0} RTS...'.format(update_res.matched_count))
 
     def identify_relevant_tweets(self):
         # select only original tweets that are not marked as relevant

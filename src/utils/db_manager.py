@@ -40,6 +40,10 @@ class DBManager:
         return self.__db[self.__collection].update_one(filter_query, {'$set': new_values},
                                                        upsert=create_if_doesnt_exist)
 
+    def update_record_many(self, filter_query, update_query, create_if_doesnt_exist=False):
+        return self.__db[self.__collection].update_many(filter_query, update_query,
+                                                       upsert=create_if_doesnt_exist)
+
     def remove_field(self, filter_query, old_values, create_if_doesnt_exist=False):
         return self.__db[self.__collection].update_one(filter_query, {'$unset': old_values},
                                                        upsert=create_if_doesnt_exist)
