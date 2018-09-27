@@ -2,6 +2,8 @@ from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
 from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+from math import floor
+from math import ceil
 
 import csv
 import logging
@@ -15,6 +17,7 @@ class TweetEvaluator:
     special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
     hashtags, user_handlers = [], []
     __dbm = None
+    BATCH_SIZE = 1000
 
     def __init__(self):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
@@ -89,25 +92,30 @@ class TweetEvaluator:
             self.__dbm.update_record({'_id': rt['_id']},rt)
 
     def identify_relevant_tweets(self):
-        # select only original tweets
+        # select only original tweets that are not marked as relevant
         query = {
             'relevante': {'$exists': 0},
             'tweet_obj.retweeted_status': {'$exists': 0}
         }
-        logging.info('Relevant Tweets: Running query...')
+        logging.info('Relevant Tweets: Running query to count...')
+        # processing by batch as workaround cursor not found error
+        total_tweets = self.__dbm.search(query, only_relevant_tws=False).count()
+        total_batches = ceil(total_tweets/self.BATCH_SIZE)
+        batch = 1
+        moreToProcess = batch<=total_batches
 
-        # Processing by batch as workaround cursor not found error        
-        processed = 0
-
-        while True:
-            search_res = self.__dbm.search(query, only_relevant_tws=False).skip(processed)
-            logging.info('Relevant Tweets: After running query... search_res = {0}'.format(search_res))
-            total_tweets = search_res.count()
-            logging.info('Identifying relevant tweets out of {0} tweets...'.format(total_tweets))
+        while moreToProcess:
+            logging.info('Querying records in batches of {0} records...'.format(self.BATCH_SIZE))
+            search_res = self.__dbm.search(query, only_relevant_tws=False).limit(self.BATCH_SIZE)
+            logging.info('Loading batch {0}/{1} into memory...'.format(batch, total_batches))
+            tweets = [doc for doc in search_res]
+            total_tweets_batch = self.BATCH_SIZE
+            if batch == total_batches:
+                total_tweets_batch = len(tweets)
+            logging.info('Identifying relevant tweets in batch {0}/{1} out of {2} tweets...'.format(batch, total_batches, total_tweets_batch))
             tweet_counter = 0
             try:
-                for doc in search_res: 
-                    tweet_reg = doc
+                for tweet_reg in tweets:
                     tweet_counter += 1
                     tweet = tweet_reg['tweet_obj']
                     if self.is_tweet_relevant(tweet):
@@ -119,13 +127,15 @@ class TweetEvaluator:
                     self.__dbm.update_record({'tweet_obj.id_str': tweet['id_str']},tweet_reg)
                     # copy the relevance flag to rts
                     self.__mark_relevance_rt(tweet_reg)
-                    processed += 1
-                logging.info('Finished iterating on search_results. Processed {0} records. Closing cursor...'.format(processed))
-                search_res.close()
-                break
+
+                logging.info('Finished identifying relevant tweets in batch {0}/{1} out of {2} tweets...'.format(batch, total_batches, total_tweets_batch))
+                batch+=1
+                moreToProcess = batch<=total_batches
             except Exception as e:
-                logging.info("Lost cursor or other exception. Retry with skip")
+                logging.info("Exception occurred...")
                 logging.info("Exception message {0}".format(e))
+
+        logging.info('Finished identifying relevant tweets...')
         return True
 
     # set to 'user' the type of tweets which keyword contains @
