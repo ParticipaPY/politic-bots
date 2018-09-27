@@ -140,8 +140,9 @@ class TweetEvaluator:
     # fix value of candidatura if hashtags related to a candidacy
     # are present in the text of the tweet
     def fix_value_of_candidatura(self):
-        myconf = str(pathlib.Path.cwd().joinpath('config.json'))
-        configuration = get_config(myconf)
+        script_parent_dir = pathlib.Path(__file__).parents[1]
+        config_fn = script_parent_dir.joinpath('config.json')
+        configuration = get_config(config_fn)
         keyword, k_metadata = parse_metadata(configuration['metadata'])
         interested_data = []
         # keep metadata that refer to candidacies
