@@ -3,17 +3,20 @@ import logging
 import requests
 import pathlib
 import time
+import tldextract
 
 from src.utils.utils import get_config, update_config
 from src.utils.db_manager import DBManager
 from cca_core.sentiment_analysis import SentimentAnalyzer
+from collections import defaultdict
 
 
-logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+
+logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class SentimentAnalysis:
-    config_file_name = str(pathlib.Path.cwd().joinpath('config.json'))
+    config_file_name = pathlib.Path(__file__).parents[1].joinpath('config.json')
     config = None
     language = ''
     method = ''
@@ -243,3 +246,62 @@ class SentimentAnalysis:
             }
             ret.append(dic_ret)
         return ret
+
+
+class LinkAnalyzer:
+    tweets_with_links = None
+    db_tweets = None
+    accepted_codes = [200, 201, 202]
+
+    def __init__(self):
+        self.db_tweets = DBManager('tweets')
+
+    def get_domains_and_freq(self, save_to_file=False, **kwargs):
+        self.tweets_with_links = self.db_tweets.get_tweets_with_links(**kwargs)
+        total_tweets = len(self.tweets_with_links)
+        domains_url = defaultdict(list)
+        domains = defaultdict(int)
+        logging.info('Extracting the links of {0} tweets...'.format(total_tweets))
+        tweet_counter = 0
+        for tweet_obj in self.tweets_with_links:
+            tweet = tweet_obj['tw_obj']
+            tweet_counter += 1
+            logging.info('Tweet {0} out of {1}'.format(tweet_counter, total_tweets))
+            if 'entities' in tweet:
+                for url in tweet['entities']['urls']:
+                    tweet_url = url['expanded_url']
+                    logging.info('Analyzing the url {0}'.format(tweet_url))
+                    url_obj = tldextract.extract(tweet_url)
+                    domain_name = url_obj.domain
+                    # overwrite the domain name if some known abbreviations are found
+                    if domain_name == 'fb': domain_name = 'facebook'
+                    if domain_name == 'youtu': domain_name = 'youtube'
+                    if domain_name in domains_url.keys():
+                        domains_url[domain_name].append(tweet_url)
+                        domains[domain_name] += 1
+                        continue
+                    try:
+                        resp = requests.get(tweet_url)
+                        if resp.status_code in self.accepted_codes:
+                            url_obj = tldextract.extract(resp.url)
+                        else:
+                            url_obj = tldextract.extract(tweet_url)
+                    except:
+                        url_obj = tldextract.extract(tweet_url)
+                    domain_name = url_obj.domain
+                    domains_url[domain_name].append(tweet_url)
+                    domains[domain_name] += 1
+            else:
+                logging.info('Tweet without entities {0}'.format(tweet))
+        if save_to_file:
+            # Save results into a json file
+            file_name = pathlib.Path(__file__).parents[2].joinpath('reports', 'tweet_domains.json')
+            with open(file_name, 'w') as fp:
+                json.dump(domains_url, fp, indent=4)
+        return domains_url, sorted(domains.items(), key=lambda k_v: k_v[1], reverse=True)
+
+
+# if __name__ == '__main__':
+#     la = LinkAnalyzer()
+#     domains_url, domains = la.get_domains_and_freq(save_to_file=True)
+#     print(domains)
