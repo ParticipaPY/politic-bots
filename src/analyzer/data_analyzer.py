@@ -7,6 +7,7 @@ import time
 from src.utils.utils import get_config, update_config
 from src.utils.db_manager import DBManager
 from cca_core.sentiment_analysis import SentimentAnalyzer
+from math import ceil
 
 
 logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
@@ -118,6 +119,8 @@ class SentimentAnalysis:
         logging.info('Going to analyze the sentiment of {0} tweets, '
                      'it can take a lot of time, be patient...'.format(tot_reg))
         batch_size = 100
+        total_batches = ceil(tot_reg/batch_size)
+        batch = 0
         tweets_to_analyze = []
         try:
             for current_reg in range(tot_reg):
@@ -131,9 +134,13 @@ class SentimentAnalysis:
                     tweets_to_analyze.append({'id': tweet['id_str'], 'text': tweet_text})
                     if len(tweets_to_analyze) < batch_size:
                         continue
-                logging.info('Analyzing the sentiment of {0} tweets out of {1}...'.format(len(tweets_to_analyze),
-                                                                                          tot_reg))
+                batch += 1
+                logging.info('Analyzing the sentiment of {0} tweets in batch {1}/{2) '
+                             'out of {1} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
                 sentiment_results = self.do_sentiment_analysis(tweets_to_analyze)
+                logging.info('Finished analyzing the sentiment of {0} tweets in batch {1}/{2) '
+                             'out of {1} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
+                logging.info('Updating sentiment scores in database...')
                 tweets_to_analyze = []
                 for sentiment_result in sentiment_results:
                     sentiment_info = sentiment_result['sentimiento']
