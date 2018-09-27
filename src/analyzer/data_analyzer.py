@@ -135,11 +135,11 @@ class SentimentAnalysis:
                     if len(tweets_to_analyze) < batch_size:
                         continue
                 batch += 1
-                logging.info('Analyzing the sentiment of {0} tweets in batch {1}/{2) '
-                             'out of {1} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
+                logging.info('Analyzing the sentiment of {0} tweets in batch {1}/{2} '
+                             'out of {3} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
                 sentiment_results = self.do_sentiment_analysis(tweets_to_analyze)
-                logging.info('Finished analyzing the sentiment of {0} tweets in batch {1}/{2) '
-                             'out of {1} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
+                logging.info('Finished analyzing the sentiment of {0} tweets in batch {1}/{2} '
+                             'out of {3} tweets...'.format(len(tweets_to_analyze),batch, total_batches, tot_reg))
                 logging.info('Updating sentiment scores in database...')
                 tweets_to_analyze = []
                 for sentiment_result in sentiment_results:
