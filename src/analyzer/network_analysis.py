@@ -6,7 +6,7 @@ import logging
 import networkx as net
 import pathlib
 
-logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
 
 class NetworkAnalyzer:
     __dbm_tweets = None
@@ -280,7 +280,7 @@ class NetworkAnalyzer:
 
     def save_network_in_gexf_format(self, file_name):
         today = datetime.strftime(datetime.now(), '%m/%d/%y')
-        f_name = pathlib.Path.cwd().parents[0].joinpath('sna','gefx',file_name+'.gexf')
+        f_name = pathlib.Path(__file__).parents[2].joinpath('sna', 'gefx', file_name+'.gexf')
         with open(f_name, 'w', encoding='utf-8') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" '

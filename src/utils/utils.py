@@ -32,7 +32,9 @@ def parse_metadata(kfile):
 
 
 def get_user_handlers_and_hashtags():
-    configuration = get_config(pathlib.Path.cwd().joinpath('config.json'))
+    script_parent_dir = pathlib.Path(__file__).parents[1]
+    config_fn = script_parent_dir.joinpath('config.json')
+    configuration = get_config(config_fn)
     keywords, _ = parse_metadata(configuration['metadata'])
     user_handlers, hashtags = [], []
     for keyword in keywords:

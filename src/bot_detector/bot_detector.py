@@ -10,7 +10,7 @@ from src.bot_detector.heuristics.simple import *
 from src.utils.utils import parse_date, get_user, get_config
 
 
-logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 class BotDetector:
@@ -20,7 +20,7 @@ class BotDetector:
     __conf = None
 
     def __init__(self):
-        name_config_file = str(pathlib.Path.cwd().joinpath('config.json'))
+        name_config_file = pathlib.Path(__file__).parents[1].joinpath('config.json')
         self.__conf = get_config(name_config_file)
         auth = tweepy.AppAuthHandler(
             self.__conf['twitter']['consumer_key'],

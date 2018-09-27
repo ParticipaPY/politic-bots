@@ -15,11 +15,12 @@ from src.utils.db_manager import DBManager
 from src.utils.data_wrangler import TweetEvaluator
 from src.utils.utils import get_config, parse_metadata
 
-logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+logging.basicConfig(filename=str(pathlib.Path(__file__).parents[0].joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
 def do_tweet_collection():
-    conf_file = str(pathlib.Path.cwd().joinpath('config.json'))
+    script_parent_dir = pathlib.Path(__file__).parents[0]
+    conf_file = script_parent_dir.joinpath('config.json')
     configuration = get_config(conf_file)
     credentials = {'key': configuration['twitter']['consumer_key'],
                    'secret': configuration['twitter']['consumer_secret']}

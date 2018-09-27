@@ -7,7 +7,7 @@ from src.utils.utils import get_config
 # return True if the number of retweets is greater or equal
 # than a defined threshold (e.g., 90%), False otherwise
 def is_retweet_bot(timeline):
-    file_path = str(pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json'))
+    file_path = file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)
     num_tweets = num_rts = 0
     for tweet in timeline:
@@ -58,7 +58,7 @@ def location(user):
 
 # Compute the ratio between followers/friends of a given user
 def followers_ratio(user):
-    file_path = str(pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json'))
+    file_path = file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)
     ratio = float(int(user['followers_count'])/int(user['friends_count']))
     if ratio < config['rff_threshold']:

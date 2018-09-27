@@ -287,7 +287,7 @@ def fake_handlers(data, db_users):
     """
 
     # Get heuristic parameters
-    file_path = str(pathlib.Path.cwd().joinpath('bot_detector', 'heuristics', 'heuristic_config.json'))
+    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)['fake_handler']
 
     ret = __random_account_letter(data)
