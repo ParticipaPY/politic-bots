@@ -756,8 +756,8 @@ class DBManager:
             return False
 
 
-if __name__ == '__main__':
-    db = DBManager('tweets')
+#if __name__ == '__main__':
+#    db = DBManager('tweets')
 #     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
 #     print('Original tweets {0}'.format(original_tweets.count()))
 #     id_original_tweets = [original_tweet['tweet_obj']['id_str'] for original_tweet in original_tweets]
