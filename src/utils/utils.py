@@ -23,7 +23,7 @@ def update_config(config_file, new_data):
 def parse_metadata(kfile):
     keyword = []
     k_metadata = []
-    with open(kfile, 'r', encoding='utf-8') as f:
+    with open(str(kfile), 'r', encoding='utf-8') as f:
         kfile = csv.DictReader(f)
         for line in kfile:
             keyword.append(line['keyword'])
@@ -35,7 +35,8 @@ def get_user_handlers_and_hashtags():
     script_parent_dir = pathlib.Path(__file__).parents[1]
     config_fn = script_parent_dir.joinpath('config.json')
     configuration = get_config(config_fn)
-    keywords, _ = parse_metadata(configuration['metadata'])
+    hashtags_file = script_parent_dir.joinpath('tweet_collector', configuration['metadata'])
+    keywords, _ = parse_metadata(hashtags_file)
     user_handlers, hashtags = [], []
     for keyword in keywords:
         if '@' in keyword:
