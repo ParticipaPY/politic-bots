@@ -1,2 +1,6 @@
 __pycache__/
 src/config.json
+
+env/
+
+*.log

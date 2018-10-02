@@ -508,6 +508,8 @@ class DBManager:
             {'$project': project},
             {'$sort': {'count': -1}}
         ]
+        logging.debug('Getting movements of user with "tweet_obj.user.screen_name" == "{0}"'.format(username))
+        logging.debug('Running query: "{0}"'.format(pipeline))
         user_docs = self.aggregate(pipeline)
         user_movements = defaultdict(int)
         for user_doc in user_docs:

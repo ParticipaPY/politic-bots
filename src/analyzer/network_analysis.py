@@ -147,6 +147,7 @@ class NetworkAnalyzer:
         if clear_collection:
             self.__dbm_users.clear_collection()
         users = self.__dbm_tweets.get_unique_users()
+        logging.info('Extracted {0} unique users from the database...'.format(users.count()))
         for user in users:
             db_user = {
                 'screen_name': user['screen_name'],
