@@ -143,11 +143,13 @@ class NetworkAnalyzer:
         return user_dict
 
     def create_users_db(self, clear_collection=False):
-        logging.info('Creating database of users, it can take several minutes, please wait_')
+        logging.info('::. Network Analyzer: Creating database of users, it can take several minutes, please wait_')
         if clear_collection:
             self.__dbm_users.clear_collection()
         users = self.__dbm_tweets.get_unique_users()
-        logging.info('Extracted {0} unique users from the database...'.format(users.count()))
+        users_count = len(users)
+        logging.info('::. Network Analyzer: Extracted {0} unique users from the database...'.format(users_count))
+        progress = 1
         for user in users:
             db_user = {
                 'screen_name': user['screen_name'],
@@ -163,11 +165,18 @@ class NetworkAnalyzer:
             }
             # Assign the party and movement to the party and movement that are more related to the user
             user_parties = self.__dbm_tweets.get_party_user(user['screen_name'])
-            if len(user_parties) > 0:
+            user_parties_count = len(user_parties) or 0
+            logging.debug('::. Network Analyzer: User {0} has {1} associated parties...'
+                          .format(user['screen_name'],user_parties_count))
+
+            if user_parties_count > 0:
                 user_party = user_parties[0]
                 db_user.update({'party': user_party['partido']})
                 user_movements = self.__dbm_tweets.get_movement_user(user['screen_name'])
-                if len(user_movements) > 0:
+                user_movements_count = len(user_movements) or 0
+                logging.debug('::. Network Analyzer: User {0} has {1} associated movements...'
+                              .format(user['screen_name'], user_movements_count))
+                if user_movements_count > 0:
                     user_movement = user_movements[0]
                     db_user.update({'movement': user_movement['movimiento']})
                 else:
@@ -175,6 +184,9 @@ class NetworkAnalyzer:
             else:
                 db_user.update({'party': '', 'movement': ''})
             filter_query = {'screen_name': user['screen_name']}
+            logging.debug('::. Network Analyzer: Updating/creating user {0} ({1}/{2})...'
+                          .format(user['screen_name'], progress, users_count))
+            progress += 1
             self.__dbm_users.update_record(filter_query, db_user, create_if_doesnt_exist=True)
 
     def generate_network(self, subnet_query={}, depth=1, file_name='network'):
