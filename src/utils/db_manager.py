@@ -79,11 +79,89 @@ class DBManager:
     def aggregate(self, pipeline):
         return [doc for doc in self.__db[self.__collection].aggregate(pipeline, allowDiskUse=True)]
 
-    def get_sentiment_tweets(self, **kwargs):
+    def __add_extra_filters(self, match, **kwargs):
+        if 'partido' in kwargs.keys():
+            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
+        if 'movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+        if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
+            if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
+                match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
+            else:
+                logging.error('The parameter candidate_handler cannot be empty')
+        if 'limited_to_time_window' in kwargs.keys():
+            match.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
+        return match
+
+    def get_original_tweets(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.retweeted_status': {'$exists': 0}  # discard retweets
+            'tweet_obj.retweeted_status': {'$exists': 0},
+            'tweet_obj.in_reply_to_status_id_str': {'$eq': None},
+            'tweet_obj.is_quote_status': False
         }
+        match = self.__add_extra_filters(match, **kwargs)
+        pipeline = [{'$match': match}]
+        return self.aggregate(pipeline)
+
+    def get_retweets(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 1},
+            'tweet_obj.in_reply_to_status_id_str': {'$eq': None},
+            'tweet_obj.is_quote_status': False
+        }
+        match = self.__add_extra_filters(match, **kwargs)
+        pipeline = [{'$match': match}]
+        return self.aggregate(pipeline)
+
+    def get_replies(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.retweeted_status': {'$exists': 0},
+            'tweet_obj.in_reply_to_status_id_str': {'$ne': None},
+            'tweet_obj.is_quote_status': False
+        }
+        match = self.__add_extra_filters(match, **kwargs)
+        pipeline = [{'$match': match}]
+        return self.aggregate(pipeline)
+
+    def get_quotes(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.is_quote_status': True
+        }
+        match = self.__add_extra_filters(match, **kwargs)
+        pipeline = [{'$match': match}]
+        return self.aggregate(pipeline)
+
+    def get_sentiment_tweets(self, type_query='all', **kwargs):
+        if type_query == 'original':
+            match = {
+                'relevante': {'$eq': 1},
+                'tweet_obj.retweeted_status': {'$exists': 0},
+                'tweet_obj.in_reply_to_status_id_str': {'$eq': None},
+                'tweet_obj.is_quote_status': False
+            }
+        elif type_query == 'replies':
+            match = {
+                'relevante': {'$eq': 1},
+                'tweet_obj.retweeted_status': {'$exists': 0},
+                'tweet_obj.in_reply_to_status_id_str': {'$ne': None},
+                'tweet_obj.is_quote_status': False
+            }
+        elif type_query == 'quotes':
+            match = {
+                'relevante': {'$eq': 1},
+                'tweet_obj.is_quote_status': True
+            }
+        else:
+            match = {
+                'relevante': {'$eq': 1},
+                '$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},  # discard retweets
+                        # if retweeted_status exists the tweet should be a quote
+                        {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}}, {'tweet_obj.is_quote_status': True}]}]
+            }
         group = {
             '_id': '$sentimiento.tono',
             'num_tweets': {'$sum': 1}
@@ -115,31 +193,24 @@ class DBManager:
     def get_plain_tweets(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
             'tweet_obj.entities.media': {'$exists': 0},  # don't have media
             '$or': [{'tweet_obj.entities.urls': {'$size': 0}},  # don't have urls
                     {'tweet_obj.truncated': True},  # are truncated tweets
                     # are quoted tweets with only one url, which is the original tweet
                     {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$size': 1}}]},
-                    {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$exists': 0}}]}]
+                    {'$and': [{'tweet_obj.is_quote_status': True}, {'tweet_obj.entities.urls': {'$exists': 0}}]}
+                    ]
         }
-        group = {}
-        project = {}
-        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
-        pipeline = [{'$match': match}]
-        if group:
-            pipeline.append({'$group': group})
-        if project:
-            pipeline.append({'$project': project})
-        result_docs = self.aggregate(pipeline)
-        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
-            return self.update_counts(result_docs, **kwargs)
-        return result_docs
+        match = self.__add_extra_filters(match, **kwargs)
+        filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
+                              {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}},
+                                        {'tweet_obj.is_quote_status': True}]}]}
+        pipeline = [{'$match': match}, {'$match': filter_rts}]
+        return self.aggregate(pipeline)
 
     def get_tweets_with_links(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
             'tweet_obj.entities.media': {'$exists': 0},  # don't have media
             '$and': [
                 {'tweet_obj.entities.urls': {'$ne': []}},  # have urls
@@ -150,64 +221,38 @@ class DBManager:
                 ]}
                 ]
         }
-        group = {}
-        project = {
-            'id': '$tweet_obj.id_str',
-            'tw_obj': '$tweet_obj'
-        }
-        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
-        pipeline = [{'$match': match}]
-        if group:
-            pipeline.append({'$group': group})
-        pipeline.append({'$project': project})
-        result_docs = self.aggregate(pipeline)
-        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
-            return self.update_counts(result_docs, **kwargs)
-        return result_docs
+        match = self.__add_extra_filters(match, **kwargs)
+        filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
+                              {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}},
+                                        {'tweet_obj.is_quote_status': True}]}]}
+        pipeline = [{'$match': match}, {'$match': filter_rts}]
+        return self.aggregate(pipeline)
 
     def get_tweets_with_photo(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.retweeted_status': {'$exists': 0},      # discard retweets
             'tweet_obj.entities.media': {'$ne': []},           # choose tweets with media
             'tweet_obj.entities.media.type': {'$eq': 'photo'}  # choose tweets with photo
         }
-        group = {}
-        project = {
-            'id': '$tweet_obj.id_str',
-            'tw_obj': '$tweet_obj'
-        }
-        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
-        pipeline = [{'$match': match}]
-        if group:
-            pipeline.append({'$group': group})
-        pipeline.append({'$project': project})
-        result_docs = self.aggregate(pipeline)
-        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
-            return self.update_counts(result_docs, **kwargs)
-        return result_docs
+        match = self.__add_extra_filters(match, **kwargs)
+        filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
+                              {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}},
+                                        {'tweet_obj.is_quote_status': True}]}]}
+        pipeline = [{'$match': match}, {'$match': filter_rts}]
+        return self.aggregate(pipeline)
 
     def get_tweets_with_video(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.retweeted_status': {'$exists': 0},  # discard retweets
             'tweet_obj.entities.media': {'$ne': []},  # choose tweets with media
             'tweet_obj.entities.media.type': {'$eq': 'video'}  # choose tweets with photo
         }
-        group = {}
-        project = {
-            'id': '$tweet_obj.id_str',
-            'tw_obj': '$tweet_obj'
-        }
-        match, group, project = self.__update_dicts_with_domain_info(match, group, project, **kwargs)
-        pipeline = [{'$match': match}]
-        if group:
-            pipeline.append({'$group': group})
-        pipeline.append({'$project': project})
-        result_docs = self.aggregate(pipeline)
-        if 'partido' in kwargs.keys() or 'movimiento' in kwargs.keys():
-            return self.update_counts(result_docs, **kwargs)
-        return result_docs
+        match = self.__add_extra_filters(match, **kwargs)
+        filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
+                              {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}},
+                                        {'tweet_obj.is_quote_status': True}]}]}
+        pipeline = [{'$match': match}, {'$match': filter_rts}]
+        return self.aggregate(pipeline)
 
     def __update_dicts_with_domain_info(self, match, group, project, **kwargs):
         if 'partido' in kwargs.keys():
@@ -758,6 +803,7 @@ class DBManager:
 
 #if __name__ == '__main__':
 #    db = DBManager('tweets')
+#    db.get_sentiment_tweets(**{'partido': 'anr'})
 #     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
 #     print('Original tweets {0}'.format(original_tweets.count()))
 #     id_original_tweets = [original_tweet['tweet_obj']['id_str'] for original_tweet in original_tweets]
