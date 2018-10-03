@@ -271,7 +271,7 @@ class LinkAnalyzer:
         logging.info('Extracting the links of {0} tweets...'.format(total_tweets))
         tweet_counter = 0
         for tweet_obj in self.tweets_with_links:
-            tweet = tweet_obj['tw_obj']
+            tweet = tweet_obj['tweet_obj']
             tweet_counter += 1
             logging.info('Tweet {0} out of {1}'.format(tweet_counter, total_tweets))
             if 'entities' in tweet:
