@@ -44,13 +44,13 @@ class BotDetector:
 
     def __get_timeline(self, user_screen_name):
         """
-        Get tweets in the timeline of a given user
+        Get the last 100 tweets in the timeline of a given user
         :param user: user from whom her timeline should be obtained from
         :return: user's timeline
         """
         timeline = []
         try:
-            for status in tweepy.Cursor(self.__api.user_timeline, screen_name=user_screen_name).items():
+            for status in tweepy.Cursor(self.__api.user_timeline, screen_name=user_screen_name).items(100):
                 timeline.append(status._json)
         except tweepy.TweepError:
             pass
@@ -108,7 +108,6 @@ class BotDetector:
                     new_field = {
                         'timeline': timeline_tweets_to_save
                     }
-
                     self.__dbm_users.update_record({'screen_name': user_screen_name}, new_field)
 
         if recompute_heuristics or 'creation_date' not in user_computed_heuristics:
