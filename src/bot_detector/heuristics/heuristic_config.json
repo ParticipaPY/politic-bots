@@ -5,7 +5,7 @@
     "max_prop_interactions_bots": 0.8,
     "max_avg_pbb_freq_contacts": 0.75
   },
-  "fake_handlers": {
+  "fake_handler": {
     "min_num_followers": 5000,
     "name_similarity_threshold": 0.75,
     "max_date": 99991231

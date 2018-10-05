@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import string
 
@@ -9,7 +10,10 @@ CONSONANTS = 'bcdfghjklmnñpqrstvwxyz'
 MIN_YEAR, MAX_MONTH, MAX_DAY = 1000, 12, 31
 
 
-def __db_trustworthy_users(db_users, config):
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+
+
+def __db_trustworthy_users(db_users, db_tweets, config):
     """
     Generate a database of trustworthy users. We trust in the user if she
     has a verified account or has more than X number of followers
@@ -19,17 +23,19 @@ def __db_trustworthy_users(db_users, config):
 
     :return: database of trustworthy users
     """
-    print('Please wait, the trustworthy_users collection is being updated')
-    dbm_trustworthy_users = DBManager('trustworthy_users')
-    for doc in db_users.find_all():
-        data = get_user(db_users, doc['screen_name'])
-        if data['verified'] or int(data['followers_count']) > config['min_num_followers']:
-            if not dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}):
-                dbm_trustworthy_users.save_record({'screen_name': doc['screen_name'], 'name': data['name'],
-                                                   'created_at': data['created_at'],
-                                                   'followers_count': data['followers_count'],
-                                                   'verified': data['verified']})
-    return dbm_trustworthy_users
+    trustworthy_users_db = DBManager('trustworthy_users')
+    if trustworthy_users_db.num_records_collection() == 0:
+        logging.info('The trustworthy_users collection is being created...')
+        for doc in db_users.find_all():
+            data = get_user(db_tweets, doc['screen_name'])
+            if data['verified'] or int(data['followers_count']) > config['min_num_followers']:
+                if not trustworthy_users_db.find_record({'screen_name': data['screen_name']}):
+                    trustworthy_users_db.save_record({'screen_name': doc['screen_name'],
+                                                      'name': data['name'],
+                                                      'created_at': data['created_at'],
+                                                      'followers_count': data['followers_count'],
+                                                      'verified': data['verified']})
+    return trustworthy_users_db
 
 
 def __get_bigrams(s):
@@ -61,10 +67,13 @@ def __string_similarity(str1, str2):
             if x == y:
                 hit_count += 1
                 break
-    return (2.0 * hit_count) / union
+    if union > 0:
+        return (2.0 * hit_count) / union
+    else:
+        return 0
 
 
-def __similar_account_name(data, db_users, config):
+def __similar_account_name(data, db_users, db_tweets, config):
     """
     Check various conditions about the user's name and screen name:
     1. Condition 1: the user and screen name is inside the database of
@@ -85,7 +94,7 @@ def __similar_account_name(data, db_users, config):
     mini_sn = 0.0
     mini_n = 0.0
     # create a database of verified accounts
-    dbm_trustworthy_users = __db_trustworthy_users(db_users, config)
+    dbm_trustworthy_users = __db_trustworthy_users(db_users, db_tweets, config)
     if dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}) and \
        dbm_trustworthy_users.find_record({'name': data['name']}):
         return 0
@@ -129,10 +138,11 @@ def __analyze_name(name):
     vowels_counter = 0
     consonant_counter = 0
     for letter in name:
-        if letter.lower() in VOWELS:
-            vowels_counter += 1
-        else:
-            consonant_counter += 1
+        if letter.isalpha():
+            if letter.lower() in VOWELS:
+                vowels_counter += 1
+            else:
+                consonant_counter += 1
     # if the number of consonants is three times larger than
     # the number of vowels then is likely that name the user
     # has a suspicious name.
@@ -169,7 +179,6 @@ def __random_account_letter(data):
     :return: 1 if the name or screen has random letter, 0 otherwise
     """
     result = __analyze_name(data['screen_name'])
-    result += __analyze_name(data['name'])
     if result >= 1:
         return 1
     else:
@@ -275,7 +284,7 @@ def __random_account_number(data, config):
         return 0
 
 
-def fake_handlers(data, db_users):
+def fake_handlers(data, db_users, db_tweets):
     """
     Check if the user'name and screen name is similar to the name or screen
     name of trustworthy users or if they have strings of random letters or numbers
@@ -292,5 +301,5 @@ def fake_handlers(data, db_users):
 
     ret = __random_account_letter(data)
     ret += __random_account_number(data, config)
-    ret += __similar_account_name(data, db_users, config)
+    ret += __similar_account_name(data, db_users, db_tweets, config)
     return ret

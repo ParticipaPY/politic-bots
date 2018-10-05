@@ -4,7 +4,6 @@ from src.analyzer.network_analysis import NetworkAnalyzer
 
 import ast
 import click
-import os
 
 
 # Taken from
@@ -17,8 +16,8 @@ class ToList(click.Option):
             raise click.BadParameter(value)
 
 
-@click.command()
-@click.option('--users', cls=ToList, help='List of user names to examine', default=[])
+#@click.command()
+#@click.option('--users', cls=ToList, help='List of user names to examine', default=[])
 def run_bot_detector(users):
     # create database of user if it doesn't exist
     users_db = DBManager('users')
@@ -30,7 +29,9 @@ def run_bot_detector(users):
 
 
 if __name__ == "__main__":
-    cd_name = os.path.basename(os.getcwd())
-    if cd_name != 'bot_detector':
-        click.UsageError('Illegal use: this script must run from the bot_detector directory')
-    run_bot_detector()
+    run_bot_detector([])
+
+    #cd_name = os.path.basename(os.getcwd())
+    #if cd_name != 'bot_detector':
+    #    click.UsageError('Illegal use: this script must run from the bot_detector directory')
+    #run_bot_detector()

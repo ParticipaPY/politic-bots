@@ -92,6 +92,9 @@ def parse_date(date):
     return date
 
 
+# Get information about the user, check
+# https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
+# to understand the data of users available in the tweet objects
 def get_user(db, screen_name):
     user = db.search({'tweet_obj.user.screen_name': screen_name})
     user_count = user.count()

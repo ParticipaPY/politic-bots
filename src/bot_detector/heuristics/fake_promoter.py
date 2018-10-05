@@ -27,7 +27,7 @@ def compute_user_interactions(user_screen_name, interactions, config):
         # the least frequent contacts
         if interacted_users_counter <= config['max_num_freq_contacts_to_consider'] and \
            interaction_with != user_screen_name:
-            interactions_with_freq_contacts += interactions_with_freq_contacts
+            interactions_with_freq_contacts += interaction_count
             interacted_users_counter += 1
         # accumulate the total number of interactions
         total_interactions += interaction_count
@@ -52,7 +52,7 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
     """
 
     sums_dict = {}
-    total_interactions = agg_interactions['total_interactions']
+    total_interactions = agg_interactions['total']
     interactions_freq_contacts = agg_interactions['interactions_freq_contacts']
 
     sum_of_interactions, sum_of_pbbs, sum_interactions_weighted_pbbs, sum_interactions_freq_weighted_pbbs = 0, 0, 0, 0
@@ -64,7 +64,11 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
         if interacted_user == user_screen_name:
             continue
         # Get the interacted user's probability of being bot
-        interacted_user_pbb = db_users.find_record({'screen_name': interacted_user})['bot_detector_pbb']
+        interacted_user = db_users.find_record({'screen_name': interacted_user})
+        if interacted_user:
+            interacted_user_pbb = interacted_user['bot_analysis']['pbb']
+        else:
+            interacted_user_pbb = 1
 
         # Compute what fraction of the total no. interactions
         # represents the no. of interactions with the current
@@ -132,7 +136,7 @@ def is_fake_promoter(user_screen_name, db_users, config):
 
     agg_interactions = compute_user_interactions(user_screen_name, user_interactions, config)
 
-    if agg_interactions['total_interactions'] == 0:
+    if agg_interactions['total'] == 0:
         logging.info('The user {} has no interactions. It can\'t be a promoter-bot.'.format(user_screen_name))
         return 0
 
@@ -163,18 +167,12 @@ def fake_promoter(user_screen_name, db_users, method=0):
         raise Exception('Error. Unknown heuristic method {}'.format(method))
 
     # Get heuristic parameters
-    file_path = file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
+    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)['fake_promoter']
 
     prop_interaction_with_bots, avg_pbb_most_freq_contacts = is_fake_promoter(user_screen_name, db_users, config)
 
     if method == 0:
-        if prop_interaction_with_bots >= config['max_prop_interactions_bots']:
-            return 1
-        else:
-            return 0
+        return prop_interaction_with_bots, config['max_prop_interactions_bots']
     else:
-        if avg_pbb_most_freq_contacts >= config['max_avg_pbb_freq_contacts']:
-            return 1
-        else:
-            return 0
+        return avg_pbb_most_freq_contacts, config['max_avg_pbb_freq_contacts']
