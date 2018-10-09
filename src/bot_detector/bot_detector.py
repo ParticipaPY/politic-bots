@@ -1,9 +1,8 @@
-import datetime
 import logging
 import tweepy
 
 from src.utils.db_manager import DBManager
-from src.bot_detector.heuristics.fake_handlers import fake_handlers
+from src.bot_detector.heuristics.fake_handlers import similar_account_name, random_account_letter, random_account_number
 from src.bot_detector.heuristics.fake_promoter import fake_promoter
 from src.bot_detector.heuristics.simple import *
 from src.utils.utils import parse_date, get_user
@@ -25,33 +24,67 @@ class BotDetector:
         auth = tweepy.AppAuthHandler(conf['twitter']['consumer_key'], conf['twitter']['consumer_secret'])
         self.__api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-    def __save_user_pbb(self, user_screen_name, pbb, bot_score, user_bot_features, num_heuristics, exist_user):
+    def __save_user_pbb(self, user_screen_name, pbb, bot_score, user_bot_features, num_heuristics,
+                        sum_weights, exist_user):
         new_fields = {
             'exists': int(exist_user),
             'bot_analysis': {'features': user_bot_features,
                              'pbb': pbb,
-                             'num_heuristics_met': bot_score,
-                             'num_evaluated_heuristics': num_heuristics}
+                             'raw_score': bot_score,
+                             'num_evaluated_heuristics': num_heuristics,
+                             'sum_weights': sum_weights}
         }
         self.__dbm_users.update_record({'screen_name': user_screen_name}, new_fields)
 
     def __check_if_user_exists(self, user_screen_name):
-        try:
-            self.__api.get_user(user_screen_name)
-            return True
-        except tweepy.TweepError:
-            return False
+        user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
+        if 'exists' in user_obj.keys():
+            return int(user_obj['exists'])
+        else:
+            try:
+                self.__api.get_user(user_screen_name)
+                return True
+            except tweepy.TweepError:
+                return False
 
-    def __get_timeline(self, user_screen_name):
+    def __compute_bot_formula(self, user_bot_features, exists_user):
+        name_weights_file = pathlib.Path(__file__).parents[0].joinpath('heuristic_weights.json')
+        weights_file = get_config(name_weights_file)
+        sum_heuristic_values = 0
+        sum_weights = 0
+        for feature_name in user_bot_features.keys():
+            feature_weight = weights_file[feature_name]
+            feature_value = user_bot_features[feature_name]['value']
+            sum_heuristic_values += feature_weight * feature_value
+            sum_weights += feature_weight
+        sum_heuristic_values += weights_file['exists'] * (1-int(exists_user))
+        sum_weights += weights_file['exists']
+        return sum_heuristic_values, sum_weights, sum_heuristic_values/sum_weights
+
+    def __get_timeline(self, user_screen_name, user_tweets):
         """
         Get the last 100 tweets in the timeline of a given user
         :param user: user from whom her timeline should be obtained from
         :return: user's timeline
         """
+        user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
+        if 'timeline' in user_obj.keys():
+            return user_obj['timeline']
+        logging.info('Get the last 100 tweets from Twitter')
         timeline = []
         try:
             for status in tweepy.Cursor(self.__api.user_timeline, screen_name=user_screen_name).items(100):
                 timeline.append(status._json)
+            # save the not electoral tweets of the user's timeline
+            id_electoral_tweets = [tweet['id_str'] for tweet in user_tweets]
+            timeline_tweets_to_save = [tweet for tweet in timeline
+                                       if tweet['id_str'] not in id_electoral_tweets]
+            logging.info('To save {0} not electoral tweets of {1}'.format(len(timeline_tweets_to_save),
+                                                                          user_screen_name))
+            new_field = {
+                'timeline': timeline_tweets_to_save
+            }
+            self.__dbm_users.update_record({'screen_name': user_screen_name}, new_field)
         except tweepy.TweepError:
             pass
         return timeline
@@ -61,58 +94,71 @@ class BotDetector:
         user_tweets = [user_tweet_obj['tweet_obj'] for user_tweet_obj in user_tweets_obj]
         return user_tweets
 
+    def __get_user_info_from_twitter(self, user_screen_name):
+        user_twitter_obj = None
+        try:
+            user_twitter_obj = self.__api.get_user(user_screen_name)
+        except tweepy.TweepError:
+            pass
+        return user_twitter_obj._json
+
+    def __get_computed_heuristics(self, user_screen_name):
+        user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
+        if 'bot_analysis' in user_obj.keys():
+            return user_obj['bot_analysis']['features']
+        else:
+            return None
+
     def __compute_heuristics(self, user_screen_name, recompute_heuristics=False):
         logging.info('\n\nComputing the probability of being bot of the user: {0}\n\n'.format(user_screen_name))
-        user_bot_features = {}
 
         # Check if the user still exists on Twitter
         exist_user = self.__check_if_user_exists(user_screen_name)
 
         # Get the information about the user and her tweets
-        user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
+        user_obj = get_user(self.__dbm_tweets, user_screen_name)
+        if not user_obj:
+            user_obj = self.__get_user_info_from_twitter(user_screen_name)
+            if not user_obj:
+                raise Exception('Error!, Cannot fetch information about the user {0}'.format(user_screen_name))
+
+        if user_obj['verified']:
+            # It is a verified account, it cannot be bot
+            logging.info('The user {0} is an account verified by Twitter, it cannot be a bot'.format(user_screen_name))
+            self.__save_user_pbb(user_screen_name, 0, 0, None, 0, 0, exist_user)
+            return
+
+        # Get tweets of the user
         user_tweets = self.__get_tweets_user(user_screen_name)
 
-        user_computed_heuristics = []
-        if 'bot_analysis' in user_obj.keys():
-            user_computed_heuristics = user_obj['bot_analysis']['features'].keys()
+        # Get the computed heuristics
+        user_bot_features = self.__get_computed_heuristics(user_screen_name)
+        if user_bot_features:
+            user_computed_heuristics = user_bot_features.keys()
+        else:
+            user_computed_heuristics = []
 
         if recompute_heuristics or 'retweet_electoral' not in user_computed_heuristics:
-            # Compute the percentage of retweets in the electoral tweets
-            per_rt, rt_threshold = is_retweet_bot(user_tweets)
-            user_bot_features['retweet_electoral'] = {
-                'raw_value': per_rt,
-                'threshold': rt_threshold,
-                'value': 1 if per_rt > rt_threshold else 0
-            }
+            if user_tweets:
+                # Compute the percentage of retweets in the electoral tweets
+                per_rt = is_retweet_bot(user_tweets)
+                user_bot_features['retweet_electoral'] = {
+                    'value': per_rt
+                }
 
         if recompute_heuristics or 'retweet_timeline' not in user_computed_heuristics:
             # Compute the percentage of retweets in the user's timeline
             if exist_user:
                 # If the user still exists on Twitter, get her timeline
-                user_timeline = self.__get_timeline(user_screen_name)
+                user_timeline = self.__get_timeline(user_screen_name, user_tweets)
                 if user_timeline:
-                    logging.info('The user {0} has {1} tweets in her timeline'.format(user_screen_name,
-                                                                                      len(user_timeline)))
-                    per_rt, rt_threshold = is_retweet_bot(user_timeline)
+                    per_rt = is_retweet_bot(user_timeline)
                     user_bot_features['retweet_timeline'] = {
-                        'raw_value': per_rt,
-                        'threshold': rt_threshold,
-                        'value': int(per_rt > rt_threshold)
+                        'value': per_rt
                     }
-                    # save the not electoral tweets of the user's timeline
-                    id_electoral_tweets = [tweet['id_str'] for tweet in user_tweets]
-                    timeline_tweets_to_save = [tweet for tweet in user_timeline
-                                               if tweet['id_str'] not in id_electoral_tweets]
-                    logging.info('To save {0} not electoral tweets of {1}'.format(len(timeline_tweets_to_save),
-                                                                                  user_screen_name))
-                    new_field = {
-                        'timeline': timeline_tweets_to_save
-                    }
-                    self.__dbm_users.update_record({'screen_name': user_screen_name}, new_field)
 
         if recompute_heuristics or 'creation_date' not in user_computed_heuristics:
             # Check the user's creation year
-            user_obj = get_user(self.__dbm_tweets, user_screen_name)
             extraction_date = self.__dbm_tweets.find_record({})['extraction_date']
             electoral_year = int('20' + extraction_date.split('/')[2])
             user_bot_features['creation_date'] = {
@@ -151,66 +197,81 @@ class BotDetector:
 
         if recompute_heuristics or 'ff_ratio' not in user_computed_heuristics:
             # Check the user's following followers ratio
-            ratio, ff_threshold = followers_ratio(user_obj)
+            ratio = followers_ratio(user_obj)
             user_bot_features['ff_ratio'] = {
-                'raw_value': ratio,
-                'threshold': ff_threshold,
-                'value': int(ratio < ff_threshold)
+                'value': ratio
             }
 
-        if recompute_heuristics or 'fake_handler' not in user_computed_heuristics:
-            # Check if the user has a fake handler
-            fh = fake_handlers(user_obj, self.__dbm_users, self.__dbm_tweets)
-            user_bot_features['fake_handler'] = {
-                'raw_value': fh,
-                'value': int(fh > 0)
+        if recompute_heuristics or 'random_letters' not in user_computed_heuristics:
+            rl_value = random_account_letter(user_obj)
+            user_bot_features['random_letters'] = {
+                'value': rl_value
+            }
+
+        if recompute_heuristics or 'random_numbers' not in user_computed_heuristics:
+            rn_value = random_account_number(user_obj)
+            user_bot_features['random_numbers'] = {
+                'value': rn_value
+            }
+
+        if recompute_heuristics or 'similar_account' not in user_computed_heuristics:
+            similarity_score = similar_account_name(user_obj, self.__dbm_users, self.__dbm_tweets)
+            user_bot_features['similar_account'] = {
+                'value': similarity_score
             }
 
         # Compute the user's probability of being bot
-        bot_score = 0
         num_computed_heuristics = len(user_bot_features.keys())
-        for key in user_bot_features.keys():
-            bot_score += user_bot_features[key]['value']
-        pbb = bot_score/num_computed_heuristics
+        bot_score, sum_weights, pbb = self.__compute_bot_formula(user_bot_features, exist_user)
 
-        self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features, num_computed_heuristics, exist_user)
+        self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features,
+                             num_computed_heuristics, sum_weights, exist_user)
         logging.info('\n\nThere are a {0}% of probability that the user {1} '
                      'would be a bot\n\n'.format(round(pbb * 100, 2), user_screen_name))
         return
 
     def __check_heuristic_fake_promoter(self, users):
+        name_weights_file = pathlib.Path(__file__).parents[0].joinpath('heuristic_weights.json')
+        weights_file = get_config(name_weights_file)
+
         for user_screen_name in users:
             user_obj = self.__dbm_users.search({'screen_name': user_screen_name})
             user_bot_features = user_obj['bot_analysis']['features']
             # Check if the user interacts with bot accounts
-            fp, fp_threshold = fake_promoter(user_screen_name, self.__dbm_users)
-            user_bot_features['fake_handler'] = {
-                'raw_value': fp,
-                'threhold': fp_threshold,
-                'value': int(fp > fp_threshold)
+            fp = fake_promoter(user_screen_name, self.__dbm_users)
+            user_bot_features['fake_promoter'] = {
+                'value': fp
             }
-            bot_score = user_obj['bot_analysis']['num_heuristics_met']
-            bot_score += user_bot_features['fake_handler']['value']
+            bot_score = user_obj['bot_analysis']['raw_score']
+            bot_score += user_bot_features['fake_handler']['value'] * weights_file['fake_promoter']
             heuristics = user_obj['bot_analysis']['num_evaluated_heuristics']
             heuristics += 1
-            pbb = bot_score/heuristics
+            sum_weights = user_obj['bot_analysis']['sum_weights']
+            sum_weights += weights_file['fake_promoter']
+            pbb = bot_score/sum_weights
             exist_user = user_obj['exists']
-            self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features, heuristics, exist_user)
+            self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features, heuristics, sum_weights,
+                                 exist_user)
 
     def compute_bot_probability(self, users):
         num_implemented_heuristics = 9
         if not users:
             # Get all users who don't have the analysis of bot or those who have been evaluated by less than
             # the number of implemented heuristics (10 so far)
-            users_obj = self.__dbm_users.search(
-                {'$or': [{'bot_analysis': {'$exists': 0}},
-                         {'$and': [{'bot_analysis': {'$exists': 1}},
-                                   {'bot_analysis.num_evaluated_heuristics': {'$lt': num_implemented_heuristics}}]}]}
-            )
-            users = [user_obj['screen_name'] for user_obj in users_obj]
-        #for i in range(100):
+            #users_obj = self.__dbm_users.search(
+            #   {'$or': [{'bot_analysis': {'$exists': 0}},
+            #            {'$and': [{'bot_analysis': {'$exists': 1}},
+            #                      {'bot_analysis.num_evaluated_heuristics': {'$lt': num_implemented_heuristics}}]}]}
+            #)
+            users = self.__dbm_users.search({'bot_analysis.raw_score': {'$exists': 0}})
+
+        tot_user = users.count()
+        idx_user = 1
         for user in users:
-            self.__compute_heuristics(user)
+            logging.info('User {0}/{1}'.format(idx_user, tot_user))
+            self.__compute_heuristics(user['screen_name'])
+            idx_user += 1
+
         # This heuristic is based on the users' probability of being bot (pbb), so it has to be computed
         # after all of the users have assigned their pbb
         # self.__check_heuristic_fake_promoter(users)
