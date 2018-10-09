@@ -1,0 +1,16 @@
+{
+  "retweet_electoral": 4,
+  "retweet_timeline": 4,
+  "creation_date": 2,
+  "default_profile": 1.5,
+  "default_profile_picture": 1.5,
+  "default_background": 1.5,
+  "empty_description": 1.5,
+  "location": 1,
+  "ff_ratio": 3,
+  "random_letters": 2,
+  "random_numbers": 2,
+  "similar_account": 2.5,
+  "exists": 2,
+  "fake_promoter": 3
+}
