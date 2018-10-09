@@ -73,12 +73,12 @@ def __string_similarity(str1, str2):
         return 0
 
 
-def __similar_account_name(data, db_users, db_tweets, config):
+def similar_account_name(data, db_users, db_tweets):
     """
     Check various conditions about the user's name and screen name:
     1. Condition 1: the user and screen name is inside the database of
     trustworthy users
-    2. Condition 2: the user's name and screen name is a variant of
+    2. Condition 2: the user's name and screen name is a variation of
     a trustworthy user (like john and john jr)
     3. Condition 3: the user uses a name or screen names that is part of the
     name or screen name of a trustworthy user
@@ -92,8 +92,12 @@ def __similar_account_name(data, db_users, db_tweets, config):
     :return: 1 if condition 2, 3, or 4 is met 0 otherwise
     """
     mini_sn = 0.0
-    mini_n = 0.0
-    # create a database of verified accounts
+
+    # Get heuristic parameters
+    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
+    config = get_config(file_path)['fake_handler']
+
+    # create a database of "trustworthy" accounts
     dbm_trustworthy_users = __db_trustworthy_users(db_users, db_tweets, config)
     if dbm_trustworthy_users.find_record({'screen_name': data['screen_name']}) and \
        dbm_trustworthy_users.find_record({'name': data['name']}):
@@ -105,22 +109,14 @@ def __similar_account_name(data, db_users, db_tweets, config):
         dbm_trustworthy_users.find_record({'screen_name': data['screen_name'].replace('junior', '')}):
         return 1
     else:
+        # check against the database of trustworthy users
         for doc in dbm_trustworthy_users.find_all():
             dist_sn = __string_similarity(doc['screen_name'], data['screen_name'])
-            dist_n = __string_similarity(doc['name'], data['name'])
             if doc['name'] in data['screen_name'] or doc['screen_name'] in data['screen_name']:
-                return 1
-            if doc['name'] in data['name'] or doc['screen_name'] in data['name']:
                 return 1
             if mini_sn < dist_sn:
                 mini_sn = dist_sn
-            if mini_n < dist_n:
-                mini_n = dist_n
-        if mini_n > config['name_similarity_threshold'] or \
-           mini_sn > config['name_similarity_threshold']:
-            return 1
-        else:
-            return 0
+        return mini_sn
 
 
 def __analyze_name(name):
@@ -170,7 +166,7 @@ def __analyze_name(name):
     return bot_prob
 
 
-def __random_account_letter(data):
+def random_account_letter(data):
     """
     Verify if user's name and screen name has strings of
     random letters
@@ -217,7 +213,7 @@ def __parse_number_date_ddmmyyyy(number, len_number):
     return day, month, year
 
 
-def __random_account_number(data, config):
+def random_account_number(data):
     """
         Verify if user's name and screen name has strings of
         random numbers
@@ -227,6 +223,11 @@ def __random_account_number(data, config):
 
         :return: 1 if the name or screen has random numbers, 0 otherwise
         """
+
+    # Get heuristic parameters
+    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
+    config = get_config(file_path)['fake_handler']
+
     bot_prob = 0
     # random numbers
     # verify if the screen_name is composed of only of numbers
@@ -299,7 +300,5 @@ def fake_handlers(data, db_users, db_tweets):
     file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)['fake_handler']
 
-    ret = __random_account_letter(data)
-    ret += __random_account_number(data, config)
-    ret += __similar_account_name(data, db_users, db_tweets, config)
-    return ret
+    return similar_account_name(data, db_users, db_tweets, config)
+

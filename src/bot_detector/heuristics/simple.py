@@ -20,7 +20,7 @@ def is_retweet_bot(user_tweets):
             num_rts += 1
     # If it doesn't have any tweets, can't be a RT-bot
     per_rts = num_rts / num_tweets if num_tweets > 0 else -1
-    return per_rts, config['rt_threshold']
+    return per_rts
 
 
 # Check when the account was created
@@ -57,5 +57,8 @@ def location(user):
 def followers_ratio(user):
     file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
     config = get_config(file_path)['ratio_followers_followees']
-    ratio = float(int(user['followers_count'])/int(user['friends_count']))
-    return ratio, config['rff_threshold']
+    if int(user['friends_count']) > 0:
+        ratio = float(int(user['followers_count'])/int(user['friends_count']))
+    else:
+        ratio = 0
+    return ratio

@@ -68,7 +68,7 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
         if interacted_user:
             interacted_user_pbb = interacted_user['bot_analysis']['pbb']
         else:
-            interacted_user_pbb = 1
+            interacted_user_pbb = 0
 
         # Compute what fraction of the total no. interactions
         # represents the no. of interactions with the current
@@ -173,6 +173,6 @@ def fake_promoter(user_screen_name, db_users, method=0):
     prop_interaction_with_bots, avg_pbb_most_freq_contacts = is_fake_promoter(user_screen_name, db_users, config)
 
     if method == 0:
-        return prop_interaction_with_bots, config['max_prop_interactions_bots']
+        return prop_interaction_with_bots
     else:
-        return avg_pbb_most_freq_contacts, config['max_avg_pbb_freq_contacts']
+        return avg_pbb_most_freq_contacts
