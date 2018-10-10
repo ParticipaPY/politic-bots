@@ -4,11 +4,7 @@ from src.utils.utils import get_config
 
 
 # Check the number of retweets in a given timeline
-# return True if the number of retweets is greater or equal
-# than a defined threshold (e.g., 90%), False otherwise
 def is_retweet_bot(user_tweets):
-    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
-    config = get_config(file_path)['retweet_bot']
     num_tweets = num_rts = 0
     for tweet in user_tweets:
         num_tweets += 1
@@ -21,6 +17,18 @@ def is_retweet_bot(user_tweets):
     # If it doesn't have any tweets, can't be a RT-bot
     per_rts = num_rts / num_tweets if num_tweets > 0 else -1
     return per_rts
+
+
+# Check the number of retweets in a given timeline
+def reply_percentage(user_tweets):
+    num_tweets = num_rps = 0
+    for tweet in user_tweets:
+        num_tweets += 1
+        if tweet['in_reply_to_status_id_str']:
+            num_rps += 1
+    # If it doesn't have any tweets, can't be a RT-bot
+    per_rps = num_rps / num_tweets if num_tweets > 0 else -1
+    return per_rps
 
 
 # Check when the account was created

@@ -1,6 +1,8 @@
 {
   "retweet_electoral": 4,
   "retweet_timeline": 4,
+  "reply_electoral": 2.5,
+  "reply_timeline": 2.5,
   "creation_date": 2,
   "default_profile": 1.5,
   "default_profile_picture": 1.5,
