@@ -55,10 +55,8 @@ def location(user):
 
 # Compute the ratio between followers/friends of a given user
 def followers_ratio(user):
-    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
-    config = get_config(file_path)['ratio_followers_followees']
-    if int(user['friends_count']) > 0:
-        ratio = float(int(user['followers_count'])/int(user['friends_count']))
+    if int(user['followers_count']) > 0:
+        ratio = float(int(user['friends_count'])/int(user['followers_count']))
     else:
-        ratio = 0
+        ratio = int(user['friends_count'])
     return ratio
