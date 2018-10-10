@@ -1,3 +1,4 @@
+import csv
 import logging
 import tweepy
 
@@ -226,16 +227,19 @@ class BotDetector:
 
         self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features,
                              num_computed_heuristics, sum_weights, exist_user)
-        logging.info('\n\nThere are a {0}% of probability that the user {1} '
-                     'would be a bot\n\n'.format(round(pbb * 100, 2), user_screen_name))
+        logging.info('\n\nThe bot score of {0} is {1}\n\n'.format(user_screen_name, bot_score))
         return
 
-    def __check_heuristic_fake_promoter(self, users):
+    def compute_fake_promoter_heuristic(self, users):
         name_weights_file = pathlib.Path(__file__).parents[0].joinpath('heuristic_weights.json')
         weights_file = get_config(name_weights_file)
 
-        for user_screen_name in users:
-            user_obj = self.__dbm_users.search({'screen_name': user_screen_name})
+        if not users:
+            users = self.__dbm_users.search({'bot_analysis.features.fake_promoter': {'$exists': 0}})
+
+        for user in users:
+            user_screen_name = user['screen_name']
+            user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
             user_bot_features = user_obj['bot_analysis']['features']
             # Check if the user interacts with bot accounts
             fp = fake_promoter(user_screen_name, self.__dbm_users)
@@ -243,35 +247,62 @@ class BotDetector:
                 'value': fp
             }
             bot_score = user_obj['bot_analysis']['raw_score']
-            bot_score += user_bot_features['fake_handler']['value'] * weights_file['fake_promoter']
-            heuristics = user_obj['bot_analysis']['num_evaluated_heuristics']
-            heuristics += 1
-            sum_weights = user_obj['bot_analysis']['sum_weights']
-            sum_weights += weights_file['fake_promoter']
+            bot_score += user_bot_features['fake_promoter']['value'] * weights_file['fake_promoter']
+            heuristics = user_obj['bot_analysis']['num_evaluated_heuristics'] + 1
+            sum_weights = user_obj['bot_analysis']['sum_weights'] + weights_file['fake_promoter']
             pbb = bot_score/sum_weights
             exist_user = user_obj['exists']
             self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features, heuristics, sum_weights,
                                  exist_user)
 
     def compute_bot_probability(self, users):
-        num_implemented_heuristics = 9
         if not users:
-            # Get all users who don't have the analysis of bot or those who have been evaluated by less than
-            # the number of implemented heuristics (10 so far)
-            #users_obj = self.__dbm_users.search(
-            #   {'$or': [{'bot_analysis': {'$exists': 0}},
-            #            {'$and': [{'bot_analysis': {'$exists': 1}},
-            #                      {'bot_analysis.num_evaluated_heuristics': {'$lt': num_implemented_heuristics}}]}]}
-            #)
-            users = self.__dbm_users.search({'bot_analysis.raw_score': {'$exists': 0}})
+            # Get all users who don't have the analysis of bot
+            users = self.__dbm_users.search({'bot_analysis': {'$exists': 0}})
 
         tot_user = users.count()
         idx_user = 1
         for user in users:
-            logging.info('User {0}/{1}'.format(idx_user, tot_user))
+            logging.info('Remaining users: {0}'.format(tot_user-idx_user))
             self.__compute_heuristics(user['screen_name'])
             idx_user += 1
 
-        # This heuristic is based on the users' probability of being bot (pbb), so it has to be computed
-        # after all of the users have assigned their pbb
-        # self.__check_heuristic_fake_promoter(users)
+    def to_csv(self, output_file_name, include_verified_accounts=True):
+        if not include_verified_accounts:
+            query = {'bot_analysis': {'$exists': 1}, 'verified': {'$eq': False}}
+        else:
+            query = {'bot_analysis': {'$exists': 1}}
+        users = self.__dbm_users.search(query)
+        f_name = str(pathlib.Path(__file__).parents[2].joinpath('data',output_file_name))
+        logging.info('Saving bot analysis into the csv file {0}'.format(f_name))
+        with open(f_name, 'w', encoding='utf-8') as f:
+            user_info_fields = ['screen_name', 'profile_url', 'party', 'movement', 'exists', 'followers',
+                                'friends', 'tweets', 'rts', 'verified']
+            bot_analysis_fields = ['location', 'default_profile_picture', 'retweet_electoral',
+                                   'default_background', 'similar_account', 'random_numbers', 'ff_ratio',
+                                   'random_letters', 'default_profile', 'creation_date', 'empty_description',
+                                   'retweet_timeline', 'raw_score', 'sum_weights', 'pbb']
+            writer = csv.DictWriter(f, fieldnames=user_info_fields+bot_analysis_fields)
+            writer.writeheader()
+            tot_users = users.count()
+            logging.info('Going to save the information of the bot analysis of {0} users'.format(tot_users))
+            idx_user = 1
+            for user in users:
+                logging.info('Remaining users: {0}'.format(tot_users - idx_user))
+                row_dict = {}
+                for field_name in bot_analysis_fields:
+                    if field_name in user['bot_analysis']['features'].keys():
+                        row_dict[field_name] = user['bot_analysis']['features'][field_name]['value']
+                    elif field_name in user['bot_analysis'].keys():
+                        row_dict[field_name] = user['bot_analysis'][field_name]
+                for field_name in user_info_fields:
+                    if field_name == 'profile_url':
+                        continue
+                    row_dict[field_name] = user[field_name]
+                if user['exists']:
+                    row_dict['profile_url'] = 'https://twitter.com/' + user['screen_name']
+                else:
+                    row_dict['profile_url'] = ' '
+                writer.writerow(row_dict)
+                idx_user += 1
+        logging.info('The saving process has finished, please check the file {0}'.format(f_name))
