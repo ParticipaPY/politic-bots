@@ -68,7 +68,7 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
         if interacted_user:
             interacted_user_pbb = interacted_user['bot_analysis']['pbb']
         else:
-            interacted_user_pbb = 0
+            continue
 
         # Compute what fraction of the total no. interactions
         # represents the no. of interactions with the current
@@ -79,12 +79,6 @@ def __compute_sums_totals(user_screen_name, user_interactions, agg_interactions,
         # with the most NUM_INTERACTED_USERS_HEUR interacted users
         # represents the no. of interactions with the current interacted user.
         prop_interactions_freq = num_interactions/interactions_freq_contacts
-
-        logging.info('{}, {}: {}% from total, {}% from {} of the most frequent interacted users. '
-                     'bot_detector_pbb: {}'.format(interacted_user, num_interactions, prop_interactions*100,
-                                                   prop_interactions_freq*100,
-                                                   config['max_num_freq_contacts_to_consider'],
-                                                   interacted_user_pbb))
 
         # Weight the probability of being bot of the current interacted user
         # using as weight the proportion of interactions of the current interacted
@@ -130,15 +124,18 @@ def is_fake_promoter(user_screen_name, db_users, config):
     network_analyzer = NetworkAnalyzer()
 
     # Get information about the interactions started by the user
+    user_out_interactions = network_analyzer.get_out_interactions(user_screen_name)["out_interactions"]["total"]["details"]
+    sorted_out_interactions = [k for k in sorted(user_out_interactions.items(), key=lambda k_v: k_v[1], reverse=True)]
+
     user_interactions = [(interaction_with, interaction_count)
-      for interaction_with, interaction_count in
-                    network_analyzer.get_interactions(user_screen_name)["out_interactions"]["total"]["details"]]
+                         for interaction_with, interaction_count in sorted_out_interactions]
+
 
     agg_interactions = compute_user_interactions(user_screen_name, user_interactions, config)
 
     if agg_interactions['total'] == 0:
         logging.info('The user {} has no interactions. It can\'t be a promoter-bot.'.format(user_screen_name))
-        return 0
+        return 0, 0
 
     sums_inter = __compute_sums_totals(user_screen_name, user_interactions, agg_interactions, db_users, config)
 
