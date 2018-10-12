@@ -1,7 +1,7 @@
 {
   "fake_promoter": {
     "max_num_freq_contacts_to_consider": 20,
-    "threshold_prob_bot": 0.85,
+    "threshold_prob_bot": 0.87,
     "max_prop_interactions_bots": 0.8,
     "max_avg_pbb_freq_contacts": 0.75
   },
