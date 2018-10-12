@@ -113,8 +113,15 @@ class BotDetector:
     def __compute_heuristics(self, user_screen_name, recompute_heuristics=False):
         logging.info('\n\nComputing the probability of being bot of the user: {0}\n\n'.format(user_screen_name))
 
+        # Get tweets of the user
+        user_tweets = self.__get_tweets_user(user_screen_name)
+
         # Check if the user still exists on Twitter
         exist_user = self.__check_if_user_exists(user_screen_name)
+        user_timeline = None
+        if exist_user:
+            # If the user still exists on Twitter, get her timeline
+            user_timeline = self.__get_timeline(user_screen_name, user_tweets)
 
         # Get the information about the user and her tweets
         user_obj = get_user(self.__dbm_tweets, user_screen_name)
@@ -128,9 +135,6 @@ class BotDetector:
             logging.info('The user {0} is an account verified by Twitter, it cannot be a bot'.format(user_screen_name))
             self.__save_user_pbb(user_screen_name, 0, 0, None, 0, 0, exist_user)
             return
-
-        # Get tweets of the user
-        user_tweets = self.__get_tweets_user(user_screen_name)
 
         # Get the computed heuristics
         user_bot_features = self.__get_computed_heuristics(user_screen_name)
@@ -147,16 +151,28 @@ class BotDetector:
                     'value': per_rt
                 }
 
+        if recompute_heuristics or 'reply_electoral' not in user_computed_heuristics:
+            if user_tweets:
+                # Compute the percentage of replies in the electoral tweets
+                per_rp = reply_percentage(user_tweets)
+                user_bot_features['reply_electoral'] = {
+                    'value': per_rp
+                }
+
         if recompute_heuristics or 'retweet_timeline' not in user_computed_heuristics:
             # Compute the percentage of retweets in the user's timeline
-            if exist_user:
-                # If the user still exists on Twitter, get her timeline
-                user_timeline = self.__get_timeline(user_screen_name, user_tweets)
                 if user_timeline:
                     per_rt = is_retweet_bot(user_timeline)
                     user_bot_features['retweet_timeline'] = {
                         'value': per_rt
                     }
+
+        if recompute_heuristics or 'reply_timeline' not in user_computed_heuristics:
+            if user_timeline:
+                per_rp = reply_percentage(user_timeline)
+                user_bot_features['reply_timeline'] = {
+                    'value': per_rp
+                }
 
         if recompute_heuristics or 'creation_date' not in user_computed_heuristics:
             # Check the user's creation year
@@ -235,14 +251,19 @@ class BotDetector:
         weights_file = get_config(name_weights_file)
 
         if not users:
-            users = self.__dbm_users.search({'bot_analysis.features.fake_promoter': {'$exists': 0}})
+            users = self.__dbm_users.search({'bot_analysis.features.fake_promoter': {'$exists': 0},
+                                             'verified': {'$ne': True}})
 
+        tot_user = users.count()
+        idx_user = 1
         for user in users:
+            logging.info('Remaining users: {0}'.format(tot_user - idx_user))
             user_screen_name = user['screen_name']
             user_obj = self.__dbm_users.search({'screen_name': user_screen_name})[0]
             user_bot_features = user_obj['bot_analysis']['features']
             # Check if the user interacts with bot accounts
             fp = fake_promoter(user_screen_name, self.__dbm_users)
+            logging.info('User: {0}, fake promoter score: {1}'.format(user_screen_name, fp))
             user_bot_features['fake_promoter'] = {
                 'value': fp
             }
@@ -254,22 +275,27 @@ class BotDetector:
             exist_user = user_obj['exists']
             self.__save_user_pbb(user_screen_name, pbb, bot_score, user_bot_features, heuristics, sum_weights,
                                  exist_user)
+            idx_user += 1
 
     def compute_bot_probability(self, users):
         if not users:
             # Get all users who don't have the analysis of bot
             users = self.__dbm_users.search({'bot_analysis': {'$exists': 0}})
 
-        tot_user = users.count()
+        tot_user = len(users) if type(users) == list else users.count()
         idx_user = 1
         for user in users:
             logging.info('Remaining users: {0}'.format(tot_user-idx_user))
-            self.__compute_heuristics(user['screen_name'])
+            if type(users) == list:
+                user_screen_name = user
+            else:
+                user_screen_name = user['screen_name']
+            self.__compute_heuristics(user_screen_name)
             idx_user += 1
 
     def to_csv(self, output_file_name, include_verified_accounts=True):
         if not include_verified_accounts:
-            query = {'bot_analysis': {'$exists': 1}, 'verified': {'$eq': False}}
+            query = {'bot_analysis': {'$exists': 1}, 'verified': {'$ne': True}}
         else:
             query = {'bot_analysis': {'$exists': 1}}
         users = self.__dbm_users.search(query)
@@ -277,11 +303,12 @@ class BotDetector:
         logging.info('Saving bot analysis into the csv file {0}'.format(f_name))
         with open(f_name, 'w', encoding='utf-8') as f:
             user_info_fields = ['screen_name', 'profile_url', 'party', 'movement', 'exists', 'followers',
-                                'friends', 'tweets', 'rts', 'verified']
+                                'friends', 'tweets', 'rts', 'rps', 'verified']
             bot_analysis_fields = ['location', 'default_profile_picture', 'retweet_electoral',
                                    'default_background', 'similar_account', 'random_numbers', 'ff_ratio',
                                    'random_letters', 'default_profile', 'creation_date', 'empty_description',
-                                   'retweet_timeline', 'raw_score', 'sum_weights', 'pbb']
+                                   'retweet_timeline', 'reply_electoral', 'reply_timeline', 'fake_promoter',
+                                   'raw_score', 'sum_weights', 'pbb']
             writer = csv.DictWriter(f, fieldnames=user_info_fields+bot_analysis_fields)
             writer.writeheader()
             tot_users = users.count()
