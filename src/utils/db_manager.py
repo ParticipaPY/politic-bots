@@ -774,6 +774,17 @@ class DBManager:
             match.update({'movement': {'$eq': kwargs['movimiento']}})
         pipeline = [
             {'$match': match},
+            {'$project': {
+                'screen_name': '$screen_name',
+                'tweets': '$tweets',
+                'original_tweets': '$original_tweets',
+                'rts': '$rts',
+                'qts': '$qts',
+                'rps': '$rps',
+                'followers': '$followers',
+                'friends': '$friends',
+                'pbb': '$bot_analysis.pbb'
+            }},
             {'$sort': {'tweets': -1}}
         ]
         return self.aggregate(pipeline)
@@ -805,7 +816,9 @@ class DBManager:
 
 
 #if __name__ == '__main__':
-#    db = DBManager('tweets')
+#    db = DBManager('users')
+#    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
+#    pass
 #    db.get_sentiment_tweets(**{'partido': 'anr'})
 #     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
 #     print('Original tweets {0}'.format(original_tweets.count()))
