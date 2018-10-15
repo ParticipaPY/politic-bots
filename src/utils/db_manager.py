@@ -789,6 +789,35 @@ class DBManager:
         ]
         return self.aggregate(pipeline)
 
+    def get_posting_frequency_in_seconds(self, **kwargs):
+        match = {'relevante': {'$eq': 1}}
+        if 'partido' in kwargs.keys():
+            match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
+        if 'movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+        pipeline = [
+            {'$match': match},
+            {'$project': {
+               'id_str': '$tweet_obj.id_str',
+               'datetime': {'$dateFromString': {
+                    'dateString': '$tweet_py_datetime'
+                }},
+               '_id': 0,
+            }},
+            {'$sort': {'datetime': 1}}
+        ]
+        ret_agg = self.aggregate(pipeline)
+        previous_dt = None
+        for tweet in ret_agg:
+            if not previous_dt:
+                previous_dt = tweet['datetime']
+                tweet['diff_with_previous'] = 0
+                continue
+            current_dt = tweet['datetime']
+            tweet['diff_with_previous'] = (current_dt - previous_dt).total_seconds()
+            previous_dt = current_dt
+        return ret_agg
+
     def add_tweet(self, tweet, type_k, extraction_date, flag):
         """
         Save a tweet in the database
@@ -816,9 +845,10 @@ class DBManager:
 
 
 #if __name__ == '__main__':
-#    db = DBManager('users')
-#    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
+#    db = DBManager('tweets')
+#    ret = db.get_posting_frequency_in_minutes(**{'partido': 'anr', 'movimiento': 'honor colorado'})
 #    pass
+#    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
 #    db.get_sentiment_tweets(**{'partido': 'anr'})
 #     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
 #     print('Original tweets {0}'.format(original_tweets.count()))
