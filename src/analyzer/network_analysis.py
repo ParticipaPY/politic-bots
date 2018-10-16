@@ -293,7 +293,7 @@ class NetworkAnalyzer:
     def save_network_in_gexf_format(self, file_name):
         today = datetime.strftime(datetime.now(), '%m/%d/%y')
         f_name = pathlib.Path(__file__).parents[2].joinpath('sna', 'gefx', file_name+'.gexf')
-        with open(f_name, 'w', encoding='utf-8') as f:
+        with open(str(f_name), 'w', encoding='utf-8') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" '
                     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
