@@ -5,6 +5,7 @@ from src.utils.utils import get_config, get_user_handlers_and_hashtags, get_py_d
 
 import pathlib
 import logging
+import tweepy
 
 
 logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
@@ -67,8 +68,11 @@ class DBManager:
             query.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
         return self.search(query)
 
-    def find_all(self):
-        return self.__db[self.__collection].find()
+    def find_all(self, projection=None):
+        if projection:
+            return self.__db[self.__collection].find({}, projection)
+        else:
+            return self.__db[self.__collection].find()
 
     def find_tweets_by_hashtag(self, hashtag, **kwargs):
         query = {'type': 'hashtag', 'keyword': hashtag, 'relevante': 1}
@@ -84,6 +88,8 @@ class DBManager:
             match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
         if 'movimiento' in kwargs.keys():
             match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+        if 'no_movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['no_movimiento']: {'$eq': 0}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
@@ -263,6 +269,8 @@ class DBManager:
             match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
             group.update({'movimiento': {'$push': '$flag.movimiento'}})
             project.update({'movimiento': '$movimiento'})
+        if 'no_movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['no_movimiento']: {'$eq': 0}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})
@@ -795,6 +803,8 @@ class DBManager:
             match.update({'flag.partido_politico.' + kwargs['partido']: {'$gt': 0}})
         if 'movimiento' in kwargs.keys():
             match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
+        if 'no_movimiento' in kwargs.keys():
+            match.update({'flag.movimiento.' + kwargs['no_movimiento']: {'$eq': 0}})
         pipeline = [
             {'$match': match},
             {'$project': {
@@ -850,11 +860,6 @@ class DBManager:
 #    pass
 #    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
 #    db.get_sentiment_tweets(**{'partido': 'anr'})
-#     original_tweets = db.search({'relevante': {'$eq': 1}, 'tweet_obj.retweeted_status': {'$exists': 0}})
-#     print('Original tweets {0}'.format(original_tweets.count()))
-#     id_original_tweets = [original_tweet['tweet_obj']['id_str'] for original_tweet in original_tweets]
-#     plain_tweets = db.get_plain_tweets()
-#     print('Plain tweets {0}'.format(len(plain_tweets)))
 #     id_multi_tweets = [tweet['tweet_obj']['id_str'] for tweet in plain_tweets]
 #     link_tweets = db.get_tweets_with_links()
 #     print('Tweets with links {0}'.format(len(link_tweets)))
