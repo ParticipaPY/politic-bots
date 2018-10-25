@@ -117,8 +117,7 @@ There are some tasks that can be run from `src/run.py`. Bellow we explain each o
 ### Collect Political Tweets
 
 The data sets of tweets collected during the presidential primary and general elections that took place
-in Paraguay in December 2017 and April 2018, respectively, are available to be download. The directory **`data`** contains
-the file `links_to_datasets.txt` with the links to dumps of the MongoDB databases used in the project. 
+in Paraguay in December 2017 and April 2018, respectively, are available to be download.
 
 In case a new set of tweets needs to be downloaded, below we list the steps that are required to follow.
  
