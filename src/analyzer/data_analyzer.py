@@ -274,6 +274,7 @@ class LinkAnalyzer:
             tweet = tweet_obj['tweet_obj']
             tweet_counter += 1
             logging.info('Tweet {0} out of {1}'.format(tweet_counter, total_tweets))
+            curret_tweet_domains = set()
             if 'entities' in tweet:
                 for url in tweet['entities']['urls']:
                     tweet_url = url['expanded_url']
@@ -281,11 +282,14 @@ class LinkAnalyzer:
                     url_obj = tldextract.extract(tweet_url)
                     domain_name = url_obj.domain
                     # overwrite the domain name if some known abbreviations are found
-                    if domain_name == 'fb': domain_name = 'facebook'
-                    if domain_name == 'youtu': domain_name = 'youtube'
+                    if domain_name == 'fb':
+                        domain_name = 'facebook'
+                    if domain_name == 'youtu':
+                        domain_name = 'youtube'
                     if domain_name in domains_url.keys():
                         domains_url[domain_name].append(tweet_url)
                         domains[domain_name] += 1
+                        curret_tweet_domains.add(domain_name)
                         continue
                     try:
                         resp = requests.get(tweet_url)
@@ -298,6 +302,9 @@ class LinkAnalyzer:
                     domain_name = url_obj.domain
                     domains_url[domain_name].append(tweet_url)
                     domains[domain_name] += 1
+                    curret_tweet_domains.add(domain_name)
+                self.db_tweets.update_record({'tweet_obj.id_str': tweet['id_str']},
+                                             {'domains': list(curret_tweet_domains)})
             else:
                 logging.info('Tweet without entities {0}'.format(tweet))
         if save_to_file:
@@ -308,7 +315,7 @@ class LinkAnalyzer:
         return domains_url, sorted(domains.items(), key=lambda k_v: k_v[1], reverse=True)
 
 
-# if __name__ == '__main__':
+#if __name__ == '__main__':
 #     la = LinkAnalyzer()
 #     domains_url, domains = la.get_domains_and_freq(save_to_file=True)
 #     print(domains)
