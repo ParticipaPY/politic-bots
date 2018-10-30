@@ -20,10 +20,12 @@ def update_config(config_file, new_data):
 
 
 # Get keywords and metadata from csv file
-def parse_metadata(kfile):
+def parse_metadata(file_name):
     keyword = []
     k_metadata = []
-    with open(str(kfile), 'r', encoding='utf-8') as f:
+    script_parent_dir = pathlib.Path(__file__).parents[1]
+    metadata_file = script_parent_dir.joinpath('tweet_collector', file_name)
+    with open(str(metadata_file), 'r', encoding='utf-8') as f:
         kfile = csv.DictReader(f)
         for line in kfile:
             keyword.append(line['keyword'])
