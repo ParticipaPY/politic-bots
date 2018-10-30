@@ -3,8 +3,7 @@ from collections import defaultdict
 
 # create_flag takes a dictionary of metadata and a value to create the initial flags dictionary
 # - metadata contains tuples of keys and values that must be added to the flags dictionary
-# - val represents a value we want to use as an array in the flags dictionary
-def create_flag(metadata, val):
+def create_flag(metadata):
     flags = {}
     headers = []
     saved = 0
@@ -21,7 +20,7 @@ def create_flag(metadata, val):
         saved = 1
     for header in headers:
         for column in set(columns[header]):
-            if header == val:
+            if header == 'keyword':
                 flags[header] = []
             elif column != "":
                 flags[header][column] = 0
@@ -47,23 +46,35 @@ def get_entities_tweet(tweet):
     # of the original tweet
     if 'retweeted_status' in tweet.keys():
         entities.update(do_get_entities_tweet(tweet['retweeted_status']))
+    # if after the previous entities continue
+    # being empty, add to entities the screen
+    # name of the tweet's author. it is likely
+    # that the author of the tweet is one of the
+    # user we decided to follow. the latter will be
+    # checked in the function add_values_to_flags
+    if not entities:
+        entities.add(tweet['user']['screen_name'])
     return entities
 
 
-# add_values_to_flags populates the flags dictionary of a tweet according to the metadata it contains
-# - flags = Initial dictionary of flags
-# - entities = Entities in the tweet
-# - metadata = Metadata for the flags dictionary
-# - val = indicates an attribute of the flags dict that will be treated as array of keywords
-def add_values_to_flags(flags, entities, metadata, val):
+def add_values_to_flags(flags, entities, metadata):
+    """
+    add_values_to_flags populates the flags dictionary of a tweet
+    according to the metadata it contains
+
+    :param flags: dictionary of flags by the function create_flag
+    :param entities: hashtags and mentions available in the tweet
+    :param metadata: metadata for the flags dictionary
+    :return: dictionary of flags to be used to augment the tweet object
+    """
     for entity in entities:
         for row in metadata:
             # iterates over the dictionary of metadata until finding a keyword that
             # corresponds to the current entity
-            if row[val].lower() == entity.lower() or row[val] == '@'+entity:
+            if row['keyword'].lower() == entity.lower() or row['keyword'] == '@'+entity:
                 for k, v in row.items():
-                    if k == val:
+                    if k == 'keyword':
                         flags[k].append(entity)
-                    elif v != "":
+                    elif v != '':
                         flags[k][v] += 1
     return {'flag': flags}

@@ -25,18 +25,16 @@ class TwitterAPIManager:
             wait_on_rate_limit_notify=worln)
 
     # Add tweets to DB
-    def process_and_store(self, tweet, keyword_type, val, metadata):
+    def process_and_store(self, tweet, keyword_type, metadata):
         date = time.strftime('%m/%d/%y')
-        flag, headers = create_flag(metadata, val)
+        flag, headers = create_flag(metadata)
         entities = get_entities_tweet(tweet._json)
-        flag = add_values_to_flags(flag, entities, metadata, val)
+        flag = add_values_to_flags(flag, entities, metadata)
         self.db.add_tweet(tweet._json, keyword_type, date, flag)
 
     def search_tweets(self, tweets_qry, keyword, keyword_type, metadata):
         count_tweets = 0
         i = 0
-        # TODO: needs some explanation about what's the role of val
-        val = 'keyword'
         try:
             for tweet in tweepy.Cursor(
                 self.api.search,
@@ -47,7 +45,7 @@ class TwitterAPIManager:
                 include_entities=True
             ).items():
                 i += 1
-                self.process_and_store(tweet, keyword_type, val, metadata)
+                self.process_and_store(tweet, keyword_type, metadata)
             count_tweets += i
         except tweepy.TweepError as e:
             # Exit if any error
