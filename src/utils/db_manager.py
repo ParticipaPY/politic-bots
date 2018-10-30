@@ -211,7 +211,8 @@ class DBManager:
         filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
                               {'$and': [{'tweet_obj.retweeted_status': {'$exists': 1}},
                                         {'tweet_obj.is_quote_status': True}]}]}
-        pipeline = [{'$match': match}, {'$match': filter_rts}]
+        filter_videos = {'$or': [{'is_video': {'$exists': 0}}, {'is_video': 0}]}
+        pipeline = [{'$match': match}, {'$match': filter_rts}, {'$match': filter_videos}]
         return self.aggregate(pipeline)
 
     def get_tweets_with_links(self, **kwargs):
@@ -234,6 +235,38 @@ class DBManager:
         pipeline = [{'$match': match}, {'$match': filter_rts}]
         return self.aggregate(pipeline)
 
+    def get_domains_of_tweets_with_links(self, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'domains': {'$exists': 1}
+        }
+        match = self.__add_extra_filters(match, **kwargs)
+        pipeline = [
+            {
+                '$match': match
+            },
+            {
+                '$unwind': '$domains'
+            },
+            {
+                '$group': {
+                    '_id': '$domains',
+                    'count': {'$sum': 1}
+                }
+            },
+            {
+                '$project': {
+                    'domain': '$_id',
+                    'count': 1,
+                    '_id': 0
+                }
+            },
+            {
+                '$sort': {'count': -1}
+            }
+        ]
+        return self.aggregate(pipeline)
+
     def get_tweets_with_photo(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
@@ -250,8 +283,7 @@ class DBManager:
     def get_tweets_with_video(self, **kwargs):
         match = {
             'relevante': {'$eq': 1},
-            'tweet_obj.entities.media': {'$ne': []},  # choose tweets with media
-            'tweet_obj.entities.media.type': {'$eq': 'video'}  # choose tweets with photo
+            'is_video': {'$eq': 1}
         }
         match = self.__add_extra_filters(match, **kwargs)
         filter_rts = {'$or': [{'tweet_obj.retweeted_status': {'$exists': 0}},
@@ -856,6 +888,9 @@ class DBManager:
 
 #if __name__ == '__main__':
 #    db = DBManager('tweets')
+#    domains = db.get_domains_of_tweets_with_links(**{'partido': 'anr', 'no_movimiento': 'honor colorado',
+#                                                     'movimiento': 'colorado añetete'})
+#    print(domains)
 #    ret = db.get_posting_frequency_in_minutes(**{'partido': 'anr', 'movimiento': 'honor colorado'})
 #    pass
 #    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
