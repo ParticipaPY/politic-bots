@@ -2,13 +2,16 @@ from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
 from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
-from math import floor
+from src.tweet_collector.add_flags import add_values_to_flags, get_entities_tweet, create_flag
 from math import ceil
+from selenium import webdriver
 
 import csv
 import logging
 import pathlib
 import re
+import time
+
 
 logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
@@ -390,3 +393,54 @@ def save_original_tweets_file():
                           'tone': s_obj['sentimiento']['tono'],
                           'score': s_obj['sentimiento']['score']}
             writer.writerow(tweet_dict)
+
+
+def add_video_property():
+    driver = webdriver.Chrome()
+    db = DBManager('tweets')
+    plain_tweets = db.get_plain_tweets()
+    tot_plain_tweets = len(plain_tweets)
+    logging.info('Plain tweets {0}'.format(tot_plain_tweets))
+    tweet_counter = 0
+    for plain_tweet in plain_tweets:
+        tweet_counter += 1
+        if 'is_video' in plain_tweet.keys():
+            continue
+        logging.info('Remaining {0}'.format(tot_plain_tweets - tweet_counter))
+        id_tweet = plain_tweet['tweet_obj']['id_str']
+        logging.info('Checking if the tweet {0} has a video'.format(id_tweet))
+        video_url = 'https://twitter.com/i/videos/'
+        url = video_url + id_tweet
+        driver.get(url)
+        time.sleep(10)
+        spans = driver.find_elements_by_tag_name('span')
+        span_texts = [span.text for span in spans]
+        found_message = False
+        for span_text in span_texts:
+            if span_text == 'The media could not be played.':
+                found_message = True
+                break
+        if found_message:
+            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 0})
+        else:
+            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 1})
+            logging.info('\n\nThe tweet {0} has a video!\n'.format(id_tweet))
+
+
+def fix_tweets_with_empty_flags():
+    dbm = DBManager('tweets')
+    script_parent_dir = pathlib.Path(__file__).parents[1]
+    conf_file = script_parent_dir.joinpath('config.json')
+    configuration = get_config(conf_file)
+    keyword, k_metadata = parse_metadata(configuration['metadata'])
+    tweets_with_empty_flags = dbm.search({'flag.keyword': {'$size': 0}, 'relevante': 1})
+    for tweet in tweets_with_empty_flags:
+        logging.info('Updating flags of tweet {0}'.format(tweet['tweet_obj']['id_str']))
+        flag, headers = create_flag(k_metadata)
+        entities = get_entities_tweet(tweet['tweet_obj'])
+        flag = add_values_to_flags(flag, entities, k_metadata)
+        dbm.update_record({'tweet_obj.id_str': tweet['tweet_obj']['id_str']}, flag)
+
+
+#if __name__ == '__main__':
+#    fix_tweets_with_empty_flags()
