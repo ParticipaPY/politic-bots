@@ -188,18 +188,23 @@ class NetworkAnalyzer:
             progress += 1
             self.__dbm_users.update_record(filter_query, db_user, create_if_doesnt_exist=True)
 
-    def generate_network(self, subnet_query={}, depth=1, file_name='network'):
+    def generate_network(self, subnet_query={}, depth=1, file_name='network', override_net=False):
         net_query = subnet_query.copy()
         net_query.update({'depth': depth})
         ret_net = self.__dbm_networks.search(net_query)
         # the net doesn't exist yet, let's create it
-        if ret_net.count() == 0:
+        if ret_net.count() == 0 or override_net:
             logging.info('Generating the network, it can take several minutes, please wait_')
             users = self.__dbm_users.search(subnet_query)
             # for each user generate his/her edges
             for user in users:
+                if 'ff_ratio' in user.keys():
+                    u_ff_ratio = user['ff_ratio']
+                else:
+                    u_ff_ratio = self.__computer_ff_ratio(user['friends'], user['followers'])
                 self.__nodes.add(tuple({'screen_name': user['screen_name'], 'party': user['party'],
-                                        'movement': user['movement'], 'ff_ratio': user['ff_ratio']}.items()))
+                                        'movement': user['movement'], 'ff_ratio': u_ff_ratio,
+                                        'pbb': user['bot_analysis']['pbb']}.items()))
                 for interacted_user, interactions in user['interactions'].items():
                     iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
                     if not iuser:
@@ -212,14 +217,20 @@ class NetworkAnalyzer:
                             self.__unknown_users.add(interacted_user)
                             continue
                     else:
-                        iuser_ffratio = iuser['ff_ratio']
+                        if 'ff_ratio' in iuser.keys():
+                            i_ff_ratio = iuser['ff_ratio']
+                        else:
+                            i_ff_ratio = self.__computer_ff_ratio(iuser['friends'], iuser['followers'])
                     self.__nodes.add(tuple({'screen_name': iuser['screen_name'], 'party': iuser['party'],
-                                     'movement': iuser['movement'], 'ff_ratio': iuser['ff_ratio']}.items()))
+                                            'movement': iuser['movement'], 'ff_ratio': i_ff_ratio,
+                                            'pbb': iuser['bot_analysis']['pbb']}.items()))
                     edge = {
-                        'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': user['ff_ratio'],
-                                  'party': user['party'], 'movement': user['movement']},
-                        'nodeB': {'screen_name': interacted_user, 'ff_ratio': iuser_ffratio,
-                                  'party': user['party'], 'movement': user['movement']},
+                        'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': u_ff_ratio,
+                                  'party': user['party'], 'movement': user['movement'],
+                                  'pbb': user['bot_analysis']['pbb']},
+                        'nodeB': {'screen_name': interacted_user, 'ff_ratio': i_ff_ratio,
+                                  'party': iuser['party'], 'movement': iuser['movement'],
+                                  'pbb': iuser['bot_analysis']['pbb']},
                         'weight': interactions['total']
                     }
                     self.__network.append(edge)
@@ -228,7 +239,7 @@ class NetworkAnalyzer:
             # save the net in a gefx file for posterior usage
             f_name = self.save_network_in_gexf_format(file_name)
             logging.info('Saved the network in the file {0}'.format(f_name))
-            db_net = {'file_name': f_name}
+            db_net = {'file_name': str(f_name)}
             db_net.update(net_query)
             self.__dbm_networks.save_record(db_net)
         else:
@@ -309,6 +320,7 @@ class NetworkAnalyzer:
             f.write('<attribute id="0" title="party" type="string"/>\n')
             f.write('<attribute id="1" title="movement" type="string"/>\n')
             f.write('<attribute id="2" title="ff_ratio" type="float"/>\n')
+            f.write('<attribute id="3" title="pbb" type="float"/>\n')
             f.write('</attributes>\n')
             # add nodes
             f.write('<nodes>\n')
@@ -321,6 +333,7 @@ class NetworkAnalyzer:
                 f.write('<attvalue for="0" value="{}"/>\n'.format(node['party']))
                 f.write('<attvalue for="1" value="{}"/>\n'.format(node['movement']))
                 f.write('<attvalue for="2" value="{}"/>\n'.format(node['ff_ratio']))
+                f.write('<attvalue for="3" value="{}"/>\n'.format(node['pbb']))
                 f.write('</attvalues>\n')
                 #f.write('<viz:size value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('</node>\n')
@@ -341,3 +354,7 @@ class NetworkAnalyzer:
             f.write('</graph>\n')
             f.write('</gexf>\n')
         return f_name
+
+#if __name__ == '__main__':
+#    na = NetworkAnalyzer()
+#    na.generate_network(subnet_query={'party': 'anr'}, file_name='net_anr_internas_2017', override_net=True)
