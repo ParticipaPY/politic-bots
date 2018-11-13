@@ -5,7 +5,7 @@ import pathlib
 import time
 import tldextract
 
-from src.utils.utils import get_config, update_config
+from src.utils.utils import get_config, update_config, parse_metadata
 from src.utils.db_manager import DBManager
 from cca_core.sentiment_analysis import SentimentAnalyzer
 
@@ -315,7 +315,202 @@ class LinkAnalyzer:
         return domains_url, sorted(domains.items(), key=lambda k_v: k_v[1], reverse=True)
 
 
+class UserInteractions:
+    db_tweets, db_users = None, None
+
+    def __init__(self):
+        self.db_tweets = DBManager('tweets')
+        self.db_users = DBManager('users')
+
+    def __get_user_party(self, user_screen_name):
+        user = self.db_users.search({'screen_name': user_screen_name})
+        try:
+            return user[0]['party']
+        except IndexError:
+            return 'desconocido'
+
+    def __get_user_movement(self, user_screen_name):
+        user = self.db_users.search({'screen_name': user_screen_name})
+        try:
+            return user[0]['movement']
+        except IndexError:
+            return 'desconocido'
+
+    def __user_belong_party_movement(self, party, movement, tweet_author, tweet_authors):
+        if not party and not movement:
+            return True, tweet_authors
+        party = party.lower()
+        movement = movement.lower()
+        if tweet_authors[tweet_author]:
+            tweet_author_party, tweet_author_movement = tweet_authors[tweet_author]['party'], \
+                                                        tweet_authors[tweet_author]['movement']
+        else:
+            tweet_author_party, tweet_author_movement = None, None
+        if party and not tweet_author_party:
+            logging.info('Need to get the party of the user {0}'.format(tweet_author))
+            tweet_author_party = self.__get_user_party(tweet_author)
+            if tweet_authors[tweet_author]:
+                tweet_authors[tweet_author]['party'] = tweet_author_party
+            else:
+                tweet_authors[tweet_author] = {'party': tweet_author_party, 'movement': None}
+        if movement and not tweet_author_movement:
+            logging.info('Need to get the movement of the user {0}'.format(tweet_author))
+            tweet_author_movement = self.__get_user_movement(tweet_author)
+            if tweet_authors[tweet_author]:
+                tweet_authors[tweet_author]['movement'] = tweet_author_movement
+            else:
+                tweet_authors[tweet_author] = {'party': None, 'movement': tweet_author_movement}
+        if tweet_author_movement and tweet_author_party and party == tweet_author_party and \
+           movement == tweet_author_movement:
+            return True, tweet_authors
+        elif tweet_author_party and party == tweet_author_party:
+            return True, tweet_authors
+        elif tweet_author_movement and movement == tweet_author_movement:
+            return True, tweet_authors
+        else:
+            return False, tweet_authors
+
+    def __get_mentions_in_tweet(self, tweet_obj):
+        user_mentions = []
+        if 'entities' in tweet_obj.keys():
+            for mention in tweet_obj['entities']['user_mentions']:
+                user_mentions.append(mention['screen_name'])
+        return user_mentions
+
+    def __process_tweet(self, tweet, type_tweet, interactions):
+        for interaction in interactions:
+            if interaction['date'] == tweet['tweet_py_date'] and interaction['type'] == type_tweet:
+                interaction['count'] += 1
+                return interactions
+        interactions.append({'date': tweet['tweet_py_date'], 'type': type_tweet, 'count': 1})
+        return interactions
+
+    def get_inter_received_user(self, user_screen_name, party=None, movement= None, exclude_tweet=None):
+        tweets = self.db_tweets.search({})
+        interactions_user = []
+        tweet_authors = defaultdict(dict)
+        total_tweets = tweets.count()
+        tweet_counter = 0
+        for tweet in tweets:
+            tweet_counter += 1
+            logging.info('Processing {0}/{1} tweets'.format(tweet_counter, total_tweets))
+            tweet_obj = tweet['tweet_obj']
+            # discard tweets posted by the given user
+            if tweet_obj['user']['screen_name'] == user_screen_name:
+                continue
+            # discard tweet users that do not belong to the given party and movement
+            belong_party_movement, tweet_authors = self.__user_belong_party_movement(party, movement,
+                                                                                     tweet_obj['user']['screen_name'],
+                                                                                     tweet_authors)
+            if not belong_party_movement:
+                continue
+            # process replies to the given user
+            if tweet_obj['in_reply_to_screen_name'] == user_screen_name:
+                if not exclude_tweet or (exclude_tweet and tweet_obj['in_reply_to_status_id'] != exclude_tweet):
+                    interactions_user = self.__process_tweet(tweet, 'reply', interactions_user)
+            # process quotes to the given user
+            elif 'quoted_status' in tweet_obj.keys() and tweet_obj['quoted_status']['user']['screen_name'] == user_screen_name:
+                if not exclude_tweet or (exclude_tweet and tweet_obj['quoted_status']['id_str'] != exclude_tweet):
+                    interactions_user = self.__process_tweet(tweet, 'quote', interactions_user)
+            # process retweets to the given user's tweets
+            elif 'retweeted_status' in tweet_obj.keys() and tweet_obj['retweeted_status']['user']['screen_name'] == user_screen_name:
+                if not exclude_tweet or (exclude_tweet and tweet_obj['retweeted_status']['id_str'] != exclude_tweet):
+                    interactions_user = self.__process_tweet(tweet, 'retweet', interactions_user)
+            # process mentions to the given user if the tweet is not a reply. we are interested in
+            # original tweets that include the mention to the given user not in replies that by default
+            # include the screen name of the given user
+            else:
+                tweet_mentions = self.__get_mentions_in_tweet(tweet_obj)
+                if user_screen_name in tweet_mentions:
+                    interactions_user = self.__process_tweet(tweet, 'mention', interactions_user)
+
+        return interactions_user
+
+
+class UserPoliticalPreference:
+    db_tweets, db_users = None, None
+
+    def __init__(self):
+        self.db_tweets = DBManager('tweets')
+        self.db_users = DBManager('users')
+        self.hashtags, self.metadata = self.__get_hashtags_and_metadata()
+
+    def __get_hashtags_and_metadata(self):
+        script_parent_dir = pathlib.Path(__file__).parents[1]
+        config_fn = script_parent_dir.joinpath('config.json')
+        configuration = get_config(config_fn)
+        hashtags_file = script_parent_dir.joinpath('tweet_collector', configuration['metadata'])
+        keywords, metadata = parse_metadata(hashtags_file)
+        hashtags = []
+        for keyword in keywords:
+            if '@' not in keyword:
+                # The following hashtags are excluded because they are proper names of
+                # movements and people
+                if keyword not in ['HonorColorado', 'ColoradoAñetete', 'tuma']:
+                    hashtags.append(keyword.lower())
+        return hashtags, metadata
+
+    def __get_tweet_hashtags(self, tweet_obj):
+        tweet_hashtags = []
+        if 'entities' in tweet_obj.keys():
+            for hashtag in tweet_obj['entities']['hashtags']:
+                tweet_hashtags.append(hashtag['text'])
+        return tweet_hashtags
+
+    def __get_hashtag_metadata(self, hashtag):
+        for metadata in self.metadata:
+            if metadata['keyword'].lower() == hashtag.lower():
+                return metadata
+
+    def __get_user_political_movement(self, user_screen_name):
+        user_movement = None
+        user_political_preference = defaultdict(int)
+        filter = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.user.screen_name': {'$eq': user_screen_name}
+        }
+        results = self.db_tweets.search(filter)
+        for tweet in results:
+            tweet_obj = tweet['tweet_obj']
+            if 'retweeted_status' in tweet_obj.keys():
+                tweet_hashtags = self.__get_tweet_hashtags(tweet_obj['retweeted_status'])
+            else:
+                tweet_hashtags = self.__get_tweet_hashtags(tweet_obj)
+            for hashtag in tweet_hashtags:
+                if hashtag.lower() in self.hashtags:
+                    hashtag_metadata = self.__get_hashtag_metadata(hashtag)
+                    if hashtag_metadata['movimiento']:
+                        user_political_preference[hashtag_metadata['movimiento']] += 1
+        if user_political_preference:
+            s_user_political_preference = [k for k in sorted(user_political_preference.items(), key=lambda k_v: k_v[1],
+                                           reverse=True)]
+            user_movement = s_user_political_preference[0][0]
+        return user_movement
+
+    def __get_user_political_party(self, user_screen_name):
+        user_parties = self.db_tweets.get_party_user(user_screen_name)
+        if len(user_parties) > 0:
+            return user_parties[0]['partido']
+        else:
+            return None
+
+    def update_users_political_preference(self, include_movement=True):
+        users = self.db_users.search({})
+        total_users = users.count()
+        users_counter = 0
+        for user in users:
+            users_counter += 1
+            user_movement, user_party = None, None
+            logging.info('Processing {0}/{1} users'.format(users_counter, total_users))
+            if include_movement:
+                user_movement = self.__get_user_political_movement(user['screen_name'])
+            user_party = self.__get_user_political_party(user['screen_name'])
+            logging.info('User {0} demonstrates to support {1}, {2}'.format(user['screen_name'], user_party,
+                                                                            user_movement))
+            self.db_users.update_record({'screen_name': user['screen_name']}, {'party': user_party,
+                                                                               'movement': user_movement})
+
+
 #if __name__ == '__main__':
-#     la = LinkAnalyzer()
-#     domains_url, domains = la.get_domains_and_freq(save_to_file=True)
-#     print(domains)
+#    upp = UserPoliticalPreference()
+#    upp.update_users_political_preference()
