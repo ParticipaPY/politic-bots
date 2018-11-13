@@ -90,6 +90,8 @@ class DBManager:
             match.update({'flag.movimiento.' + kwargs['movimiento']: {'$gt': 0}})
         if 'no_movimiento' in kwargs.keys():
             match.update({'flag.movimiento.' + kwargs['no_movimiento']: {'$eq': 0}})
+        if 'puesto' in kwargs.keys():
+            match.update({'flag.puesto.' + kwargs['puesto']: {'$gt': 0}})
         if 'include_candidate' in kwargs.keys() and not kwargs['include_candidate']:
             if 'candidate_handler' in kwargs.keys() and kwargs['candidate_handler'] != '':
                 match.update({'tweet_obj.user.screen_name': {'$ne': kwargs['candidate_handler']}})

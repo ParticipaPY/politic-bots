@@ -83,3 +83,5 @@ urllib3==1.22
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
+jupyter_contrib_nbextensions==0.5.0
+hide_code==0.2.0
