@@ -860,6 +860,55 @@ class DBManager:
             previous_dt = current_dt
         return ret_agg
 
+    def interactions_user_over_time(self, user_screen_name, **kwargs):
+        match = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.user.screen_name': {'$ne': user_screen_name}
+        }
+        group = {
+            '_id': '$tweet_py_date',
+            'num_tweets': {'$sum': 1}
+        }
+        project = {
+            'date': {
+                '$dateFromString': {
+                    'dateString': '$_id'
+                }
+            },
+            'count': '$num_tweets'
+        }
+        # replies
+        rp_match = {'tweet_obj.in_reply_to_screen_name': {'$eq': user_screen_name}}
+        rp_match.update(match)
+        rp_project = {'type': 'reply'}
+        rp_project.update(project)
+        pipeline = [{'$match': rp_match},
+                    {'$group': group},
+                    {'$project': rp_project},
+                    {'$sort': {'date': 1}}]
+        results = self.aggregate(pipeline)
+        # quotes
+        qt_match = {'tweet_obj.quoted_status.user.screen_name': {'$eq': user_screen_name}}
+        qt_match.update(match)
+        qt_project = {'type': 'quote'}
+        qt_project.update(project)
+        pipeline = [{'$match': qt_match},
+                    {'$group': group},
+                    {'$project': qt_project},
+                    {'$sort': {'date': 1}}]
+        results.extend(self.aggregate(pipeline))
+        # retweets
+        rt_match = {'tweet_obj.retweeted_status.user.screen_name': {'$eq': user_screen_name}}
+        rt_match.update(match)
+        rt_project = {'type': 'retweet'}
+        rt_project.update(project)
+        pipeline = [{'$match': rt_match},
+                    {'$group': group},
+                    {'$project': rt_project},
+                    {'$sort': {'date': 1}}]
+        results.extend(self.aggregate(pipeline))
+        return results
+
     def add_tweet(self, tweet, type_k, extraction_date, flag):
         """
         Save a tweet in the database
@@ -888,6 +937,9 @@ class DBManager:
 
 #if __name__ == '__main__':
 #    db = DBManager('tweets')
+#    r = db.interactions_user_over_time('Santula')
+#    party = db.get_party_user('nielsbirbaumer')
+#    print(party)
 #    domains = db.get_domains_of_tweets_with_links(**{'partido': 'anr', 'no_movimiento': 'honor colorado',
 #                                                     'movimiento': 'colorado añetete'})
 #    print(domains)
