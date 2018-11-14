@@ -5,7 +5,6 @@ from src.utils.utils import get_config, get_user_handlers_and_hashtags, get_py_d
 
 import pathlib
 import logging
-import tweepy
 
 
 logging.basicConfig(filename=str(pathlib.Path(__file__).parents[1].joinpath('politic_bots.log')), level=logging.DEBUG)
