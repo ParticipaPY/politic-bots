@@ -321,6 +321,7 @@ class NetworkAnalyzer:
             f.write('<attribute id="1" title="movement" type="string"/>\n')
             f.write('<attribute id="2" title="ff_ratio" type="float"/>\n')
             f.write('<attribute id="3" title="pbb" type="float"/>\n')
+            f.write('<attribute id="4" title="is_bot" type="string"/>\n')
             f.write('</attributes>\n')
             # add nodes
             f.write('<nodes>\n')
@@ -330,10 +331,14 @@ class NetworkAnalyzer:
                 node = dict(node_tup)
                 f.write('<node id="{0}" label="{1}">\n'.format(node_id, node['screen_name']))
                 f.write('<attvalues>\n')
-                f.write('<attvalue for="0" value="{}"/>\n'.format(node['party']))
-                f.write('<attvalue for="1" value="{}"/>\n'.format(node['movement']))
-                f.write('<attvalue for="2" value="{}"/>\n'.format(node['ff_ratio']))
-                f.write('<attvalue for="3" value="{}"/>\n'.format(node['pbb']))
+                f.write('<attvalue for="0" value="{0}"/>\n'.format(node['party']))
+                f.write('<attvalue for="1" value="{0}"/>\n'.format(node['movement']))
+                f.write('<attvalue for="2" value="{0}"/>\n'.format(node['ff_ratio']))
+                f.write('<attvalue for="3" value="{0}"/>\n'.format(node['pbb']))
+                if node['pbb'] > 0.719:
+                    f.write('<at value for="4" value="{0}"/>\n'.format('yes'))
+                else:
+                    f.write('<at value for="4" value="{0}"/>\n'.format('no'))
                 f.write('</attvalues>\n')
                 #f.write('<viz:size value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('</node>\n')
