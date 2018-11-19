@@ -325,14 +325,19 @@ class UserInteractions:
     def __get_user_party(self, user_screen_name):
         user = self.db_users.search({'screen_name': user_screen_name})
         try:
-            return user[0]['party']
+            party =  user[0]['party']
+            return party if party else 'desconocido'
         except IndexError:
             return 'desconocido'
 
     def __get_user_movement(self, user_screen_name):
         user = self.db_users.search({'screen_name': user_screen_name})
         try:
-            return user[0]['movement']
+            movement = user[0]['movement']
+            if movement:
+                return movement
+            else:
+                return 'desconocido'
         except IndexError:
             return 'desconocido'
 
@@ -345,30 +350,40 @@ class UserInteractions:
             tweet_author_party, tweet_author_movement = tweet_authors[tweet_author]['party'], \
                                                         tweet_authors[tweet_author]['movement']
         else:
-            tweet_author_party, tweet_author_movement = None, None
-        if party and not tweet_author_party:
+            tweet_author_party, tweet_author_movement = 'desconocido', 'desconocido'
+        if party and tweet_author_party == 'desconocido':
             logging.info('Need to get the party of the user {0}'.format(tweet_author))
             tweet_author_party = self.__get_user_party(tweet_author)
             if tweet_authors[tweet_author]:
                 tweet_authors[tweet_author]['party'] = tweet_author_party
             else:
-                tweet_authors[tweet_author] = {'party': tweet_author_party, 'movement': None}
-        if movement and not tweet_author_movement:
+                tweet_authors[tweet_author] = {'party': tweet_author_party, 'movement': 'desconocido'}
+        if movement and tweet_author_movement == 'desconocido':
             logging.info('Need to get the movement of the user {0}'.format(tweet_author))
             tweet_author_movement = self.__get_user_movement(tweet_author)
             if tweet_authors[tweet_author]:
                 tweet_authors[tweet_author]['movement'] = tweet_author_movement
             else:
-                tweet_authors[tweet_author] = {'party': None, 'movement': tweet_author_movement}
-        if tweet_author_movement and tweet_author_party and party == tweet_author_party and \
-           movement == tweet_author_movement:
-            return True, tweet_authors
-        elif tweet_author_party and party == tweet_author_party:
-            return True, tweet_authors
-        elif tweet_author_movement and movement == tweet_author_movement:
-            return True, tweet_authors
+                tweet_authors[tweet_author] = {'party': 'desconocido', 'movement': tweet_author_movement}
+        if party and movement:
+            if party == tweet_author_party and movement == tweet_author_movement:
+                return True, tweet_authors
+            else:
+                return False, tweet_authors
         else:
-            return False, tweet_authors
+            if party:
+                if party == tweet_author_party:
+                    return True, tweet_authors
+                else:
+                    return False, tweet_authors
+            else:
+                if movement:
+                    if movement == tweet_author_movement:
+                        return True, tweet_authors
+                    else:
+                        return False, tweet_authors
+                else:
+                    return False, tweet_authors
 
     def __get_mentions_in_tweet(self, tweet_obj):
         user_mentions = []
@@ -385,7 +400,7 @@ class UserInteractions:
         interactions.append({'date': tweet['tweet_py_date'], 'type': type_tweet, 'count': 1})
         return interactions
 
-    def get_inter_received_user(self, user_screen_name, party=None, movement= None, exclude_tweet=None):
+    def get_inter_received_user(self, user_screen_name, party=None, movement=None, exclude_tweet=None):
         tweets = self.db_tweets.search({})
         interactions_user = []
         tweet_authors = defaultdict(dict)
@@ -510,7 +525,33 @@ class UserPoliticalPreference:
             self.db_users.update_record({'screen_name': user['screen_name']}, {'party': user_party,
                                                                                'movement': user_movement})
 
+    def update_tweet_user_political_preference(self, include_movement=True):
+        tweets = self.db_tweets.search({})
+        tweet_authors = defaultdict(dict)
+        total_tweets = tweets.count()
+        tweet_counter = 0
+        for tweet in tweets:
+            tweet_counter += 1
+            logging.info('Processing {0}/{1} tweets'.format(tweet_counter, total_tweets))
+            tweet_obj = tweet['tweet_obj']
+            new_fields = {}
+            if tweet_obj['user']['screen_name'] not in tweet_authors.keys():
+                user = self.db_users.search({'screen_name': tweet_obj['user']['screen_name']})
+                try:
+                    new_fields['author_party'] = user[0]['party']
+                except IndexError:
+                    new_fields['author_party'] = None
+                if include_movement:
+                    try:
+                        new_fields.update({'author_movement': user[0]['movement']})
+                    except IndexError:
+                        new_fields.update({'author_movement': None})
+                tweet_authors[tweet_obj['user']['screen_name']] = new_fields
+            else:
+                new_fields = tweet_authors[tweet_obj['user']['screen_name']]
+            self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
-#if __name__ == '__main__':
-#    upp = UserPoliticalPreference()
-#    upp.update_users_political_preference()
+
+if __name__ == '__main__':
+    upp = UserPoliticalPreference()
+    upp.update_tweet_user_political_preference()
