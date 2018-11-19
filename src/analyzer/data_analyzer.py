@@ -552,6 +552,6 @@ class UserPoliticalPreference:
             self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
 
-if __name__ == '__main__':
-    upp = UserPoliticalPreference()
-    upp.update_tweet_user_political_preference()
+#if __name__ == '__main__':
+#    upp = UserPoliticalPreference()
+#    upp.update_tweet_user_political_preference()
