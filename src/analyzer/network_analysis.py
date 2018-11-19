@@ -321,7 +321,6 @@ class NetworkAnalyzer:
             f.write('<attribute id="1" title="movement" type="string"/>\n')
             f.write('<attribute id="2" title="ff_ratio" type="float"/>\n')
             f.write('<attribute id="3" title="pbb" type="float"/>\n')
-            f.write('<attribute id="4" title="is_bot" type="string"/>\n')
             f.write('</attributes>\n')
             # add nodes
             f.write('<nodes>\n')
@@ -335,10 +334,6 @@ class NetworkAnalyzer:
                 f.write('<attvalue for="1" value="{0}"/>\n'.format(node['movement']))
                 f.write('<attvalue for="2" value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('<attvalue for="3" value="{0}"/>\n'.format(node['pbb']))
-                if node['pbb'] > 0.719:
-                    f.write('<at value for="4" value="{0}"/>\n'.format('yes'))
-                else:
-                    f.write('<at value for="4" value="{0}"/>\n'.format('no'))
                 f.write('</attvalues>\n')
                 #f.write('<viz:size value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('</node>\n')
@@ -360,6 +355,7 @@ class NetworkAnalyzer:
             f.write('</gexf>\n')
         return f_name
 
+
 #if __name__ == '__main__':
 #    na = NetworkAnalyzer()
-#    na.generate_network(subnet_query={'party': 'anr'}, file_name='net_anr_internas_2017', override_net=True)
+#    na.generate_network(subnet_query={'party': 'anr'}, file_name='net_bots_anr_internas_2017', override_net=True)
