@@ -551,7 +551,28 @@ class UserPoliticalPreference:
                 new_fields = tweet_authors[tweet_obj['user']['screen_name']]
             self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
+    def update_tweet_user_pbb(self):
+        tweets = self.db_tweets.search({})
+        tweet_authors = defaultdict(dict)
+        total_tweets = tweets.count()
+        tweet_counter = 0
+        for tweet in tweets:
+            tweet_counter += 1
+            logging.info('Processing {0}/{1} tweets'.format(tweet_counter, total_tweets))
+            tweet_obj = tweet['tweet_obj']
+            new_fields = {}
+            if tweet_obj['user']['screen_name'] not in tweet_authors.keys():
+                user = self.db_users.search({'screen_name': tweet_obj['user']['screen_name']})
+                try:
+                    new_fields['author_pbb'] = user[0]['bot_analysis']['pbb']
+                except IndexError:
+                    new_fields['author_party'] = -1
+                tweet_authors[tweet_obj['user']['screen_name']] = new_fields
+            else:
+                new_fields = tweet_authors[tweet_obj['user']['screen_name']]
+            self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
-#if __name__ == '__main__':
-#    upp = UserPoliticalPreference()
-#    upp.update_tweet_user_political_preference()
+
+if __name__ == '__main__':
+    upp = UserPoliticalPreference()
+    upp.update_tweet_user_pbb()
