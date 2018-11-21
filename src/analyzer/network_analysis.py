@@ -202,9 +202,10 @@ class NetworkAnalyzer:
                     u_ff_ratio = user['ff_ratio']
                 else:
                     u_ff_ratio = self.__computer_ff_ratio(user['friends'], user['followers'])
+                pbb_score = user['bot_analysis']['pbb'] if 'bot_analysis' in user.keys() else ''
                 self.__nodes.add(tuple({'screen_name': user['screen_name'], 'party': user['party'],
                                         'movement': user['movement'], 'ff_ratio': u_ff_ratio,
-                                        'pbb': user['bot_analysis']['pbb']}.items()))
+                                        'pbb': pbb_score}.items()))
                 for interacted_user, interactions in user['interactions'].items():
                     iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
                     if not iuser:
@@ -221,16 +222,19 @@ class NetworkAnalyzer:
                             i_ff_ratio = iuser['ff_ratio']
                         else:
                             i_ff_ratio = self.__computer_ff_ratio(iuser['friends'], iuser['followers'])
+
+                    pbb_iuser_score = user['bot_analysis']['pbb'] if 'bot_analysis' in iuser.keys() else ''
                     self.__nodes.add(tuple({'screen_name': iuser['screen_name'], 'party': iuser['party'],
                                             'movement': iuser['movement'], 'ff_ratio': i_ff_ratio,
-                                            'pbb': iuser['bot_analysis']['pbb']}.items()))
+
+                                            'pbb': pbb_iuser_score}.items()))
                     edge = {
                         'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': u_ff_ratio,
                                   'party': user['party'], 'movement': user['movement'],
-                                  'pbb': user['bot_analysis']['pbb']},
+                                  'pbb': pbb_score},
                         'nodeB': {'screen_name': interacted_user, 'ff_ratio': i_ff_ratio,
                                   'party': iuser['party'], 'movement': iuser['movement'],
-                                  'pbb': iuser['bot_analysis']['pbb']},
+                                  'pbb': pbb_iuser_score},
                         'weight': interactions['total']
                     }
                     self.__network.append(edge)
