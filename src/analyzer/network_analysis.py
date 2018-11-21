@@ -355,7 +355,6 @@ class NetworkAnalyzer:
             f.write('</gexf>\n')
         return f_name
 
-
 #if __name__ == '__main__':
 #    na = NetworkAnalyzer()
 #    na.generate_network(subnet_query={'party': 'anr'}, file_name='net_bots_anr_internas_2017', override_net=True)
