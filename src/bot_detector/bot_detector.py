@@ -290,6 +290,7 @@ class BotDetector:
                 user_screen_name = user
             else:
                 user_screen_name = user['screen_name']
+            # TODO: check first to get score from internas
             self.__compute_heuristics(user_screen_name)
             idx_user += 1
 

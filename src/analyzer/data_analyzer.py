@@ -454,7 +454,7 @@ class UserPoliticalPreference:
         script_parent_dir = pathlib.Path(__file__).parents[1]
         config_fn = script_parent_dir.joinpath('config.json')
         configuration = get_config(config_fn)
-        hashtags_file = script_parent_dir.joinpath('tweet_collector', configuration['metadata'])
+        hashtags_file = script_parent_dir.joinpath(configuration['metadata'])
         keywords, metadata = parse_metadata(hashtags_file)
         hashtags = []
         for keyword in keywords:
@@ -572,7 +572,8 @@ class UserPoliticalPreference:
                 new_fields = tweet_authors[tweet_obj['user']['screen_name']]
             self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
-
-if __name__ == '__main__':
-    upp = UserPoliticalPreference()
-    upp.update_tweet_user_pbb()
+#if __name__ == '__main__':
+    #upp = UserPoliticalPreference()
+    #upp.update_users_political_preference(include_movement=False)
+    #upp.update_tweet_user_political_preference(include_movement=False)
+    #upp.update_tweet_user_pbb()

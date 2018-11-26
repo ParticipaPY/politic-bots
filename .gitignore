@@ -14,3 +14,7 @@ datasets/politic_bots/generales2018\.gz
 reports/notebooks/\.ipynb_checkpoints/bots_politicos_generales_2018-checkpoint\.ipynb
 
 reports/notebooks/\.ipynb_checkpoints/bots_politicos_internas_anr_2017-checkpoint\.ipynb
+
+datasets/politic_bots/20181120_internas2017\.gz
+
+datasets/queries/relevant_tweets_anr\.js
