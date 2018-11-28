@@ -454,8 +454,7 @@ class UserPoliticalPreference:
         script_parent_dir = pathlib.Path(__file__).parents[1]
         config_fn = script_parent_dir.joinpath('config.json')
         configuration = get_config(config_fn)
-        hashtags_file = script_parent_dir.joinpath(configuration['metadata'])
-        keywords, metadata = parse_metadata(hashtags_file)
+        keywords, metadata = parse_metadata(configuration['metadata'])
         hashtags = []
         for keyword in keywords:
             if '@' not in keyword:
@@ -477,7 +476,7 @@ class UserPoliticalPreference:
             if metadata['keyword'].lower() == hashtag.lower():
                 return metadata
 
-    def __get_user_political_movement(self, user_screen_name):
+    def get_user_political_movement(self, user_screen_name):
         user_movement = None
         user_political_preference = defaultdict(int)
         filter = {
@@ -502,12 +501,30 @@ class UserPoliticalPreference:
             user_movement = s_user_political_preference[0][0]
         return user_movement
 
-    def __get_user_political_party(self, user_screen_name):
-        user_parties = self.db_tweets.get_party_user(user_screen_name)
-        if len(user_parties) > 0:
-            return user_parties[0]['partido']
-        else:
-            return None
+    def get_user_political_party(self, user_screen_name):
+        user_party = None
+        user_political_preference = defaultdict(int)
+        filter = {
+            'relevante': {'$eq': 1},
+            'tweet_obj.user.screen_name': {'$eq': user_screen_name}
+        }
+        results = self.db_tweets.search(filter)
+        for tweet in results:
+            tweet_obj = tweet['tweet_obj']
+            if 'retweeted_status' in tweet_obj.keys():
+                tweet_hashtags = self.__get_tweet_hashtags(tweet_obj['retweeted_status'])
+            else:
+                tweet_hashtags = self.__get_tweet_hashtags(tweet_obj)
+            for hashtag in tweet_hashtags:
+                if hashtag.lower() in self.hashtags:
+                    hashtag_metadata = self.__get_hashtag_metadata(hashtag)
+                    if hashtag_metadata['partido_politico']:
+                        user_political_preference[hashtag_metadata['partido_politico']] += 1
+        if user_political_preference:
+            s_user_political_preference = [k for k in sorted(user_political_preference.items(), key=lambda k_v: k_v[1],
+                                                             reverse=True)]
+            user_party = s_user_political_preference[0][0]
+        return user_party
 
     def update_users_political_preference(self, include_movement=True):
         users = self.db_users.search({})
@@ -518,8 +535,8 @@ class UserPoliticalPreference:
             user_movement, user_party = None, None
             logging.info('Processing {0}/{1} users'.format(users_counter, total_users))
             if include_movement:
-                user_movement = self.__get_user_political_movement(user['screen_name'])
-            user_party = self.__get_user_political_party(user['screen_name'])
+                user_movement = self.get_user_political_movement(user['screen_name'])
+            user_party = self.get_user_political_party(user['screen_name'])
             logging.info('User {0} demonstrates to support {1}, {2}'.format(user['screen_name'], user_party,
                                                                             user_movement))
             self.db_users.update_record({'screen_name': user['screen_name']}, {'party': user_party,
