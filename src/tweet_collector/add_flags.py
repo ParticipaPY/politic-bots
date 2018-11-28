@@ -71,6 +71,7 @@ def add_values_to_flags(flags, entities, metadata):
         for row in metadata:
             # iterates over the dictionary of metadata until finding a keyword that
             # corresponds to the current entity
+            # TODO: Consider duplicates in metadata
             if row['keyword'].lower() == entity.lower() or row['keyword'] == '@'+entity:
                 for k, v in row.items():
                     if k == 'keyword':
@@ -78,3 +79,28 @@ def add_values_to_flags(flags, entities, metadata):
                     elif v != '':
                         flags[k][v] += 1
     return {'flag': flags}
+
+# if __name__ == '__main__':
+#
+#     from src.utils.db_manager import *
+#     from src.utils.data_wrangler import *
+#     from src.analyzer.data_analyzer import *
+#
+#     db = DBManager('tweets')
+#     conf_file = "/Users/cdparra/Projects/participa/politic-bots/src/config.json"
+#     configuration = get_config(conf_file)
+#     keyword, k_metadata = parse_metadata(configuration['metadata'])
+#     flags, headers = create_flag(k_metadata)
+#     tweets = db.search({},only_relevant_tws=True)
+#
+#     tweets_count = tweets.count()
+#
+#     i=0
+#     for tweet in tweets:
+#         flags, headers = create_flag(k_metadata)
+#         entities = get_entities_tweet(tweet['tweet_obj'])
+#         flag = add_values_to_flags(flags, entities, k_metadata)
+#         print("Updating {0}/{1} ({2})".format(i,tweets_count,tweet['tweet_obj']['id_str']))
+#         i+=1
+#         # #     self.db.add_tweet(tweet._json, keyword_type, date, flag)
+#         db.update_record({"tweet_obj.id_str":tweet['tweet_obj']['id_str']}, flag)

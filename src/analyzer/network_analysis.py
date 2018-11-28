@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
-
+from src.analyzer.data_analyzer import UserPoliticalPreference
 import logging
 import networkx as net
 import pathlib
@@ -163,6 +163,7 @@ class NetworkAnalyzer:
                 'rps': user['replies_count']
             }
             # Assign the party and movement to the party and movement that are more related to the user
+            # counting both Hashtags and Mentions by the user
             user_parties = self.__dbm_tweets.get_party_user(user['screen_name'])
             user_parties_count = len(user_parties) or 0
             logging.debug('::. Network Analyzer: User {0} has {1} associated parties...'
@@ -170,18 +171,27 @@ class NetworkAnalyzer:
 
             if user_parties_count > 0:
                 user_party = user_parties[0]
-                db_user.update({'party': user_party['partido']})
+                db_user.update({'most_interacted_party': user_party['partido']})
                 user_movements = self.__dbm_tweets.get_movement_user(user['screen_name'])
                 user_movements_count = len(user_movements) or 0
                 logging.debug('::. Network Analyzer: User {0} has {1} associated movements...'
                               .format(user['screen_name'], user_movements_count))
                 if user_movements_count > 0:
                     user_movement = user_movements[0]
-                    db_user.update({'movement': user_movement['movimiento']})
+                    db_user.update({'most_interacted_movement': user_movement['movimiento']})
                 else:
-                    db_user.update({'movement': ''})
+                    db_user.update({'most_interacted_movement': ''})
             else:
-                db_user.update({'party': '', 'movement': ''})
+                db_user.update({'most_interacted_party': '', 'movement': ''})
+
+
+            # Assign the party and movement to the party and movement that are more related to the user
+            # counting both Hashtags and Mentions by the user
+            upp = UserPoliticalPreference()
+            user_party = upp.get_user_political_party(user['screen_name'])
+            user_movement = upp.get_user_political_movement(user['screen_name'])
+            db_user.update({'party': user_party, 'movement': user_movement})
+
             filter_query = {'screen_name': user['screen_name']}
             logging.debug('::. Network Analyzer: Updating/creating user {0} ({1}/{2})...'
                           .format(user['screen_name'], progress, users_count))
@@ -361,5 +371,6 @@ class NetworkAnalyzer:
 
 #if __name__ == '__main__':
 #    na = NetworkAnalyzer()
+#    na.create_users_db(clear_collection=True)
 #    na.generate_network(subnet_query={'party': 'anr'}, file_name='net_bots_anr_internas_2017', override_net=True)
 #    na.generate_network(subnet_query={}, file_name='net_bots_generales_2018.gexf', override_net=True)
