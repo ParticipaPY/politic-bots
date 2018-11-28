@@ -589,8 +589,9 @@ class UserPoliticalPreference:
                 new_fields = tweet_authors[tweet_obj['user']['screen_name']]
             self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
+
 #if __name__ == '__main__':
-    #upp = UserPoliticalPreference()
-    #upp.update_users_political_preference(include_movement=False)
-    #upp.update_tweet_user_political_preference(include_movement=False)
-    #upp.update_tweet_user_pbb()
+#    upp = UserPoliticalPreference()
+#    upp.update_users_political_preference(include_movement=False)
+#    upp.update_tweet_user_political_preference(include_movement=False)
+#    upp.update_tweet_user_pbb()
