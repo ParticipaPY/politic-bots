@@ -542,6 +542,25 @@ class UserPoliticalPreference:
             self.db_users.update_record({'screen_name': user['screen_name']}, {'party': user_party,
                                                                                'movement': user_movement})
 
+    def update_user_most_interacted_party_movement(self, include_movement=True):
+        users = self.db_users.search({})
+        total_users = users.count()
+        users_counter = 0
+        for user in users:
+            users_counter += 1
+            user_most_interacted_movement, user_most_interacted_party = None, None
+            logging.info('Processing {0}/{1} users'.format(users_counter, total_users))
+            if include_movement:
+                user_interacted_movements = self.db_tweets.get_movement_user(user['screen_name'])
+                if len(user_interacted_movements) > 0:
+                    user_most_interacted_movement = user_interacted_movements[0]['movimiento']
+            user_interacted_parties = self.db_tweets.get_party_user(user['screen_name'])
+            if len(user_interacted_parties) > 0:
+                user_most_interacted_party = user_interacted_parties[0]['partido']
+            self.db_users.update_record({'screen_name': user['screen_name']},
+                                        {'most_interacted_party': user_most_interacted_party,
+                                         'most_interacted_movement': user_most_interacted_movement})
+
     def update_tweet_user_political_preference(self, include_movement=True):
         tweets = self.db_tweets.search({})
         tweet_authors = defaultdict(dict)
@@ -590,8 +609,9 @@ class UserPoliticalPreference:
             self.db_tweets.update_record({'tweet_obj.id_str': tweet_obj['id_str']}, new_fields)
 
 
-#if __name__ == '__main__':
-#    upp = UserPoliticalPreference()
+if __name__ == '__main__':
+    upp = UserPoliticalPreference()
 #    upp.update_users_political_preference(include_movement=False)
 #    upp.update_tweet_user_political_preference(include_movement=False)
 #    upp.update_tweet_user_pbb()
+    upp.update_user_most_interacted_party_movement()
