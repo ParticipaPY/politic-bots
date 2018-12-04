@@ -22,11 +22,11 @@ class DBManager:
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']
         client = MongoClient(self.__host+':'+self.__port)
-        if db_name == "":
+
+        if not db_name:
             self.__db = client[config['mongo']['db_name']]
         else:
-            self.__db = db_name
-
+            self.__db = client[db_name]
         self.__collection = collection
 
     def num_records_collection(self):
