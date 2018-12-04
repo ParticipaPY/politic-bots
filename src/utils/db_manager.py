@@ -15,14 +15,18 @@ class DBManager:
     __host = None
     __collection = ''
 
-    def __init__(self, collection):
+    def __init__(self, collection, db_name = ""):
         script_parent_dir = pathlib.Path(__file__).parents[1]
         config_fn = script_parent_dir.joinpath('config.json')
         config = get_config(config_fn)
         self.__host = config['mongo']['host']
         self.__port = config['mongo']['port']
         client = MongoClient(self.__host+':'+self.__port)
-        self.__db = client[config['mongo']['db_name']]
+        if db_name == "":
+            self.__db = client[config['mongo']['db_name']]
+        else:
+            self.__db = db_name
+
         self.__collection = collection
 
     def num_records_collection(self):

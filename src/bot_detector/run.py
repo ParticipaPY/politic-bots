@@ -24,16 +24,21 @@ class ToList(click.Option):
 
 
 @click.command()
+@click.option('--reusedb', help='Name of database of profiles with calculated scores to reuse', default="")
+@click.option('--fakepromoter', help='Name of database of profiles with calculated scores to reuse', default=False, is_flag=True)
 @click.option('--users', cls=ToList, help='List of user names to examine', default=[])
-def run_bot_detector(users):
+def run_bot_detector(users, reusedb, fakepromoter):
     bot_detector = BotDetector()
     # create database of user if it doesn't exist
     users_db = DBManager('users')
     if users_db.num_records_collection() == 0:
         na = NetworkAnalyzer()
         na.create_users_db()
-    bot_detector.compute_bot_probability(users)
-    #bot_detector.compute_fake_promoter_heuristic(users)
+
+    bot_detector.compute_bot_probability(users, 'users', reusedb)
+
+    if fakepromoter:
+        bot_detector.compute_fake_promoter_heuristic(users)
 
 
 if __name__ == "__main__":

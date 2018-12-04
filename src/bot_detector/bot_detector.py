@@ -277,24 +277,39 @@ class BotDetector:
                                  exist_user)
             idx_user += 1
 
-    def compute_bot_probability(self, users):
+    def compute_bot_probability(self, users, source_users_db = "", source_users_collection = ""):
+        reusers_db = None
+        if source_users_db and source_users_collection:
+            reusers_db = DBManager(source_users_collection, source_users_db)
+
         if not users:
-            # Get all users who don't have the analysis of bot
+            # Get all users who don't have the analysis of bot in current user
             users = self.__dbm_users.search({'bot_analysis': {'$exists': 0}})
 
         tot_user = len(users) if type(users) == list else users.count()
         idx_user = 1
         for user in users:
             logging.info('Remaining users: {0}'.format(tot_user-idx_user))
+            if reusers_db:
+                reuser_cursor = reusers_db.search({'user.screen_name': user['screen_name']})
+
+                if reuser_cursor.count() > 0:
+                    logging.info('Reusing bot analysis from another DB')
+                    reuser = reuser_cursor[0]
+                    bot_analysis = reuser['bot_analysis']
+                    self.__save_user_pbb(reuser['screen_name'], bot_analysis['pbb'], bot_analysis['raw_score'],
+                                         bot_analysis['features'], bot_analysis['num_evaluated_heuristics'],
+                                         bot_analysis['sum_weights'], reuser['exists'])
+                    continue
+
             if type(users) == list:
                 user_screen_name = user
             else:
                 user_screen_name = user['screen_name']
-            # TODO: check first to get score from internas
             self.__compute_heuristics(user_screen_name)
             idx_user += 1
 
-    def to_csv(self, output_file_name, include_verified_accounts=True):
+def to_csv(self, output_file_name, include_verified_accounts=True):
         if not include_verified_accounts:
             query = {'bot_analysis': {'$exists': 1}, 'verified': {'$ne': True}}
         else:
