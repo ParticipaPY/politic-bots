@@ -277,7 +277,7 @@ class BotDetector:
                                  exist_user)
             idx_user += 1
 
-    def compute_bot_probability(self, users, source_users_db = "", source_users_collection = ""):
+    def compute_bot_probability(self, users, source_users_collection = "", source_users_db = ""):
         reusers_db = None
         if source_users_db and source_users_collection:
             reusers_db = DBManager(source_users_collection, source_users_db)
@@ -291,7 +291,7 @@ class BotDetector:
         for user in users:
             logging.info('Remaining users: {0}'.format(tot_user-idx_user))
             if reusers_db:
-                reuser_cursor = reusers_db.search({'user.screen_name': user['screen_name']})
+                reuser_cursor = reusers_db.search({'screen_name': user['screen_name']})
 
                 if reuser_cursor.count() > 0:
                     logging.info('Reusing bot analysis from another DB')
