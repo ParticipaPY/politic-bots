@@ -108,7 +108,7 @@ class BotDetector:
         if 'bot_analysis' in user_obj.keys():
             return user_obj['bot_analysis']['features']
         else:
-            return None
+            return {}
 
     def __compute_heuristics(self, user_screen_name, recompute_heuristics=False):
         logging.info('\n\nComputing the probability of being bot of the user: {0}\n\n'.format(user_screen_name))
