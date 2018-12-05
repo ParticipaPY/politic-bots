@@ -264,6 +264,10 @@ class BotDetector:
             # Check if the user interacts with bot accounts
             fp = fake_promoter(user_screen_name, self.__dbm_users)
             logging.info('User: {0}, fake promoter score: {1}'.format(user_screen_name, fp))
+
+            if not user_bot_features:
+                user_bot_features = {}
+
             user_bot_features['fake_promoter'] = {
                 'value': fp
             }
