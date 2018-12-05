@@ -298,7 +298,7 @@ class BotDetector:
                 reuser_cursor = reusers_db.search({'screen_name': user['screen_name']})
 
                 if reuser_cursor.count() > 0:
-                    logging.info('Reusing bot analysis from another DB')
+                    logging.info('Reusing bot analysis from another DB for {0}'.format(user['screen_name']))
                     reuser = reuser_cursor[0]
                     bot_analysis = reuser['bot_analysis']
                     self.__save_user_pbb(reuser['screen_name'], bot_analysis['pbb'], bot_analysis['raw_score'],
