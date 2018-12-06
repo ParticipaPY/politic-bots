@@ -313,13 +313,13 @@ class BotDetector:
             self.__compute_heuristics(user_screen_name)
             idx_user += 1
 
-def to_csv(self, output_file_name, include_verified_accounts=True):
+    def to_csv(self, output_file_name, include_verified_accounts=True):
         if not include_verified_accounts:
             query = {'bot_analysis': {'$exists': 1}, 'verified': {'$ne': True}}
         else:
             query = {'bot_analysis': {'$exists': 1}}
         users = self.__dbm_users.search(query)
-        f_name = str(pathlib.Path(__file__).parents[2].joinpath('data',output_file_name))
+        f_name = str(pathlib.Path(__file__).parents[2].joinpath('reports',output_file_name))
         logging.info('Saving bot analysis into the csv file {0}'.format(f_name))
         with open(f_name, 'w', encoding='utf-8') as f:
             user_info_fields = ['screen_name', 'profile_url', 'party', 'movement', 'exists', 'followers',
