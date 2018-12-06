@@ -104,3 +104,24 @@ def get_user(db, screen_name):
         user = user[0]
         return user['tweet_obj']['user']
     return None
+
+
+def fix_users_verified_attribute(tweets_db, users_db):
+    users = users_db.search({'verified':{'$exists':0}})
+    if users:
+        total_users = users.count()
+        print("{0} users do not have the verified attribute".format(total_users ))
+
+    idx = 1
+    for user in users:
+        print("Processing {0}/{1}".format(idx, total_users))
+        idx+=1
+        screen_name = user['screen_name']
+        if screen_name:
+            user_tweets = tweets_db.search({'tweet_obj.user.screen_name':{'$eq':screen_name}})
+            if user_tweets:
+                user_tweet = user_tweets[0]
+                user['verified'] = user_tweet['tweet_obj']['user']['verified']
+                if user['verified']:
+                    print("Updating verified user {0} based on one of its tweets".format(screen_name))
+                users_db.update_record({'screen_name':{'$eq':screen_name}}, user)
