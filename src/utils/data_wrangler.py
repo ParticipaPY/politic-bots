@@ -434,15 +434,22 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
         else:
             import http.client
             response = get_video_config_with_user_bearer(user_bearer, id_tweet)
+            time.sleep(3)
             if response.status != http.client.OK:
                 found_message=True
 
         if found_message:
-            logging.info('\n\nThe tweet {0} DOES NOT have a video!\n'.format(id_tweet))
+            if not response:
+                logging.info('\n\nThe tweet {0} DOES NOT have a video!\n'.format(id_tweet))
+            else:
+                logging.info('\n\nThe tweet {0} DOES NOT have a video! Response STATUS = {1}, HEADERS = {2} \n'.format(id_tweet, str(response.status), str(response.headers)))
             db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 0})
         else:
+            if not response:
+                logging.info('\n\nThe tweet {0} HAS a video!\n'.format(id_tweet))
+            else:
+                logging.info('\n\nThe tweet {0} HAS a video! Response STATUS = {1}, HEADERS = {2} \n'.format(id_tweet, str(response.status),  str(response.headers)))
             db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 1})
-            logging.info('\n\nThe tweet {0} has a video!\n'.format(id_tweet))
 
 
 def fix_tweets_with_empty_flags():
