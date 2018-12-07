@@ -125,3 +125,23 @@ def fix_users_verified_attribute(tweets_db, users_db):
                 if user['verified']:
                     print("Updating verified user {0} based on one of its tweets".format(screen_name))
                 users_db.update_record({'screen_name':{'$eq':screen_name}}, user)
+
+
+def get_video_config_with_user_bearer(user_bearer, status_id):
+    api_domain = "api.twitter.com"
+    api_url = "/1.1/videos/tweet/config/"+status_id+".json"
+    headers = {}
+    headers['authorization'] = "Bearer "+user_bearer
+    import http.client
+    conn = http.client.HTTPSConnection(api_domain)
+    conn.request("GET", api_url, None, headers)
+    return conn.getresponse()
+
+if __name__ == '__main__':
+    import http.client
+    response = get_video_config_with_user_bearer("AAAAAAAAAAAAAAAAAAAAAIK1zgAAAAAA2tUWuhGZ2JceoId5GwYWU5GspY4%3DUq7gzFoCZs1QfwGoVdvSac3IniczZEYXIcDyumCauIXpcAPorE", "937374730281213952")
+
+    if response.status == http.client.OK:
+        print("The status is a VIDEO: {0}".format(str(response.read())))
+    else:
+        print("The status is NOT a VIDEO: {0}".format(str(response.read())))
