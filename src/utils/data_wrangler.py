@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
-from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis, get_video_config_with_user_bearer
 from src.tweet_collector.add_flags import add_values_to_flags, get_entities_tweet, create_flag
 from math import ceil
 from selenium import webdriver
@@ -395,32 +395,50 @@ def save_original_tweets_file():
             writer.writerow(tweet_dict)
 
 
-def add_video_property():
-    driver = webdriver.Chrome()
+# Two methods to add video property:
+# 1. Query https://twitter.com/i/videos/STATUS_ID
+#    If there is embedded video in resulting HTML, then tweet is video
+# 2. Use an authenticated user authorization bearer and query https://api.twitter.com//1.1/videos/tweet/config/STATUS_ID .json
+#    If response is 200, there is a video
+#
+# (1) might be faster with a good connection, but (2) is more accurate
+# even though users are limited to 300 requests per every 15 minutes window
+def add_video_property(use_video_config_api = False, user_bearer=None):
     db = DBManager('tweets')
     plain_tweets = db.get_plain_tweets()
     tot_plain_tweets = len(plain_tweets)
     logging.info('Plain tweets {0}'.format(tot_plain_tweets))
     tweet_counter = 0
+
+    if not use_video_config_api:
+        driver = webdriver.Chrome()
+
     for plain_tweet in plain_tweets:
         tweet_counter += 1
         if 'is_video' in plain_tweet.keys():
             continue
-        logging.info('Remaining {0}'.format(tot_plain_tweets - tweet_counter))
+        logging.info('Remaining tweets: {0}'.format(tot_plain_tweets - tweet_counter))
         id_tweet = plain_tweet['tweet_obj']['id_str']
-        logging.info('Checking if the tweet {0} has a video'.format(id_tweet))
-        video_url = 'https://twitter.com/i/videos/'
-        url = video_url + id_tweet
-        driver.get(url)
-        time.sleep(10)
-        spans = driver.find_elements_by_tag_name('span')
-        span_texts = [span.text for span in spans]
         found_message = False
-        for span_text in span_texts:
-            if span_text == 'The media could not be played.':
-                found_message = True
-                break
+        if not use_video_config_api:
+            video_url = 'https://twitter.com/i/videos/'
+            url = video_url + id_tweet
+            driver.get(url)
+            time.sleep(5)
+            spans = driver.find_elements_by_tag_name('span')
+            span_texts = [span.text for span in spans]
+            for span_text in span_texts:
+                if span_text == 'The media could not be played.':
+                    found_message = True
+                    break
+        else:
+            import http.client
+            response = get_video_config_with_user_bearer(user_bearer, id_tweet)
+            if response.status != http.client.OK:
+                found_message=True
+
         if found_message:
+            logging.info('\n\nThe tweet {0} DOES NOT have a video!\n'.format(id_tweet))
             db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 0})
         else:
             db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 1})
