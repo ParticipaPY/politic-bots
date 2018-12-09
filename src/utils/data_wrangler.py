@@ -10,6 +10,7 @@ import csv
 import logging
 import pathlib
 import re
+import calendar
 import time
 
 
@@ -415,18 +416,25 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
 
     for plain_tweet in plain_tweets:
         tweet_counter += 1
-        if 'is_video' in plain_tweet.keys():
-            continue
+        response = None
+        if 'video_config_api' in plain_tweet.keys():
+             continue
         logging.info('Remaining tweets: {0}'.format(tot_plain_tweets - tweet_counter))
         id_tweet = plain_tweet['tweet_obj']['id_str']
         found_message = False
+        method = "video_config_api"
+        result_value = None
+        result_status = None
+        result_headers = None
         if not use_video_config_api:
+            method = "video_embed_url"
             video_url = 'https://twitter.com/i/videos/'
             url = video_url + id_tweet
             driver.get(url)
             time.sleep(5)
             spans = driver.find_elements_by_tag_name('span')
             span_texts = [span.text for span in spans]
+            result_value = str(span_texts)
             for span_text in span_texts:
                 if span_text == 'The media could not be played.':
                     found_message = True
@@ -434,22 +442,34 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
         else:
             import http.client
             response = get_video_config_with_user_bearer(user_bearer, id_tweet)
-            time.sleep(3)
+            curr_rate_limit_remaining = int(response.headers['x-rate-limit-remaining'])
+            curr_time = calendar.timegm(time.gmtime())
+            curr_rate_limit_expiration = int(response.headers['x-rate-limit-reset'])
+            seconds_until_expiration = curr_rate_limit_expiration - curr_time
+
+            result_value = str(response.read())
+            result_headers = str(response.headers)
+            result_status = str(response.status)
+
             if response.status != http.client.OK:
                 found_message=True
 
+            if curr_rate_limit_remaining == 0:
+                logging.info('\n\nProcessed {0} tweets Twitter API rate limit exceeded. Waiting for {1} seconds'
+                             .format(tweet_counter, seconds_until_expiration+1))
+                time.sleep(seconds_until_expiration+1)
+
+        update_object = {}
         if found_message:
-            if not response:
-                logging.info('\n\nThe tweet {0} DOES NOT have a video!\n'.format(id_tweet))
-            else:
-                logging.info('\n\nThe tweet {0} DOES NOT have a video! Response STATUS = {1}, HEADERS = {2} \n'.format(id_tweet, str(response.status), str(response.headers)))
-            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 0})
+            logging.info('\n\nThe tweet {0} DOES NOT have a video! Response STATUS = \n{1}, HEADERS = \n{2}, \nBODY = {3} \n'
+                             .format(id_tweet, result_status, result_headers, result_value))
+            update_object[method] = {'is_video': 0, 'is_video_response': result_value}
+            db.update_record({'tweet_obj.id_str': id_tweet}, update_object)
         else:
-            if not response:
-                logging.info('\n\nThe tweet {0} HAS a video!\n'.format(id_tweet))
-            else:
-                logging.info('\n\nThe tweet {0} HAS a video! Response STATUS = {1}, HEADERS = {2} \n'.format(id_tweet, str(response.status),  str(response.headers)))
-            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 1})
+            logging.info('\n\nThe tweet {0} HAS a video! Response STATUS = {1}, HEADERS = {2} \n'
+                         .format(id_tweet, result_status,  result_headers))
+            update_object[method] = {'is_video': 1, 'is_video_response': result_value}
+            db.update_record({'tweet_obj.id_str': id_tweet}, update_object)
 
 
 def fix_tweets_with_empty_flags():
