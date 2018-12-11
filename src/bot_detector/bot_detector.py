@@ -264,6 +264,10 @@ class BotDetector:
             # Check if the user interacts with bot accounts
             fp = fake_promoter(user_screen_name, self.__dbm_users)
             logging.info('User: {0}, fake promoter score: {1}'.format(user_screen_name, fp))
+
+            if not user_bot_features:
+                user_bot_features = {}
+
             user_bot_features['fake_promoter'] = {
                 'value': fp
             }
@@ -294,7 +298,7 @@ class BotDetector:
                 reuser_cursor = reusers_db.search({'screen_name': user['screen_name']})
 
                 if reuser_cursor.count() > 0:
-                    logging.info('Reusing bot analysis from another DB')
+                    logging.info('Reusing bot analysis from another DB for {0}'.format(user['screen_name']))
                     reuser = reuser_cursor[0]
                     bot_analysis = reuser['bot_analysis']
                     self.__save_user_pbb(reuser['screen_name'], bot_analysis['pbb'], bot_analysis['raw_score'],
@@ -309,13 +313,13 @@ class BotDetector:
             self.__compute_heuristics(user_screen_name)
             idx_user += 1
 
-def to_csv(self, output_file_name, include_verified_accounts=True):
+    def to_csv(self, output_file_name, include_verified_accounts=True):
         if not include_verified_accounts:
             query = {'bot_analysis': {'$exists': 1}, 'verified': {'$ne': True}}
         else:
             query = {'bot_analysis': {'$exists': 1}}
         users = self.__dbm_users.search(query)
-        f_name = str(pathlib.Path(__file__).parents[2].joinpath('data',output_file_name))
+        f_name = str(pathlib.Path(__file__).parents[2].joinpath('reports',output_file_name))
         logging.info('Saving bot analysis into the csv file {0}'.format(f_name))
         with open(f_name, 'w', encoding='utf-8') as f:
             user_info_fields = ['screen_name', 'profile_url', 'party', 'movement', 'exists', 'followers',

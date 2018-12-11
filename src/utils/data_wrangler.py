@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
-from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis
+from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis, get_video_config_with_user_bearer
 from src.tweet_collector.add_flags import add_values_to_flags, get_entities_tweet, create_flag
 from math import ceil
 from selenium import webdriver
@@ -10,6 +10,7 @@ import csv
 import logging
 import pathlib
 import re
+import calendar
 import time
 
 
@@ -395,36 +396,80 @@ def save_original_tweets_file():
             writer.writerow(tweet_dict)
 
 
-def add_video_property():
-    driver = webdriver.Chrome()
+# Two methods to add video property:
+# 1. Query https://twitter.com/i/videos/STATUS_ID
+#    If there is embedded video in resulting HTML, then tweet is video
+# 2. Use an authenticated user authorization bearer and query https://api.twitter.com//1.1/videos/tweet/config/STATUS_ID .json
+#    If response is 200, there is a video
+#
+# (1) might be faster with a good connection, but (2) is more accurate
+# even though users are limited to 300 requests per every 15 minutes window
+def add_video_property(use_video_config_api = False, user_bearer=None):
     db = DBManager('tweets')
     plain_tweets = db.get_plain_tweets()
     tot_plain_tweets = len(plain_tweets)
     logging.info('Plain tweets {0}'.format(tot_plain_tweets))
     tweet_counter = 0
+
+    if not use_video_config_api:
+        driver = webdriver.Chrome()
+
     for plain_tweet in plain_tweets:
         tweet_counter += 1
-        if 'is_video' in plain_tweet.keys():
-            continue
-        logging.info('Remaining {0}'.format(tot_plain_tweets - tweet_counter))
+        response = None
+        if 'video_config_api' in plain_tweet.keys():
+             continue
+        logging.info('Remaining tweets: {0}'.format(tot_plain_tweets - tweet_counter))
         id_tweet = plain_tweet['tweet_obj']['id_str']
-        logging.info('Checking if the tweet {0} has a video'.format(id_tweet))
-        video_url = 'https://twitter.com/i/videos/'
-        url = video_url + id_tweet
-        driver.get(url)
-        time.sleep(10)
-        spans = driver.find_elements_by_tag_name('span')
-        span_texts = [span.text for span in spans]
         found_message = False
-        for span_text in span_texts:
-            if span_text == 'The media could not be played.':
-                found_message = True
-                break
-        if found_message:
-            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 0})
+        method = "video_config_api"
+        result_value = None
+        result_status = None
+        result_headers = None
+        if not use_video_config_api:
+            method = "video_embed_url"
+            video_url = 'https://twitter.com/i/videos/'
+            url = video_url + id_tweet
+            driver.get(url)
+            time.sleep(5)
+            spans = driver.find_elements_by_tag_name('span')
+            span_texts = [span.text for span in spans]
+            result_value = str(span_texts)
+            for span_text in span_texts:
+                if span_text == 'The media could not be played.':
+                    found_message = True
+                    break
         else:
-            db.update_record({'tweet_obj.id_str': id_tweet}, {'is_video': 1})
-            logging.info('\n\nThe tweet {0} has a video!\n'.format(id_tweet))
+            import http.client
+            response = get_video_config_with_user_bearer(user_bearer, id_tweet)
+            curr_rate_limit_remaining = int(response.headers['x-rate-limit-remaining'])
+            curr_time = calendar.timegm(time.gmtime())
+            curr_rate_limit_expiration = int(response.headers['x-rate-limit-reset'])
+            seconds_until_expiration = curr_rate_limit_expiration - curr_time
+
+            result_value = str(response.read())
+            result_headers = str(response.headers)
+            result_status = str(response.status)
+
+            if response.status != http.client.OK:
+                found_message=True
+
+            if curr_rate_limit_remaining == 0:
+                logging.info('\n\nProcessed {0} tweets Twitter API rate limit exceeded. Waiting for {1} seconds'
+                             .format(tweet_counter, seconds_until_expiration+1))
+                time.sleep(seconds_until_expiration+1)
+
+        update_object = {}
+        if found_message:
+            logging.info('\n\nThe tweet {0} DOES NOT have a video! Response STATUS = \n{1}, HEADERS = \n{2}, \nBODY = {3} \n'
+                             .format(id_tweet, result_status, result_headers, result_value))
+            update_object[method] = {'is_video': 0, 'is_video_response': result_value}
+            db.update_record({'tweet_obj.id_str': id_tweet}, update_object)
+        else:
+            logging.info('\n\nThe tweet {0} HAS a video! Response STATUS = {1}, HEADERS = {2} \n'
+                         .format(id_tweet, result_status,  result_headers))
+            update_object[method] = {'is_video': 1, 'is_video_response': result_value}
+            db.update_record({'tweet_obj.id_str': id_tweet}, update_object)
 
 
 def fix_tweets_with_empty_flags():

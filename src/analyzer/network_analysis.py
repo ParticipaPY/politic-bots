@@ -160,7 +160,9 @@ class NetworkAnalyzer:
                 'original_tweets': user['original_count'],
                 'rts': user['retweets_count'],
                 'qts': user['quotes_count'],
-                'rps': user['replies_count']
+                'rps': user['replies_count'],
+                'verified': user['verified']
+
             }
             # Assign the party and movement to the party and movement that are more related to the user
             # counting both Hashtags and Mentions by the user
