@@ -296,9 +296,5 @@ def fake_handlers(data, db_users, db_tweets):
     :return: integer that represents the number of conditions met by the user
     """
 
-    # Get heuristic parameters
-    file_path = pathlib.Path(__file__).parents[0].joinpath('heuristic_config.json')
-    config = get_config(file_path)['fake_handler']
-
-    return similar_account_name(data, db_users, db_tweets, config)
+    return similar_account_name(data, db_users, db_tweets)
 
