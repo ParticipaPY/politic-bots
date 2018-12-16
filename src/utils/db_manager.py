@@ -828,7 +828,8 @@ class DBManager:
                 'rps': '$rps',
                 'followers': '$followers',
                 'friends': '$friends',
-                'pbb': '$bot_analysis.pbb'
+                'pbb': '$bot_analysis.pbb',
+                'raw_score': '$bot_analysis'
             }},
             {'$sort': {'tweets': -1}}
         ]
@@ -847,7 +848,7 @@ class DBManager:
             {'$project': {
                'id_str': '$tweet_obj.id_str',
                'datetime': {'$dateFromString': {
-                    'dateString': '$tweet_py_datetime'
+                    'dateString': '$tweet_py_date'
                 }},
                '_id': 0,
             }},
