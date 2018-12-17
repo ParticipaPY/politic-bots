@@ -7,6 +7,7 @@ from src.bot_detector.heuristics.fake_handlers import similar_account_name, rand
 from src.bot_detector.heuristics.fake_promoter import fake_promoter
 from src.bot_detector.heuristics.simple import *
 from src.bot_detector.heuristics.sleepless_account import *
+from src.bot_detector.heuristics.tweet_frequency import *
 
 from src.utils.utils import parse_date, get_user
 
@@ -244,7 +245,12 @@ class BotDetector:
                 user_bot_features['sleepless_account'] = {
                     'value': is_sleepless(user_timeline)
                 }
-
+        if recompute_heuristics or 'tweet_frequency' not in user_computed_heuristics:
+            if user_timeline :
+                freq = frequency(user_timeline)['tweets_per_hour']
+                user_bot_features['tweet_frequency'] = {
+                    'value': freq
+                }
         # Compute the user's probability of being bot
         num_computed_heuristics = len(user_bot_features.keys())
         bot_score, sum_weights, pbb = self.__compute_bot_formula(user_bot_features, exist_user)
@@ -336,7 +342,7 @@ class BotDetector:
                                    'default_background', 'similar_account', 'random_numbers', 'ff_ratio',
                                    'random_letters', 'default_profile', 'creation_date', 'empty_description',
                                    'retweet_timeline', 'reply_electoral', 'reply_timeline', 'fake_promoter',
-                                   'sleepless_account', 'raw_score', 'sum_weights', 'pbb']
+                                   'sleepless_account', 'tweet_frequency', 'raw_score', 'sum_weights', 'pbb']
             writer = csv.DictWriter(f, fieldnames=user_info_fields+bot_analysis_fields)
             writer.writeheader()
             tot_users = users.count()

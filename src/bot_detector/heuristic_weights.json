@@ -15,5 +15,6 @@
   "similar_account": 2.5,
   "exists": 2,
   "fake_promoter": 3,
-  "sleepless_account": 3
+  "sleepless_account": 3,
+  "tweet_frequency": 3
 }
