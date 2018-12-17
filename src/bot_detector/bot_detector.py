@@ -6,6 +6,8 @@ from src.utils.db_manager import DBManager
 from src.bot_detector.heuristics.fake_handlers import similar_account_name, random_account_letter, random_account_number
 from src.bot_detector.heuristics.fake_promoter import fake_promoter
 from src.bot_detector.heuristics.simple import *
+from src.bot_detector.heuristics.sleepless_account import *
+
 from src.utils.utils import parse_date, get_user
 
 
@@ -237,6 +239,12 @@ class BotDetector:
                 'value': similarity_score
             }
 
+        if recompute_heuristics or 'sleepless_account' not in user_computed_heuristics:            
+            if user_timeline:       
+                user_bot_features['sleepless_account'] = {
+                    'value': is_sleepless(user_timeline)
+                }
+
         # Compute the user's probability of being bot
         num_computed_heuristics = len(user_bot_features.keys())
         bot_score, sum_weights, pbb = self.__compute_bot_formula(user_bot_features, exist_user)
@@ -328,7 +336,7 @@ class BotDetector:
                                    'default_background', 'similar_account', 'random_numbers', 'ff_ratio',
                                    'random_letters', 'default_profile', 'creation_date', 'empty_description',
                                    'retweet_timeline', 'reply_electoral', 'reply_timeline', 'fake_promoter',
-                                   'raw_score', 'sum_weights', 'pbb']
+                                   'sleepless_account', 'raw_score', 'sum_weights', 'pbb']
             writer = csv.DictWriter(f, fieldnames=user_info_fields+bot_analysis_fields)
             writer.writeheader()
             tot_users = users.count()

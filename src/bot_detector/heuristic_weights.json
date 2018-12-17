@@ -14,5 +14,6 @@
   "random_numbers": 2,
   "similar_account": 2.5,
   "exists": 2,
-  "fake_promoter": 3
+  "fake_promoter": 3,
+  "sleepless_account": 3
 }
