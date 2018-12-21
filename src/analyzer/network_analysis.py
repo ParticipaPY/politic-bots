@@ -215,9 +215,23 @@ class NetworkAnalyzer:
                 else:
                     u_ff_ratio = self.__computer_ff_ratio(user['friends'], user['followers'])
                 pbb_score = user['bot_analysis']['pbb'] if 'bot_analysis' in user.keys() else ''
+                raw_score = user['bot_analysis']['raw_score'] if 'bot_analysis' in user.keys() else ''
+                exists = user['exists'] if 'exists' in user.keys() else ''
+                inter_party_profile = user['is_potential_troll'] if 'is_potential_troll' in user.keys() else ''
+                # ToDo: make bot threshold configurable
+                is_bot = 0
+                if exists == 1:
+                    if raw_score >= 1.716666667:
+                        is_bot = 1
+                else:
+                    if raw_score >= 1.465753425:
+                        is_bot = 1
+
                 self.__nodes.add(tuple({'screen_name': user['screen_name'], 'party': user['party'],
                                         'movement': user['movement'], 'ff_ratio': u_ff_ratio,
-                                        'pbb': pbb_score}.items()))
+                                        'pbb': pbb_score, 'raw_score': raw_score, 'exists': exists,
+                                        'is_bot': is_bot, 'inter_party_profile': inter_party_profile
+                                        }.items()))
                 for interacted_user, interactions in user['interactions'].items():
                     iuser = self.__dbm_users.find_record({'screen_name': interacted_user})
                     if not iuser:
@@ -235,18 +249,32 @@ class NetworkAnalyzer:
                         else:
                             i_ff_ratio = self.__computer_ff_ratio(iuser['friends'], iuser['followers'])
 
-                    pbb_iuser_score = user['bot_analysis']['pbb'] if 'bot_analysis' in iuser.keys() else ''
+                    pbb_iuser_score = iuser['bot_analysis']['pbb'] if 'bot_analysis' in iuser.keys() else ''
+                    raw_score_iuser = iuser['bot_analysis']['raw_score'] if 'bot_analysis' in iuser.keys() else ''
+                    exists_iuser = iuser['exists'] if 'exists' in iuser.keys() else ''
+                    inter_party_profile_iuser = iuser['is_potential_troll'] if 'is_potential_troll' in iuser.keys() else ''
+                    # ToDo: make bot threshold configurable
+                    is_bot_iuser = 0
+                    if exists_iuser == 1:
+                        if raw_score_iuser >= 1.716666667:
+                            is_bot_iuser = 1
+                    else:
+                        if raw_score_iuser >= 1.465753425:
+                            is_bot_iuser = 1
+
                     self.__nodes.add(tuple({'screen_name': iuser['screen_name'], 'party': iuser['party'],
                                             'movement': iuser['movement'], 'ff_ratio': i_ff_ratio,
-
-                                            'pbb': pbb_iuser_score}.items()))
+                                            'pbb': pbb_iuser_score, 'raw_score': raw_score_iuser, 'exists': exists_iuser,
+                                            'is_bot': is_bot_iuser, 'inter_party_profile': inter_party_profile_iuser}.items()))
                     edge = {
                         'nodeA': {'screen_name': user['screen_name'], 'ff_ratio': u_ff_ratio,
                                   'party': user['party'], 'movement': user['movement'],
-                                  'pbb': pbb_score},
+                                  'pbb': pbb_score, 'raw_score': raw_score, 'exists': exists,
+                                  'is_bot': is_bot, 'inter_party_profile': inter_party_profile},
                         'nodeB': {'screen_name': interacted_user, 'ff_ratio': i_ff_ratio,
                                   'party': iuser['party'], 'movement': iuser['movement'],
-                                  'pbb': pbb_iuser_score},
+                                  'pbb': pbb_iuser_score, 'raw_score': raw_score_iuser, 'exists': exists_iuser,
+                                  'is_bot': is_bot_iuser, 'inter_party_profile': inter_party_profile_iuser},
                         'weight': interactions['total']
                     }
                     self.__network.append(edge)
@@ -320,6 +348,7 @@ class NetworkAnalyzer:
     def save_network_in_gexf_format(self, file_name):
         today = datetime.strftime(datetime.now(), '%m/%d/%y')
         f_name = pathlib.Path(__file__).parents[2].joinpath('sna', 'gefx', file_name+'.gexf')
+
         with open(str(f_name), 'w', encoding='utf-8') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" '
@@ -337,6 +366,9 @@ class NetworkAnalyzer:
             f.write('<attribute id="1" title="movement" type="string"/>\n')
             f.write('<attribute id="2" title="ff_ratio" type="float"/>\n')
             f.write('<attribute id="3" title="pbb" type="float"/>\n')
+            f.write('<attribute id="4" title="raw_score" type="float"/>\n')
+            f.write('<attribute id="5" title="exists" type="float"/>\n')
+            f.write('<attribute id="6" title="is_bot" type="float"/>\n')
             f.write('</attributes>\n')
             # add nodes
             f.write('<nodes>\n')
@@ -350,6 +382,9 @@ class NetworkAnalyzer:
                 f.write('<attvalue for="1" value="{0}"/>\n'.format(node['movement']))
                 f.write('<attvalue for="2" value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('<attvalue for="3" value="{0}"/>\n'.format(node['pbb']))
+                f.write('<attvalue for="4" value="{0}"/>\n'.format(node['raw_score']))
+                f.write('<attvalue for="5" value="{0}"/>\n'.format(node['exists']))
+                f.write('<attvalue for="6" value="{0}"/>\n'.format(node['is_bot']))
                 f.write('</attvalues>\n')
                 #f.write('<viz:size value="{0}"/>\n'.format(node['ff_ratio']))
                 f.write('</node>\n')
