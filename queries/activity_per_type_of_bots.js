@@ -10,10 +10,10 @@ db.getCollection("users").aggregate(
 		// Stage 2
 		{
 			$project: {
-				ors_total: { $sum : "$original_tweets"},
-				rts_total: { $sum : "$rts"},
-				rps_total: { $sum : "$rps"},
-				qts_total: { $sum : "$qts"}, 
+				ors_total: "$original_tweets",
+				rts_total: "$rts",
+				rps_total: "$rps",
+				qts_total: "$qts", 
 				_id: "all" 
 			}
 		},

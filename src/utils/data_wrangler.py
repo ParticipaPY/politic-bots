@@ -417,8 +417,12 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
     for plain_tweet in plain_tweets:
         tweet_counter += 1
         response = None
-        if 'video_config_api' in plain_tweet.keys():
-             continue
+        # video_config_api_response = None
+        # if 'video_config_api' in plain_tweet.keys():
+        #     video_config_api_response = plain_tweet['video_config_api']['is_video_response']
+        if 'video_embed_url' in plain_tweet.keys():
+            video_config_api_response = plain_tweet['video_config_api']['is_video_response']
+
         logging.info('Remaining tweets: {0}'.format(tot_plain_tweets - tweet_counter))
         id_tweet = plain_tweet['tweet_obj']['id_str']
         found_message = False
@@ -426,12 +430,28 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
         result_value = None
         result_status = None
         result_headers = None
+
+        previous_responses = {}
+        previous_responses['noexist'] = "Sorry, that page does not exist"
+        previous_responses['empty'] = "b''"
+        previous_responses['limit'] = "Rate limit exceeded"
+        previous_responses['nomedia'] = "The media could not be played"
+
+        # proceed = False
+        # if video_config_api_response:
+        #     if video_config_api_response.__contains__(previous_responses['noexist']) or video_config_api_response == previous_responses['empty'] or video_config_api_response.__contains__(previous_responses['limit']):
+        #         logging.info('Processing tweet that got response: {0}'.format(video_config_api_response))
+        #         proceed = True
+        #
+        # if not proceed:
+        #     continue
+
         if not use_video_config_api:
             method = "video_embed_url"
             video_url = 'https://twitter.com/i/videos/'
             url = video_url + id_tweet
             driver.get(url)
-            time.sleep(5)
+            time.sleep(10)
             spans = driver.find_elements_by_tag_name('span')
             span_texts = [span.text for span in spans]
             result_value = str(span_texts)
@@ -442,9 +462,15 @@ def add_video_property(use_video_config_api = False, user_bearer=None):
         else:
             import http.client
             response = get_video_config_with_user_bearer(user_bearer, id_tweet)
-            curr_rate_limit_remaining = int(response.headers['x-rate-limit-remaining'])
+            curr_rate_limit_remaining_header = response.headers['x-rate-limit-remaining']
+            curr_rate_limit_remaining = 0
+            if curr_rate_limit_remaining_header:
+                curr_rate_limit_remaining = int(curr_rate_limit_remaining_header)
             curr_time = calendar.timegm(time.gmtime())
-            curr_rate_limit_expiration = int(response.headers['x-rate-limit-reset'])
+            curr_rate_limit_expiration_header = response.headers['x-rate-limit-reset']
+            curr_rate_limit_expiration = curr_time
+            if curr_rate_limit_expiration_header:
+                curr_rate_limit_expiration = int(curr_rate_limit_expiration_header )
             seconds_until_expiration = curr_rate_limit_expiration - curr_time
 
             result_value = str(response.read())
