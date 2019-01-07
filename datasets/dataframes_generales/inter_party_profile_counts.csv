@@ -1,0 +1,51 @@
+"_id.most_interacted_party",_id.party,count,party-tuple
+somospy,plra,1.0,plra-somospy
+prf,plra,1.0,plra-prf
+ppq,plra,2.0,plra-ppq
+pmas,plra,14.0,plra-pmas
+pen,plra,9.0,plra-pen
+pdp,plra,63.0,plra-pdp
+kuna pyrenda,plra,4.0,plra-kuna pyrenda
+hagamos,plra,2.0,plra-hagamos
+ganar,plra,93.0,plra-ganar
+fg,plra,119.0,plra-fg
+cruzada,plra,1.0,plra-cruzada
+compromiso,plra,1.0,plra-compromiso
+avancemos,plra,23.0,plra-avancemos
+somospy,pdp,1.0,pdp-somospy
+pmas,pdp,8.0,pdp-pmas
+plra,pdp,20.0,pdp-plra
+pen,pdp,2.0,pdp-pen
+kuna pyrenda,pdp,1.0,pdp-kuna pyrenda
+fg,pdp,1.0,pdp-fg
+cruzada,pdp,1.0,pdp-cruzada
+avancemos,pdp,1.0,pdp-avancemos
+plra,null,2.0,null-plra
+ppq,hagamos,3.0,hagamos-ppq
+pmas,hagamos,2.0,hagamos-pmas
+plra,hagamos,22.0,hagamos-plra
+pen,hagamos,4.0,hagamos-pen
+pdp,hagamos,7.0,hagamos-pdp
+kuna pyrenda,hagamos,1.0,hagamos-kuna pyrenda
+ganar,hagamos,1.0,hagamos-ganar
+de la a,hagamos,2.0,hagamos-de la a
+cruzada,hagamos,1.0,hagamos-cruzada
+avancemos,hagamos,1.0,hagamos-avancemos
+plra,ganar,16.0,ganar-plra
+fg,ganar,2.0,ganar-fg
+avancemos,ganar,1.0,ganar-avancemos
+unace,anr,4.0,anr-unace
+ppq,anr,7.0,anr-ppq
+pmas,anr,16.0,anr-pmas
+plra,anr,336.0,anr-plra
+pj,anr,2.0,anr-pj
+pen,anr,14.0,anr-pen
+pdp,anr,76.0,anr-pdp
+kuna pyrenda,anr,2.0,anr-kuna pyrenda
+hagamos,anr,2.0,anr-hagamos
+ganar,anr,16.0,anr-ganar
+fg,anr,20.0,anr-fg
+de la a,anr,1.0,anr-de la a
+cruzada,anr,1.0,anr-cruzada
+compromiso,anr,1.0,anr-compromiso
+avancemos,anr,6.0,anr-avancemos
