@@ -3,8 +3,7 @@ import json
 import pathlib
 import re
 
-from datetime import datetime, timedelta, tzinfo
-
+from datetime import datetime, timedelta, tzinfo, time
 
 # Get configuration from file
 def get_config(config_file):
@@ -93,6 +92,9 @@ def parse_date(date):
             'year': split_date[5]}
     return date
 
+# Parses from the string created_at to datetime type
+def tweet_datetime(tweet):
+    return datetime.strptime(tweet['created_at'], "%a %b %d %H:%M:%S %z %Y")
 
 # Get information about the user, check
 # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
