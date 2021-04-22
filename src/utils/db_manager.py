@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from src.utils.utils import get_config, get_user_handlers_and_hashtags, get_py_date
 
 import pathlib
@@ -71,11 +71,34 @@ class DBManager:
             query.update({'extraction_date': {'$in': kwargs['limited_to_time_window']}})
         return self.search(query)
 
-    def find_all(self, projection=None):
-        if projection:
-            return self.__db[self.__collection].find({}, projection)
+    def find_all(self, query={}, projection=None, sort=None, pagination=None):
+        order_by = []
+        if sort:
+            for clause in sort:
+                order_by.append((clause['key'], clause['direction']))
+        if pagination:
+            skips = pagination['page_size'] * (pagination['page_num']-1)
+        if projection and sort and pagination:            
+            return self.__db[self.__collection].find(query, projection).\
+                skip(skips).sort(order_by).limit(pagination['page_size'])
+        elif projection and pagination and not sort:
+            return self.__db[self.__collection].find(query, projection).\
+                skip(skips).limit(pagination['page_size'])
+        elif projection and sort and not pagination:
+            return self.__db[self.__collection].find(query, projection).\
+                sort(order_by)
+        elif not projection and pagination and sort:
+            return self.__db[self.__collection].find(query).\
+                skip(skips).sort(order_by).limit(pagination['page_size'])
+        elif projection and not sort and not pagination:
+            return self.__db[self.__collection].find(query, projection)
+        elif sort and not projection and not pagination:
+            return self.__db[self.__collection].find(query).sort(order_by)
+        elif pagination and not projection and not sort:
+            return self.__db[self.__collection].find(query).skip(skips).\
+                limit(pagination['page_size'])
         else:
-            return self.__db[self.__collection].find()
+            return self.__db[self.__collection].find(query)
 
     def find_tweets_by_hashtag(self, hashtag, **kwargs):
         query = {'type': 'hashtag', 'keyword': hashtag, 'relevante': 1}
@@ -940,27 +963,42 @@ class DBManager:
             logging.info('Tweet not inserted because num_results = {0}'.format(num_results))
             return False
 
+    def get_tweets_reduced(self, filters={}, projection={}):        
+        results = self.find_all(filters, projection)
+        reduced_tweets = []
+        special_keys = ['retweeted_status', 'is_quote_status',
+                        'in_reply_to_status_id_str']
+        for tweet in results:
+            reduced_tweet = {}
+            if 'type' in projection and 'type' not in tweet:
+                if 'retweeted_status' in tweet:
+                    reduced_tweet['type'] = 'rt'
+                elif 'is_quote_status' in tweet and tweet['is_quote_status']:
+                    reduced_tweet['type'] = 'qt'
+                elif 'in_reply_to_status_id_str' in tweet and tweet['in_reply_to_status_id_str']:
+                    reduced_tweet['type'] = 'rp'
+                else:
+                    reduced_tweet['type'] = 'og'
+            for key, value in tweet.items():
+                if key not in special_keys:
+                    if isinstance(value, dict):
+                        for k, v in value.items():
+                            combined_key = key + '_' + k
+                            reduced_tweet[combined_key] = tweet[key][k]
+                    else:
+                        reduced_tweet[key] = tweet[key]
+            reduced_tweets.append(reduced_tweet)
+        
+        return reduced_tweets
 
-#if __name__ == '__main__':
-#    db = DBManager('tweets')
-#    r = db.interactions_user_over_time('Santula')
-#    party = db.get_party_user('nielsbirbaumer')
-#    print(party)
-#    domains = db.get_domains_of_tweets_with_links(**{'partido': 'anr', 'no_movimiento': 'honor colorado',
-#                                                     'movimiento': 'colorado añetete'})
-#    print(domains)
-#    ret = db.get_posting_frequency_in_minutes(**{'partido': 'anr', 'movimiento': 'honor colorado'})
-#    pass
-#    users = db.get_users_and_activity(**{'partido': 'anr', 'movimiento': 'honor colorado'})
-#    db.get_sentiment_tweets(**{'partido': 'anr'})
-#     id_multi_tweets = [tweet['tweet_obj']['id_str'] for tweet in plain_tweets]
-#     link_tweets = db.get_tweets_with_links()
-#     print('Tweets with links {0}'.format(len(link_tweets)))
-#     id_multi_tweets.extend([tweet['tw_obj']['id_str'] for tweet in link_tweets])
-#     photo_tweets = db.get_tweets_with_photo()
-#     print('Tweets with photos {0}'.format(len(photo_tweets)))
-#     id_multi_tweets.extend([tweet['tw_obj']['id_str'] for tweet in photo_tweets])
-#     print('Tweets with videos {0}'.format(len(db.get_tweets_with_video())))
-#     print('Total multimedia tweets: {0}'.format(len(id_multi_tweets)))
-#     not_considered_id_tweets = [id_tweet for id_tweet in id_original_tweets if id_tweet not in id_multi_tweets]
-#     print(not_considered_id_tweets)
+    def bulk_update(self, update_queries):
+        # create list of objects to update
+        update_objs = []
+        for update_query in update_queries:
+            update_objs.append(
+                UpdateOne(
+                            update_query['filter'], 
+                            {'$set': update_query['new_values']}
+                          )
+            )            
+        return self.__db[self.__collection].bulk_write(update_objs)
