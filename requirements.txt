@@ -21,7 +21,7 @@ Jinja2==2.10
 jsonschema==2.6.0
 jupyter==1.0.0
 jupyter-client==5.2.3
-jupyter-console==5.2.0
+jupyter-console
 jupyter-core==4.4.0
 kiwisolver==1.0.1
 MarkupSafe==1.0
@@ -40,7 +40,7 @@ pathlib==1.0.1
 pexpect==4.6.0
 pickleshare==0.7.5
 prometheus-client==0.3.1
-prompt-toolkit==2.0.4
+prompt-toolkit
 ptyprocess==0.6.0
 Pygments==2.2.0
 pymongo==3.7.2
