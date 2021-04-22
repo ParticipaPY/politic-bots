@@ -1,7 +1,10 @@
+# coding: utf-8
+
 from collections import defaultdict
 from datetime import datetime
 from src.utils.db_manager import DBManager
-from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, clean_emojis, get_video_config_with_user_bearer
+from src.utils.utils import get_user_handlers_and_hashtags, parse_metadata, get_config, get_py_date, \
+                            clean_emojis, get_video_config_with_user_bearer, calculate_remaining_execution_time
 from src.tweet_collector.add_flags import add_values_to_flags, get_entities_tweet, create_flag
 from math import ceil
 from selenium import webdriver
@@ -17,15 +20,18 @@ import time
 logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
 
+BATCH_SIZE = 5000
+
+
 class TweetEvaluator:
     special_chars = r'[=\+/&<>;:\'\"\?%$!¡\,\. \t\r\n]+'
     hashtags, user_handlers = [], []
     __dbm = None
     BATCH_SIZE = 1000
 
-    def __init__(self):
+    def __init__(self, collection_name='tweets', db_name=''):
         self.user_handlers, self.hashtags = get_user_handlers_and_hashtags()
-        self.__dbm = DBManager('tweets')
+        self.__dbm = DBManager(collection=collection_name, db_name=db_name)
 
     def __is_relevant(self, users_counter, hashtags_counter):
         # a tweet is considered relevant if fulfills one of two
@@ -513,5 +519,113 @@ def fix_tweets_with_empty_flags():
         dbm.update_record({'tweet_obj.id_str': tweet['tweet_obj']['id_str']}, flag)
 
 
+def add_fields(dbm, update_queries):
+    logging.info('Adding fields to tweets...')
+    ret = dbm.bulk_update(update_queries)
+    modified_tweets = ret.bulk_api_result['nModified']
+    logging.info('Added fields to {0:,} tweets'.format(modified_tweets))
+
+
+def get_tweet_text(tweet):
+    try:
+        if 'extended_tweet' in tweet:
+            tweet_txt = tweet['extended_tweet']['full_text']
+        elif 'full_text' in tweet:
+            tweet_txt = tweet['full_text']
+        else:
+            tweet_txt = tweet['text']
+        return tweet_txt
+    except Exception as e:
+        logging.error('Exception {}'.format(e))
+        logging.info(tweet)
+
+
+def add_complete_text_attr(collection='tweets'):
+    dbm = DBManager(collection=collection)
+    query = {
+        'tweet_obj.complete_text': {'$eq': None}
+    }
+    projection = {
+        '_id': 0,
+        'tweet_obj': 1
+    }
+    logging.info('Finding tweets...')
+    docs = dbm.find_all(query, projection)
+    total_tweets = docs.count()
+    logging.info('Found {:,} tweets'.format(total_tweets))
+    max_batch = BATCH_SIZE if total_tweets > BATCH_SIZE else total_tweets
+    update_queries = []
+    processing_counter = total_segs = 0
+    for doc in docs:
+        start_time = time.time()
+        processing_counter += 1
+        tweet = doc['tweet_obj']
+        org_tweet = tweet if 'retweeted_status' not in tweet else tweet['retweeted_status']
+        complete_text = get_tweet_text(org_tweet)
+        update_queries.append({
+            'filter': {'tweet_obj.id_str': tweet['id_str']},
+            'new_values': {'tweet_obj.complete_text': complete_text}
+        })
+        if len(update_queries) == max_batch:
+            add_fields(dbm, update_queries)
+            update_queries = []
+        total_segs = calculate_remaining_execution_time(start_time, total_segs,
+                                                        processing_counter, 
+                                                        total_tweets)
+    if len(update_queries) > 0:
+        add_fields(dbm, update_queries)
+
+
+def get_tweet_type(tweet):
+    if 'retweeted_status' in tweet:
+        tweet_type = 'retweet'
+    elif 'is_quote_status' in tweet and tweet['is_quote_status']:
+        tweet_type = 'quote'
+    elif 'in_reply_to_status_id_str' in tweet and tweet['in_reply_to_status_id_str']:
+        tweet_type = 'reply'
+    else:
+        tweet_type = 'original'
+    return tweet_type
+
+
+def add_tweet_type_attr(collection='tweets'):
+    dbm = DBManager(collection=collection)
+    query = {
+        'tweet_obj.type': {'$eq': None}
+    }
+    projection = {
+        '_id': 0,
+        'tweet_obj.id_str': 1,
+        'tweet_obj.retweeted_status': 1,
+        'tweet_obj.is_quote_status': 1,
+        'tweet_obj.in_reply_to_status_id_str': 1
+    }
+    logging.info('Finding tweets...')
+    docs = dbm.find_all(query, projection)
+    total_tweets = docs.count()
+    logging.info('Found {:,} tweets'.format(total_tweets))
+    max_batch = BATCH_SIZE if total_tweets > BATCH_SIZE else total_tweets
+    update_queries = []
+    processing_counter = total_segs = 0
+    for doc in docs:
+        start_time = time.time()
+        processing_counter += 1
+        tweet = doc['tweet_obj']
+        tweet_type = get_tweet_type(tweet)        
+        update_queries.append({
+            'filter': {'tweet_obj.id_str': tweet['id_str']},
+            'new_values': {'tweet_obj.type': tweet_type}
+        })
+        if len(update_queries) == max_batch:
+            add_fields(dbm, update_queries)
+            update_queries = []
+        total_segs = calculate_remaining_execution_time(start_time, total_segs,
+                                                        processing_counter, 
+                                                        total_tweets)
+    if len(update_queries) > 0:
+        add_fields(dbm, update_queries)
+
+
 #if __name__ == '__main__':
-#    fix_tweets_with_empty_flags()
+#    add_complete_text_attr('tweets', db_name='internas_17')
+    #fix_tweets_with_empty_flags()
