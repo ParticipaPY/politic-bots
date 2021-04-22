@@ -1,9 +1,15 @@
 import csv
 import json
+import logging
 import pathlib
 import re
+import time
 
 from datetime import datetime, timedelta, tzinfo
+
+
+logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
+
 
 
 # Get configuration from file
@@ -136,6 +142,21 @@ def get_video_config_with_user_bearer(user_bearer, status_id):
     conn = http.client.HTTPSConnection(api_domain)
     conn.request("GET", api_url, None, headers)
     return conn.getresponse()
+
+
+def calculate_remaining_execution_time(start_time, total_segs, 
+                                       processing_records, total_records):
+    end_time = time.time()
+    total_segs += end_time - start_time
+    remaining_secs = (total_segs/processing_records) * \
+                     (total_records - processing_records)
+    try:
+        remaining_time = str(timedelta(seconds=remaining_secs))
+        logging.info('Remaining execution time: {}'.format(remaining_time))
+    except:
+        logging.info('Remaining execution time: infinite')
+    return total_segs
+
 
 if __name__ == '__main__':
     import http.client
