@@ -13,7 +13,7 @@ googletrans==2.4.0
 html5lib==1.0.1
 idna==2.8
 ipykernel==5.0.0
-ipython==7.0.1
+ipython==7.16.3
 ipython-genutils==0.2.0
 ipywidgets==7.4.2
 jedi==0.12.1
