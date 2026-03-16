@@ -5,8 +5,7 @@ import pathlib
 import re
 import time
 
-from datetime import datetime, timedelta, tzinfo
-
+from datetime import datetime, timedelta, tzinfo, time
 
 logging.basicConfig(filename=str(pathlib.Path.cwd().joinpath('politic_bots.log')), level=logging.DEBUG)
 
@@ -99,6 +98,9 @@ def parse_date(date):
             'year': split_date[5]}
     return date
 
+# Parses from the string created_at to datetime type
+def tweet_datetime(tweet):
+    return datetime.strptime(tweet['created_at'], "%a %b %d %H:%M:%S %z %Y")
 
 # Get information about the user, check
 # https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/user-object
